@@ -37,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
 const ADMIN_ITEMS: NavItem[] = [
   { href: "/admin/lotes", label: "Config. Lotes", icon: "⚙️" },
   { href: "/admin/actividades", label: "Config. Actividades", icon: "🔧" },
+  { href: "/admin/usuarios", label: "Usuarios", icon: "🔑", roles: ["MASTER"] },
 ];
 
 export function Sidebar({ user }: { user: User }) {
@@ -92,7 +93,7 @@ export function Sidebar({ user }: { user: User }) {
               Administración
             </p>
             <ul className="space-y-1">
-              {ADMIN_ITEMS.map((item) => {
+              {ADMIN_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role)).map((item) => {
                 const isActive = pathname.startsWith(item.href);
                 return (
                   <li key={item.href}>
