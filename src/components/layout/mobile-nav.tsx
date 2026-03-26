@@ -6,15 +6,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  ClipboardList,
+  Coffee,
+  Users,
+  LayoutDashboard,
+  type LucideIcon,
+} from "lucide-react";
 
 type User = { role: string };
 
-const MOBILE_TABS = [
-  { href: "/planilla", label: "Planilla", icon: "📋" },
-  { href: "/ingreso-cafe", label: "Café", icon: "☕" },
-  { href: "/trabajadores", label: "Personal", icon: "👷" },
-  { href: "/dashboard", label: "Dashboard", icon: "📈" },
-] as const;
+type MobileTab = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+const MOBILE_TABS: MobileTab[] = [
+  { href: "/planilla", label: "Planilla", icon: ClipboardList },
+  { href: "/ingreso-cafe", label: "Café", icon: Coffee },
+  { href: "/trabajadores", label: "Personal", icon: Users },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+];
 
 export function MobileNav({ user: _user }: { user: User }) {
   const pathname = usePathname();
@@ -24,6 +37,7 @@ export function MobileNav({ user: _user }: { user: User }) {
       <div className="flex items-center justify-around px-2 py-1">
         {MOBILE_TABS.map((tab) => {
           const isActive = pathname.startsWith(tab.href);
+          const Icon = tab.icon;
           return (
             <Link
               key={tab.href}
@@ -34,7 +48,7 @@ export function MobileNav({ user: _user }: { user: User }) {
                   : "text-finca-400 active:text-finca-600"
               }`}
             >
-              <span className="text-lg">{tab.icon}</span>
+              <Icon className="h-5 w-5" />
               <span className="truncate">{tab.label}</span>
             </Link>
           );

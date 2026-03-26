@@ -6,7 +6,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sprout } from "lucide-react";
+import {
+  Sprout,
+  ClipboardList,
+  Coffee,
+  CalendarRange,
+  BarChart3,
+  Users,
+  Map,
+  LayoutDashboard,
+  Settings,
+  Wrench,
+  KeyRound,
+  type LucideIcon,
+} from "lucide-react";
 import { SyncIndicator } from "./sync-indicator";
 import { LogoutButton } from "./logout-button";
 
@@ -20,24 +33,24 @@ type User = {
 type NavItem = {
   href: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   roles?: string[];
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/planilla", label: "Planilla", icon: "📋" },
-  { href: "/ingreso-cafe", label: "Ingreso Café", icon: "☕" },
-  { href: "/plan", label: "Plan Anual", icon: "📅" },
-  { href: "/estimaciones", label: "Estimaciones", icon: "📊" },
-  { href: "/trabajadores", label: "Trabajadores", icon: "👷" },
-  { href: "/lotes", label: "Lotes", icon: "🌱" },
-  { href: "/dashboard", label: "Dashboard", icon: "📈", roles: ["MASTER", "ADMIN", "MANAGER", "CEO"] },
+  { href: "/planilla", label: "Planilla", icon: ClipboardList },
+  { href: "/ingreso-cafe", label: "Ingreso Café", icon: Coffee },
+  { href: "/plan", label: "Plan Anual", icon: CalendarRange },
+  { href: "/estimaciones", label: "Estimaciones", icon: BarChart3 },
+  { href: "/trabajadores", label: "Trabajadores", icon: Users },
+  { href: "/lotes", label: "Lotes", icon: Map },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["MASTER", "ADMIN", "MANAGER", "CEO"] },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
-  { href: "/admin/lotes", label: "Config. Lotes", icon: "⚙️" },
-  { href: "/admin/actividades", label: "Config. Actividades", icon: "🔧" },
-  { href: "/admin/usuarios", label: "Usuarios", icon: "🔑", roles: ["MASTER"] },
+  { href: "/admin/lotes", label: "Config. Lotes", icon: Settings },
+  { href: "/admin/actividades", label: "Config. Actividades", icon: Wrench },
+  { href: "/admin/usuarios", label: "Usuarios", icon: KeyRound, roles: ["MASTER"] },
 ];
 
 export function Sidebar({ user }: { user: User }) {
@@ -67,6 +80,7 @@ export function Sidebar({ user }: { user: User }) {
         <ul className="space-y-1">
           {visibleNav.map((item) => {
             const isActive = pathname.startsWith(item.href);
+            const Icon = item.icon;
             return (
               <li key={item.href}>
                 <Link
@@ -77,7 +91,7 @@ export function Sidebar({ user }: { user: User }) {
                       : "text-finca-600 hover:bg-finca-50 hover:text-finca-900"
                   }`}
                 >
-                  <span className="text-base">{item.icon}</span>
+                  <Icon className="h-4.5 w-4.5 shrink-0" />
                   {item.label}
                 </Link>
               </li>
@@ -95,6 +109,7 @@ export function Sidebar({ user }: { user: User }) {
             <ul className="space-y-1">
               {ADMIN_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role)).map((item) => {
                 const isActive = pathname.startsWith(item.href);
+                const Icon = item.icon;
                 return (
                   <li key={item.href}>
                     <Link
@@ -105,7 +120,7 @@ export function Sidebar({ user }: { user: User }) {
                           : "text-finca-600 hover:bg-finca-50 hover:text-finca-900"
                       }`}
                     >
-                      <span className="text-base">{item.icon}</span>
+                      <Icon className="h-4.5 w-4.5 shrink-0" />
                       {item.label}
                     </Link>
                   </li>
