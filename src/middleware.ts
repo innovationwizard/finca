@@ -7,11 +7,34 @@ import { createServerClient } from "@supabase/ssr";
 
 const PUBLIC_ROUTES = ["/login", "/recuperar", "/reset-password"];
 
+// Bot crawlers that need access to OG meta tags for link previews
+const BOT_USER_AGENTS = [
+  "WhatsApp",
+  "facebookexternalhit",
+  "Facebot",
+  "Twitterbot",
+  "LinkedInBot",
+  "Slackbot",
+  "TelegramBot",
+  "Discordbot",
+  "Googlebot",
+];
+
+function isBot(ua: string | null): boolean {
+  if (!ua) return false;
+  return BOT_USER_AGENTS.some((bot) => ua.includes(bot));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes
   if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+
+  // Allow bot crawlers through so they can read OG meta tags for link previews
+  if (isBot(request.headers.get("user-agent"))) {
     return NextResponse.next();
   }
 
