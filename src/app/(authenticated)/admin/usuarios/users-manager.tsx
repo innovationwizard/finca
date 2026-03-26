@@ -230,7 +230,7 @@ export function UsersManager({
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Luis Castellanos"
+                placeholder="Nombre completo"
                 className="w-full rounded-lg border border-finca-200 px-3 py-2 text-sm text-finca-900 outline-none focus:border-finca-500 focus:ring-2 focus:ring-finca-100"
               />
             </div>
@@ -254,9 +254,10 @@ export function UsersManager({
                 Contraseña
               </label>
               <input
-                type="text"
+                type="password"
                 required
                 minLength={6}
+                autoComplete="new-password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder="Mínimo 6 caracteres"
