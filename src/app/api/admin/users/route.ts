@@ -8,8 +8,6 @@ import { prisma } from "@/lib/prisma";
 import { apiRequireRole } from "@/lib/auth/guards";
 import { z } from "zod";
 
-const MASTER_ROLES = ["MASTER"] as const;
-
 // Supabase admin client (service role — can create/manage auth users)
 function getAdminSupabase() {
   return createClient(
