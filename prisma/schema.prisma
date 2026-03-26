@@ -1,0 +1,362 @@
+// =============================================================================
+// Finca Danilandia y Anexos, S.A. — Database Schema
+// Part of Holding Grupo Orión
+// Agricultural Year: March → February
+// Currency: Quetzales (GTQ)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =============================================================================
+// AUTH & ACCESS
+// =============================================================================
+
+enum UserRole {
+  MASTER // You — full CRUD, all settings, user management
+  ADMIN // Luis — full CRUD, payroll, data entry, settings
+  MANAGER // Roberto — read-all, approve payroll, dashboards
+  FIELD // Caporal — mobile data entry (activities, intake)
+  CEO // Octavio — dashboard only (future)
+}
+
+model User {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supabaseId String   @unique @map("supabase_id")
+  email      String   @unique
+  name       String
+  role       UserRole @default(FIELD)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+// =============================================================================
+// SYSTEM SETTINGS
+// =============================================================================
+
+model SystemSetting {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key       String   @unique // "pay_period_type", "agricultural_year_start_month", etc.
+  value     String // JSON-encoded value
+  label     String // Human-readable label: "Tipo de período de pago"
+  group     String // Grouping: "payroll", "general", "alerts"
+  updatedBy String?  @map("updated_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([group])
+  @@map("system_settings")
+}
+
+// =============================================================================
+// FINCA STRUCTURE
+// =============================================================================
+
+model Lote {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String   @unique
+  slug         String   @unique
+  areaManzanas Decimal? @map("area_manzanas") @db.Decimal(8, 2)
+  plantCount   Int?     @map("plant_count")
+  density      String?
+  altitudeMasl Int?     @map("altitude_masl")
+  variety      String?
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  activityRecords     ActivityRecord[]
+  coffeeIntakes       CoffeeIntake[]
+  planEntries         PlanEntry[]
+  productionEstimates ProductionEstimate[]
+
+  @@map("lotes")
+}
+
+// =============================================================================
+// WORKERS
+// =============================================================================
+
+model Worker {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullName    String    @map("full_name")
+  dpi         String?   @unique
+  nit         String?
+  bankAccount String?   @map("bank_account")
+  phone       String?
+  photoUrl    String?   @map("photo_url")
+  isMinor     Boolean   @default(false) @map("is_minor")
+  isActive    Boolean   @default(true) @map("is_active")
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  activityRecords ActivityRecord[]
+  payrollEntries  PayrollEntry[]
+
+  @@map("workers")
+}
+
+// =============================================================================
+// ACTIVITY CATALOG
+// =============================================================================
+
+enum ActivityUnit {
+  QUINTAL // qq
+  MANZANA // mz
+  HECTAREA // ha
+  JORNAL // day-labor (task-based day)
+  DIA // fixed daily rate
+}
+
+model Activity {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String       @unique
+  unit         ActivityUnit
+  defaultPrice Decimal?     @map("default_price") @db.Decimal(10, 2)
+  isHarvest    Boolean      @default(false) @map("is_harvest")
+  isBeneficio  Boolean      @default(false) @map("is_beneficio")
+  sortOrder    Int          @default(0) @map("sort_order")
+  isActive     Boolean      @default(true) @map("is_active")
+  minQtyAlert  Decimal?     @map("min_qty_alert") @db.Decimal(10, 2)
+  maxQtyAlert  Decimal?     @map("max_qty_alert") @db.Decimal(10, 2)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  activityRecords ActivityRecord[]
+  planEntries     PlanEntry[]
+
+  @@map("activities")
+}
+
+// =============================================================================
+// MODULE 1: PLANILLA
+// =============================================================================
+
+enum PayPeriodType {
+  SEMANAL
+  CATORCENA
+}
+
+model PayPeriod {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type             PayPeriodType @default(SEMANAL)
+  periodNumber     Int           @map("period_number")
+  agriculturalYear String        @map("agricultural_year") // "2526"
+  startDate        DateTime      @map("start_date") @db.Date
+  endDate          DateTime      @map("end_date") @db.Date
+  isClosed         Boolean       @default(false) @map("is_closed")
+  closedAt         DateTime?     @map("closed_at")
+  closedBy         String?       @map("closed_by") @db.Uuid
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  activityRecords ActivityRecord[]
+  payrollEntries  PayrollEntry[]
+
+  @@unique([agriculturalYear, periodNumber, type])
+  @@map("pay_periods")
+}
+
+model ActivityRecord {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date        DateTime  @db.Date
+  payPeriodId String    @map("pay_period_id") @db.Uuid
+  workerId    String    @map("worker_id") @db.Uuid
+  activityId  String    @map("activity_id") @db.Uuid
+  loteId      String?   @map("lote_id") @db.Uuid
+  quantity    Decimal   @db.Decimal(10, 2)
+  unitPrice   Decimal   @map("unit_price") @db.Decimal(10, 2)
+  totalEarned Decimal   @map("total_earned") @db.Decimal(10, 2)
+  notes       String?
+  clientId    String?   @unique @map("client_id") // Offline sync dedup key
+  syncedAt    DateTime? @map("synced_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
+  worker    Worker    @relation(fields: [workerId], references: [id])
+  activity  Activity  @relation(fields: [activityId], references: [id])
+  lote      Lote?     @relation(fields: [loteId], references: [id])
+
+  @@index([date])
+  @@index([payPeriodId])
+  @@index([workerId])
+  @@index([loteId])
+  @@index([activityId])
+  @@map("activity_records")
+}
+
+model PayrollEntry {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payPeriodId  String    @map("pay_period_id") @db.Uuid
+  workerId     String    @map("worker_id") @db.Uuid
+  totalEarned  Decimal   @map("total_earned") @db.Decimal(10, 2)
+  bonification Decimal   @default(0) @db.Decimal(10, 2)
+  advances     Decimal   @default(0) @db.Decimal(10, 2)
+  deductions   Decimal   @default(0) @db.Decimal(10, 2)
+  totalToPay   Decimal   @map("total_to_pay") @db.Decimal(10, 2)
+  isPaid       Boolean   @default(false) @map("is_paid")
+  paidAt       DateTime? @map("paid_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
+  worker    Worker    @relation(fields: [workerId], references: [id])
+
+  @@unique([payPeriodId, workerId])
+  @@map("payroll_entries")
+}
+
+// =============================================================================
+// MODULE 2: INGRESO DE CAFÉ
+// =============================================================================
+
+enum CoffeeType {
+  CEREZA
+  PERGAMINO
+  ORO
+}
+
+enum IntakeSource {
+  COSECHA
+  COMPRA
+}
+
+enum CoffeeStatus {
+  RECIBIDO
+  DESPULPADO
+  SECANDO
+  PERGAMINO
+  ENVASADO
+  DESPACHADO
+}
+
+model CoffeeIntake {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String       @unique
+  date            DateTime     @db.Date
+  coffeeType      CoffeeType   @default(CEREZA) @map("coffee_type")
+  source          IntakeSource @default(COSECHA)
+  loteId          String?      @map("lote_id") @db.Uuid
+  supplierName    String?      @map("supplier_name")
+  procedencia     String? // Origin location for COMPRA
+  supplierAccount String?      @map("supplier_account") // Bank account for payment
+  pricePerQq      Decimal?     @map("price_per_qq") @db.Decimal(10, 2) // Purchase price per quintal
+  paymentStatus   String?      @map("payment_status") // "CANCELADO", "PENDIENTE"
+  bultos          Int?
+  pesoNetoQq      Decimal      @map("peso_neto_qq") @db.Decimal(10, 2)
+  pesoPergaminoQq Decimal?     @map("peso_pergamino_qq") @db.Decimal(10, 2)
+  rendimiento     Decimal?     @db.Decimal(6, 2)
+  status          CoffeeStatus @default(RECIBIDO)
+  processedDate   DateTime?    @map("processed_date") @db.Date
+  dispatchDate    DateTime?    @map("dispatch_date") @db.Date
+  dispatchCode    String?      @map("dispatch_code")
+  cuppingScore    Decimal?     @map("cupping_score") @db.Decimal(4, 1)
+  notes           String?
+  clientId        String?      @unique @map("client_id")
+  syncedAt        DateTime?    @map("synced_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  lote Lote? @relation(fields: [loteId], references: [id])
+
+  @@index([date])
+  @@index([loteId])
+  @@index([status])
+  @@map("coffee_intakes")
+}
+
+// =============================================================================
+// MODULE 3: ACTIVITY PLANNING
+// =============================================================================
+
+model PlanEntry {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agriculturalYear String   @map("agricultural_year")
+  loteId           String   @map("lote_id") @db.Uuid
+  activityId       String   @map("activity_id") @db.Uuid
+  month            Int
+  week             Int
+  plannedJornales  Decimal  @map("planned_jornales") @db.Decimal(8, 2)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  lote     Lote     @relation(fields: [loteId], references: [id])
+  activity Activity @relation(fields: [activityId], references: [id])
+
+  @@unique([agriculturalYear, loteId, activityId, month, week])
+  @@index([agriculturalYear])
+  @@map("plan_entries")
+}
+
+// =============================================================================
+// MODULE 4: PRODUCTION ESTIMATES
+// =============================================================================
+
+enum EstimateType {
+  PRIMERA
+  SEGUNDA
+  TERCERA
+  CUARTA
+  FINAL
+}
+
+model ProductionEstimate {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agriculturalYear String       @map("agricultural_year")
+  loteId           String       @map("lote_id") @db.Uuid
+  estimateType     EstimateType @map("estimate_type")
+  estimateDate     DateTime     @map("estimate_date") @db.Date
+  lbPerPlant       Decimal      @map("lb_per_plant") @db.Decimal(6, 2)
+  qqMaduroPerLote  Decimal?     @map("qq_maduro_per_lote") @db.Decimal(10, 2)
+  qqOroPerManzana  Decimal?     @map("qq_oro_per_manzana") @db.Decimal(10, 2)
+  qqOroPerLote     Decimal?     @map("qq_oro_per_lote") @db.Decimal(10, 2)
+  notes            String?
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  lote Lote @relation(fields: [loteId], references: [id])
+
+  @@unique([agriculturalYear, loteId, estimateType])
+  @@index([agriculturalYear])
+  @@map("production_estimates")
+}
+
+// =============================================================================
+// AUDIT
+// =============================================================================
+
+model AuditLog {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  action    String
+  tableName String   @map("table_name")
+  recordId  String   @map("record_id")
+  oldValues Json?    @map("old_values")
+  newValues Json?    @map("new_values")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([tableName, recordId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
