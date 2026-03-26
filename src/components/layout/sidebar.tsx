@@ -6,6 +6,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Sprout } from "lucide-react";
 import { SyncIndicator } from "./sync-indicator";
 import { LogoutButton } from "./logout-button";
 
@@ -51,8 +52,8 @@ export function Sidebar({ user }: { user: User }) {
     <aside className="hidden w-64 shrink-0 border-r border-finca-200 bg-white lg:flex lg:flex-col">
       {/* Brand */}
       <div className="flex h-16 items-center gap-3 border-b border-finca-100 px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-earth-500 text-sm font-bold text-white">
-          FD
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-finca-900">
+          <Sprout className="h-5 w-5 text-finca-100" />
         </div>
         <div>
           <p className="text-sm font-semibold text-finca-900">Finca Danilandia</p>

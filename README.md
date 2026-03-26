@@ -1,54 +1,56 @@
 # Finca Danilandia — Sistema de Gestión Agrícola
 
 > **Finca Danilandia y Anexos, S.A.** · Grupo Orión
-> Offline-first PWA for coffee farm management.
+> PWA para gestión de finca cafetalera con soporte sin conexión.
 
-## Quick Start
+## Inicio Rápido
 
 ```bash
-# 1. Install dependencies
+# 1. Instalar dependencias
 npm install
 
-# 2. Copy env and fill in Supabase credentials
+# 2. Copiar variables de entorno y llenar credenciales de Supabase
 cp .env.example .env.local
 
-# 3. Push schema to Supabase
+# 3. Crear tablas en Supabase
 npx prisma db push
 
-# 4. Seed with real data (lotes, activities, workers)
+# 4. Sembrar datos reales (lotes, actividades, trabajadores)
 npm run db:seed
 
-# 5. Create initial users in Supabase Auth dashboard:
-#    - Your account (MASTER role)
-#    - Luis (ADMIN role)
-#    - Roberto (MANAGER role)
-#    Then insert matching rows in the `users` table via Prisma Studio:
+# 5. Crear usuarios en el dashboard de Supabase Auth:
+#    - Tu cuenta (rol MASTER)
+#    - Luis Castellanos (rol ADMIN)
+#    - Luis Arimany (rol ADMIN)
+#    - Caporal (rol FIELD)
+#    Luego insertar filas en la tabla `users` via Prisma Studio:
 npx prisma studio
 
-# 6. Run dev server
+# 6. Iniciar servidor de desarrollo
 npm run dev
 ```
 
-## Architecture
+## Arquitectura
 
-- **Next.js 15** (App Router) on **Vercel**
+- **Next.js 15** (App Router) en **Vercel**
 - **Supabase** (PostgreSQL + Auth + Storage + Realtime)
-- **Prisma** ORM with strict typing
-- **PWA** with Serwist (service worker) + Dexie.js (IndexedDB)
-- **Offline-first**: write to IndexedDB → outbox queue → background sync
+- **Prisma** ORM con tipado estricto
+- **PWA** con Serwist (service worker) + Dexie.js (IndexedDB)
+- **Sin conexión**: escritura a IndexedDB → cola de salida → sincronización en segundo plano
 
-## Modules (Priority Order)
+## Módulos
 
-1. **Planilla** — Daily activity recording, payroll summary
-2. **Ingreso de Café** — Harvest intake, rendimiento tracking
-3. **Plan Anual** — Activity planning by lot (plan vs actual)
-4. **Estimaciones** — Production estimates (4 + final per year)
+1. **Planilla** — Registro diario de actividades, resumen de planilla
+2. **Ingreso de Café** — Registro de cosecha, seguimiento de rendimiento
+3. **Plan Anual** — Planificación de actividades por lote (plan vs ejecutado)
+4. **Estimaciones** — Estimaciones de producción (4 + final por año)
+5. **Dashboard** — KPIs, gráficas, alertas
 
-## Admin Pages (MASTER + ADMIN only)
+## Páginas de Administración (MASTER + ADMIN)
 
-- `/admin/lotes` — Lot area, plants, density configuration
-- `/admin/actividades` — Activity catalog (units, prices), pay cycle settings
+- `/admin/lotes` — Configuración de área, plantas y densidad por lote
+- `/admin/actividades` — Catálogo de actividades (unidades, precios), ciclo de pago
 
-## Agricultural Year
+## Año Agrícola
 
-March → February. Code format: `2526` = March 2025 → February 2026.
+Marzo → Febrero. Formato de código: `2526` = Marzo 2025 → Febrero 2026.

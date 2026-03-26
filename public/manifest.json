@@ -5,8 +5,8 @@
   "start_url": "/planilla",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#faf8f5",
-  "theme_color": "#6a4c3c",
+  "background_color": "#F3FAF6",
+  "theme_color": "#1B3A2D",
   "lang": "es-GT",
   "icons": [
     {

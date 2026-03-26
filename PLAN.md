@@ -70,8 +70,8 @@ Everything the app needs before any module can function.
 - [ ] Session management (cookie-based JWT from Supabase)
 - [ ] Initial users (created manually by user in Supabase Auth dashboard):
   - Jorge (developer) — MASTER
-  - Luis C. — ADMIN
-  - Luis A. — ADMIN
+  - Luis Castellanos — ADMIN
+  - Luis Arimany — ADMIN
   - Caporal — FIELD
   - Additional roles deferred
 
@@ -118,7 +118,7 @@ Everything the app needs before any module can function.
 ### Phase 1 — Planilla (Week 2-4)
 
 **Replaces**: `Planilla_Finca_Cafe_Semanal_CON_Lotes_feb-marz.xlsx`
-**Users**: Luis C. / Luis A. (ADMIN — desktop data entry), Caporal (FIELD — mobile data entry)
+**Users**: Luis Castellanos / Luis Arimany (ADMIN — desktop data entry), Caporal (FIELD — mobile data entry)
 
 #### 1.1 Pay Period Management
 - [ ] `/api/pay-periods` — GET (list) + POST (create)
@@ -366,7 +366,7 @@ These items have unknown values. They are set to `null` in seed data and flagged
 | # | Decision | Resolution |
 |---|---|---|
 | 6-8 | Supabase, Vercel, domain | User creates manually |
-| 9 | RBAC | MASTER (Jorge), ADMIN (Luis C., Luis A.), FIELD (Caporal). Defer MANAGER, CEO. |
+| 9 | RBAC | MASTER (Jorge), ADMIN (Luis Castellanos, Luis Arimany), FIELD (Caporal). Defer MANAGER, CEO. |
 | 10 | Auth | Supabase Auth |
 | 11 | MVP scope | All 4 modules (Planilla + Ingreso Café + Plan + Estimaciones + Dashboard) |
 | 12 | Offline day 1 | Online-only. Offline deferred, flagged as open. |

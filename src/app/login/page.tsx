@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sprout } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -55,8 +56,8 @@ export default function LoginPage() {
           />
         </div>
         <div className="relative z-10 px-12 text-center">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-earth-500 text-3xl font-bold text-white shadow-lg">
-            FD
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-finca-800 shadow-lg">
+            <Sprout className="h-10 w-10 text-finca-100" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white">
             Finca Danilandia
@@ -75,8 +76,8 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="mb-8 flex justify-center lg:hidden">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-earth-500 text-xl font-bold text-white">
-              FD
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-finca-800">
+              <Sprout className="h-7 w-7 text-finca-100" />
             </div>
           </div>
 
