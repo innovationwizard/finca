@@ -106,3 +106,112 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(record, { status: 201 });
 }
+
+export async function PATCH(request: NextRequest) {
+  const auth = await apiRequireRole(...WRITE_ROLES);
+  if (auth instanceof NextResponse) return auth;
+
+  const body = await request.json();
+  const { id, ...updates } = body;
+
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "ID requerido" }, { status: 400 });
+  }
+
+  const existing = await prisma.activityRecord.findUnique({
+    where: { id },
+    include: { payPeriod: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Registro no encontrado" }, { status: 404 });
+  }
+  if (existing.payPeriod.isClosed) {
+    return NextResponse.json({ error: "El período de pago ya está cerrado" }, { status: 400 });
+  }
+
+  const data: Record<string, unknown> = {};
+  if (updates.quantity !== undefined) data.quantity = updates.quantity;
+  if (updates.unitPrice !== undefined) data.unitPrice = updates.unitPrice;
+  if (updates.activityId !== undefined) data.activityId = updates.activityId;
+  if (updates.loteId !== undefined) data.loteId = updates.loteId || null;
+  if (updates.date !== undefined) data.date = new Date(updates.date);
+  if (updates.notes !== undefined) data.notes = updates.notes || null;
+
+  // Recalculate total
+  const qty = (data.quantity as number) ?? Number(existing.quantity);
+  const price = (data.unitPrice as number) ?? Number(existing.unitPrice);
+  data.totalEarned = Math.round(qty * price * 100) / 100;
+
+  // Audit log
+  await prisma.auditLog.create({
+    data: {
+      userId: auth.id,
+      action: "UPDATE",
+      tableName: "activity_records",
+      recordId: id,
+      oldValues: {
+        quantity: Number(existing.quantity),
+        unitPrice: Number(existing.unitPrice),
+        totalEarned: Number(existing.totalEarned),
+        activityId: existing.activityId,
+        loteId: existing.loteId,
+      },
+      newValues: data as Record<string, string | number | null>,
+    },
+  });
+
+  const updated = await prisma.activityRecord.update({
+    where: { id },
+    data,
+    include: {
+      worker: { select: { id: true, fullName: true } },
+      activity: { select: { id: true, name: true, unit: true } },
+      lote: { select: { id: true, name: true } },
+    },
+  });
+
+  return NextResponse.json(updated);
+}
+
+export async function DELETE(request: NextRequest) {
+  const auth = await apiRequireRole(...WRITE_ROLES);
+  if (auth instanceof NextResponse) return auth;
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ error: "ID requerido" }, { status: 400 });
+  }
+
+  const existing = await prisma.activityRecord.findUnique({
+    where: { id },
+    include: { payPeriod: true, worker: true, activity: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Registro no encontrado" }, { status: 404 });
+  }
+  if (existing.payPeriod.isClosed) {
+    return NextResponse.json({ error: "El período de pago ya está cerrado" }, { status: 400 });
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      userId: auth.id,
+      action: "DELETE",
+      tableName: "activity_records",
+      recordId: id,
+      oldValues: {
+        date: existing.date.toISOString().split("T")[0],
+        worker: existing.worker.fullName,
+        activity: existing.activity.name,
+        quantity: Number(existing.quantity),
+        totalEarned: Number(existing.totalEarned),
+      },
+    },
+  });
+
+  await prisma.activityRecord.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
+}

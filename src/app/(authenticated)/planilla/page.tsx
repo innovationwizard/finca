@@ -117,7 +117,7 @@ export default async function PlanillaPage() {
       {/* Records table */}
       <div className="mt-6">
         {currentPeriod ? (
-          <PlanillaList records={serialized} />
+          <PlanillaList records={serialized} canWrite={canWrite} />
         ) : (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-8 text-center">
             <p className="text-sm text-amber-800">

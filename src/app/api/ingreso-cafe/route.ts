@@ -114,63 +114,74 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Generate sequential code based on source
-  const year = getCurrentAgriculturalYear();
-  const prefix = data.source === "COMPRA" ? "ICC" : "IC";
-  const existingCount = await prisma.coffeeIntake.count({
-    where: {
-      code: { startsWith: `${prefix}-${year}-` },
-    },
-  });
+  try {
+    // Generate sequential code based on source — use max sequence, not count,
+    // so deletions never cause duplicate-code collisions.
+    const year = getCurrentAgriculturalYear();
+    const prefix = data.source === "COMPRA" ? "ICC" : "IC";
+    const lastIntake = await prisma.coffeeIntake.findFirst({
+      where: { code: { startsWith: `${prefix}-${year}-` } },
+      orderBy: { code: "desc" },
+      select: { code: true },
+    });
+    const currentMax = lastIntake
+      ? parseInt(lastIntake.code.split("-").pop()!, 10)
+      : 0;
 
-  const code =
-    data.source === "COMPRA"
-      ? generateCompraIntakeCode(existingCount)
-      : generateIntakeCode(existingCount);
+    const code =
+      data.source === "COMPRA"
+        ? generateCompraIntakeCode(currentMax)
+        : generateIntakeCode(currentMax);
 
-  const intake = await prisma.coffeeIntake.create({
-    data: {
-      code,
-      date: new Date(data.date),
-      coffeeType: data.coffeeType,
-      source: data.source,
-      loteId: data.loteId ?? null,
-      supplierName: data.supplierName ?? null,
-      procedencia: data.procedencia ?? null,
-      supplierAccount: data.supplierAccount ?? null,
-      pricePerQq: data.pricePerQq ?? null,
-      bultos: data.bultos ?? null,
-      pesoNetoQq: data.pesoNetoQq,
-      notes: data.notes ?? null,
-      clientId: data.clientId ?? null,
-      syncedAt: new Date(),
-    },
-    include: {
-      lote: { select: { id: true, name: true } },
-    },
-  });
+    const intake = await prisma.coffeeIntake.create({
+      data: {
+        code,
+        date: new Date(data.date),
+        coffeeType: data.coffeeType,
+        source: data.source,
+        loteId: data.loteId ?? null,
+        supplierName: data.supplierName ?? null,
+        procedencia: data.procedencia ?? null,
+        supplierAccount: data.supplierAccount ?? null,
+        pricePerQq: data.pricePerQq ?? null,
+        bultos: data.bultos ?? null,
+        pesoNetoQq: data.pesoNetoQq,
+        notes: data.notes ?? null,
+        clientId: data.clientId ?? null,
+        syncedAt: new Date(),
+      },
+      include: {
+        lote: { select: { id: true, name: true } },
+      },
+    });
 
-  return NextResponse.json(
-    {
-      ...intake,
-      date: intake.date.toISOString().split("T")[0],
-      pesoNetoQq: Number(intake.pesoNetoQq),
-      pesoPergaminoQq: intake.pesoPergaminoQq
-        ? Number(intake.pesoPergaminoQq)
-        : null,
-      rendimiento: intake.rendimiento ? Number(intake.rendimiento) : null,
-      pricePerQq: intake.pricePerQq ? Number(intake.pricePerQq) : null,
-      cuppingScore: intake.cuppingScore ? Number(intake.cuppingScore) : null,
-      processedDate: intake.processedDate
-        ? intake.processedDate.toISOString().split("T")[0]
-        : null,
-      dispatchDate: intake.dispatchDate
-        ? intake.dispatchDate.toISOString().split("T")[0]
-        : null,
-      syncedAt: intake.syncedAt?.toISOString() ?? null,
-      createdAt: intake.createdAt.toISOString(),
-      updatedAt: intake.updatedAt.toISOString(),
-    },
-    { status: 201 },
-  );
+    return NextResponse.json(
+      {
+        ...intake,
+        date: intake.date.toISOString().split("T")[0],
+        pesoNetoQq: Number(intake.pesoNetoQq),
+        pesoPergaminoQq: intake.pesoPergaminoQq
+          ? Number(intake.pesoPergaminoQq)
+          : null,
+        rendimiento: intake.rendimiento ? Number(intake.rendimiento) : null,
+        pricePerQq: intake.pricePerQq ? Number(intake.pricePerQq) : null,
+        cuppingScore: intake.cuppingScore ? Number(intake.cuppingScore) : null,
+        processedDate: intake.processedDate
+          ? intake.processedDate.toISOString().split("T")[0]
+          : null,
+        dispatchDate: intake.dispatchDate
+          ? intake.dispatchDate.toISOString().split("T")[0]
+          : null,
+        syncedAt: intake.syncedAt?.toISOString() ?? null,
+        createdAt: intake.createdAt.toISOString(),
+        updatedAt: intake.updatedAt.toISOString(),
+      },
+      { status: 201 },
+    );
+  } catch (err) {
+    console.error("POST /api/ingreso-cafe error:", err);
+    const message =
+      err instanceof Error ? err.message : "Error interno del servidor";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

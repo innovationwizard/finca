@@ -55,6 +55,23 @@ export const coffeeIntakeCreateSchema = z
 export type CoffeeIntakeCreateInput = z.infer<typeof coffeeIntakeCreateSchema>;
 
 export const coffeeIntakeUpdateSchema = z.object({
+  // Core fields (editable)
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")
+    .optional(),
+  coffeeType: z.enum(["CEREZA", "PERGAMINO", "ORO"]).optional(),
+  source: z.enum(["COSECHA", "COMPRA"]).optional(),
+  loteId: z.string().uuid("Lote inválido").nullable().optional(),
+  supplierName: z.string().max(200).nullable().optional(),
+  procedencia: z.string().max(200).nullable().optional(),
+  supplierAccount: z.string().max(100).nullable().optional(),
+  pricePerQq: z
+    .number()
+    .min(0, "El precio no puede ser negativo")
+    .nullable()
+    .optional(),
+  // Pipeline / processing fields
   status: z
     .enum([
       "RECIBIDO",

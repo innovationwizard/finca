@@ -8,6 +8,7 @@ import {
   apiRequireRole,
   WRITE_ROLES,
   READ_ALL_ROLES,
+  SETTINGS_ROLES,
 } from "@/lib/auth/guards";
 import { coffeeIntakeUpdateSchema } from "@/lib/validators/coffee-intake";
 
@@ -145,9 +146,35 @@ export async function PATCH(
     }
   }
 
+  // Validate lote exists if changing loteId
+  if (data.loteId) {
+    const lote = await prisma.lote.findUnique({
+      where: { id: data.loteId },
+    });
+    if (!lote) {
+      return NextResponse.json(
+        { error: "Lote no encontrado" },
+        { status: 404 },
+      );
+    }
+  }
+
   // Build update payload
   const updateData: Record<string, unknown> = {};
 
+  // Core fields
+  if (data.date !== undefined) updateData.date = new Date(data.date);
+  if (data.coffeeType !== undefined) updateData.coffeeType = data.coffeeType;
+  if (data.source !== undefined) updateData.source = data.source;
+  if (data.loteId !== undefined) updateData.loteId = data.loteId;
+  if (data.supplierName !== undefined)
+    updateData.supplierName = data.supplierName;
+  if (data.procedencia !== undefined) updateData.procedencia = data.procedencia;
+  if (data.supplierAccount !== undefined)
+    updateData.supplierAccount = data.supplierAccount;
+  if (data.pricePerQq !== undefined) updateData.pricePerQq = data.pricePerQq;
+
+  // Pipeline / processing fields
   if (data.status) updateData.status = data.status;
   if (data.pesoPergaminoQq !== undefined) {
     updateData.pesoPergaminoQq = data.pesoPergaminoQq;
@@ -181,4 +208,29 @@ export async function PATCH(
   });
 
   return NextResponse.json(serializeIntake(updated));
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const auth = await apiRequireRole(...SETTINGS_ROLES);
+  if (auth instanceof NextResponse) return auth;
+
+  const { id } = await params;
+
+  const existing = await prisma.coffeeIntake.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    return NextResponse.json(
+      { error: "Ingreso no encontrado" },
+      { status: 404 },
+    );
+  }
+
+  await prisma.coffeeIntake.delete({ where: { id } });
+
+  return NextResponse.json({ ok: true });
 }

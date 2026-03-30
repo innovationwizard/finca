@@ -123,11 +123,18 @@ export default function NuevoIngresoPage() {
         const created = await res.json();
         setSuccess(`Ingreso ${created.code} creado exitosamente`);
         setTimeout(() => {
+          router.refresh();
           router.push("/ingreso-cafe" as never);
         }, 1500);
       } else {
-        const err = await res.json();
-        setError(err.error ?? "Error al guardar");
+        let msg = "Error al guardar";
+        try {
+          const err = await res.json();
+          msg = err.error ?? msg;
+        } catch {
+          msg = `Error del servidor (${res.status})`;
+        }
+        setError(msg);
       }
     } catch {
       setError("Error de conexión. Intentar de nuevo.");

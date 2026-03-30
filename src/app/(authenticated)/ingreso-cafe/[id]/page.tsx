@@ -39,6 +39,13 @@ export default async function IntakeDetailPage({
     notFound();
   }
 
+  // Load active lotes for edit form
+  const lotes = await prisma.lote.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   const serialized = {
     id: intake.id,
     code: intake.code,
@@ -73,6 +80,14 @@ export default async function IntakeDetailPage({
 
   const canWrite =
     user.role === "MASTER" || user.role === "ADMIN" || user.role === "FIELD";
+  const canDelete = user.role === "MASTER" || user.role === "ADMIN";
 
-  return <IntakeDetail intake={serialized} canWrite={canWrite} />;
+  return (
+    <IntakeDetail
+      intake={serialized}
+      canWrite={canWrite}
+      canDelete={canDelete}
+      lotes={lotes}
+    />
+  );
 }
