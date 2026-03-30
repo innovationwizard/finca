@@ -1,0 +1,497 @@
+"use client";
+
+// =============================================================================
+// Upload notebook photo, extract via AI, review, and save to DB.
+// =============================================================================
+
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Camera, Upload, Loader2, CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react";
+import { ReviewTable, type ReviewRow } from "./review-table";
+
+type WorkerOption = { id: string; fullName: string };
+type ActivityOption = { id: string; name: string; defaultPrice: number | null };
+type LoteOption = { id: string; name: string };
+type PeriodOption = { id: string; periodNumber: number; startDate: string; endDate: string };
+
+type WorkerMatch = {
+  exactMatch: { id: string; fullName: string } | null;
+  candidates: { id: string; fullName: string; score: number }[];
+};
+
+type ExtractionResponse = {
+  extraction: {
+    rows: { workerName: string; entries: { day: number; quantity: number }[] }[];
+    confidence: string;
+    notes: string;
+  };
+  workerMatches: Record<string, WorkerMatch>;
+  activities: ActivityOption[];
+  lotes: LoteOption[];
+  payPeriods: PeriodOption[];
+  imageUrl: string;
+  csvUrl: string;
+};
+
+type Step = "upload" | "processing" | "review" | "saving" | "done";
+
+export function UploadFoto() {
+  const router = useRouter();
+  const [step, setStep] = useState<Step>("upload");
+  const [error, setError] = useState<string | null>(null);
+
+  // Upload form state
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [selectedActivity, setSelectedActivity] = useState("");
+  const [selectedUnitPrice, setSelectedUnitPrice] = useState("");
+
+  // Review state
+  const [rows, setRows] = useState<ReviewRow[]>([]);
+  const [workers, setWorkers] = useState<WorkerOption[]>([]);
+  const [activities, setActivities] = useState<ActivityOption[]>([]);
+  const [lotes, setLotes] = useState<LoteOption[]>([]);
+  const [payPeriods, setPayPeriods] = useState<PeriodOption[]>([]);
+  const [extractionNotes, setExtractionNotes] = useState("");
+  const [confidence, setConfidence] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [csvUrl, setCsvUrl] = useState("");
+  const [savedCount, setSavedCount] = useState(0);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFile(f);
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = () => setPreview(reader.result as string);
+    reader.readAsDataURL(f);
+  }, []);
+
+  // Step 1 → 2: Upload and extract
+  const handleUpload = useCallback(async () => {
+    if (!file) return;
+    setError(null);
+    setStep("processing");
+
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("month", month.toString());
+    formData.append("year", year.toString());
+    if (selectedActivity) formData.append("activityName", selectedActivity);
+    if (selectedUnitPrice) formData.append("unitPrice", selectedUnitPrice);
+
+    try {
+      const res = await fetch("/api/planilla/upload-foto", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al procesar la imagen");
+        setStep("upload");
+        return;
+      }
+
+      const result = data as ExtractionResponse;
+
+      // Build review rows from extraction
+      const defaultActivity = result.activities[0];
+      const defaultPeriod = result.payPeriods[0];
+
+      if (!defaultPeriod) {
+        setError("No hay período de pago abierto. Cree uno primero desde Configuración.");
+        setStep("upload");
+        return;
+      }
+
+      let rowId = 0;
+      const reviewRows: ReviewRow[] = [];
+      for (const extractedRow of result.extraction.rows) {
+        const match = result.workerMatches[extractedRow.workerName];
+        const matchedWorker = match?.exactMatch;
+
+        // Find the selected activity or use default
+        const actObj = selectedActivity
+          ? result.activities.find((a) => a.name === selectedActivity) || defaultActivity
+          : defaultActivity;
+
+        const price = selectedUnitPrice
+          ? parseFloat(selectedUnitPrice)
+          : actObj?.defaultPrice ?? 0;
+
+        for (const entry of extractedRow.entries) {
+          const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(entry.day).padStart(2, "0")}`;
+          reviewRows.push({
+            id: `row-${rowId++}`,
+            workerName: extractedRow.workerName,
+            workerId: matchedWorker?.id || null,
+            workerConfidence: matchedWorker ? "exact" : match?.candidates.length ? "partial" : "none",
+            activityId: actObj?.id || "",
+            loteId: null,
+            date: dateStr,
+            quantity: entry.quantity,
+            unitPrice: price,
+            totalEarned: Math.round(entry.quantity * price * 100) / 100,
+            payPeriodId: defaultPeriod.id,
+          });
+        }
+      }
+
+      setRows(reviewRows);
+      setWorkers(
+        result.activities.length > 0
+          ? await fetchWorkers()
+          : [],
+      );
+      setActivities(result.activities);
+      setLotes(result.lotes);
+      setPayPeriods(result.payPeriods);
+      setExtractionNotes(result.extraction.notes);
+      setConfidence(result.extraction.confidence);
+      setImageUrl(result.imageUrl);
+      setCsvUrl(result.csvUrl);
+      setStep("review");
+    } catch {
+      setError("Error de conexión");
+      setStep("upload");
+    }
+  }, [file, month, year, selectedActivity, selectedUnitPrice]);
+
+  async function fetchWorkers(): Promise<WorkerOption[]> {
+    const res = await fetch("/api/workers");
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.map((w: { id: string; fullName: string }) => ({
+      id: w.id,
+      fullName: w.fullName,
+    }));
+  }
+
+  // Step 3 → 4: Save confirmed rows
+  const handleSave = useCallback(async () => {
+    const validRows = rows.filter((r) => r.workerId && r.activityId && r.payPeriodId);
+    if (validRows.length === 0) {
+      setError("No hay filas válidas para guardar");
+      return;
+    }
+
+    setError(null);
+    setStep("saving");
+
+    // Collect worker name corrections to persist in dictionary
+    const correctionMap = new Map<string, { workerId: string; workerFullName: string }>();
+    for (const r of validRows) {
+      if (r.workerId && r.workerName) {
+        const existing = correctionMap.get(r.workerName);
+        if (!existing) {
+          const worker = workers.find((w) => w.id === r.workerId);
+          if (worker) {
+            correctionMap.set(r.workerName, { workerId: r.workerId, workerFullName: worker.fullName });
+          }
+        }
+      }
+    }
+    const corrections = Array.from(correctionMap.entries()).map(([handwritten, { workerId, workerFullName }]) => ({
+      handwritten,
+      canonical: workerFullName,
+      category: "worker" as const,
+      referenceId: workerId,
+    }));
+
+    try {
+      const res = await fetch("/api/planilla/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rows: validRows.map((r) => ({
+            workerId: r.workerId,
+            activityId: r.activityId,
+            loteId: r.loteId,
+            date: r.date,
+            quantity: r.quantity,
+            unitPrice: r.unitPrice,
+            totalEarned: r.totalEarned,
+            payPeriodId: r.payPeriodId,
+          })),
+          corrections,
+          imageUrl,
+          csvUrl,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Error al guardar");
+        setStep("review");
+        return;
+      }
+
+      setSavedCount(data.count);
+      setStep("done");
+    } catch {
+      setError("Error de conexión");
+      setStep("review");
+    }
+  }, [rows, imageUrl, csvUrl]);
+
+  const handleUpdateRow = useCallback((id: string, updates: Partial<ReviewRow>) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
+  }, []);
+
+  const handleDeleteRow = useCallback((id: string) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
+  // ── STEP: Upload ──────────────────────────────────────────────────────────
+  if (step === "upload") {
+    return (
+      <div className="space-y-6">
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+
+        {/* File input */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-finca-700">
+            Foto del cuaderno
+          </label>
+          <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-finca-300 bg-finca-50/50 px-6 py-8 transition-colors hover:border-finca-500 hover:bg-finca-50">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="environment"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            {preview ? (
+              <img
+                src={preview}
+                alt="Vista previa"
+                className="max-h-64 rounded-lg object-contain"
+              />
+            ) : (
+              <>
+                <Camera className="mb-3 h-10 w-10 text-finca-400" />
+                <p className="text-sm font-medium text-finca-700">
+                  Tomar foto o seleccionar imagen
+                </p>
+                <p className="mt-1 text-xs text-finca-400">
+                  JPEG, PNG o WebP — Máximo 10MB
+                </p>
+              </>
+            )}
+          </label>
+        </div>
+
+        {/* Context fields */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-finca-700">Mes</label>
+            <select
+              value={month}
+              onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+              className="w-full rounded-lg border border-finca-200 px-3 py-2 text-sm"
+            >
+              {[
+                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+              ].map((name, i) => (
+                <option key={i} value={i + 1}>{name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-finca-700">Año</label>
+            <input
+              type="number"
+              value={year}
+              onChange={(e) => setYear(parseInt(e.target.value, 10))}
+              min={2024}
+              max={2030}
+              className="w-full rounded-lg border border-finca-200 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-finca-700">
+              Actividad principal (opcional)
+            </label>
+            <input
+              type="text"
+              value={selectedActivity}
+              onChange={(e) => setSelectedActivity(e.target.value)}
+              placeholder="Ej: Corte de Café"
+              className="w-full rounded-lg border border-finca-200 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-finca-700">
+              Precio unitario (opcional)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={selectedUnitPrice}
+              onChange={(e) => setSelectedUnitPrice(e.target.value)}
+              placeholder="Ej: 70"
+              className="w-full rounded-lg border border-finca-200 px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+
+        {/* Upload button */}
+        <button
+          onClick={handleUpload}
+          disabled={!file}
+          className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800 disabled:opacity-50"
+        >
+          <Upload className="h-4 w-4" />
+          Procesar Foto
+        </button>
+      </div>
+    );
+  }
+
+  // ── STEP: Processing ──────────────────────────────────────────────────────
+  if (step === "processing") {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Loader2 className="h-10 w-10 animate-spin text-finca-600" />
+        <p className="mt-4 text-sm font-medium text-finca-700">
+          Procesando imagen con IA...
+        </p>
+        <p className="mt-1 text-xs text-finca-400">
+          Esto puede tomar 10-30 segundos
+        </p>
+      </div>
+    );
+  }
+
+  // ── STEP: Review ──────────────────────────────────────────────────────────
+  if (step === "review") {
+    const validCount = rows.filter((r) => r.workerId).length;
+    const unmatchedCount = rows.filter((r) => !r.workerId).length;
+
+    return (
+      <div className="space-y-6">
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+
+        {/* Extraction info */}
+        <div className="rounded-lg border border-finca-200 bg-finca-50/50 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              confidence === "high"
+                ? "bg-emerald-100 text-emerald-700"
+                : confidence === "medium"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-red-100 text-red-700"
+            }`}>
+              Confianza: {confidence === "high" ? "Alta" : confidence === "medium" ? "Media" : "Baja"}
+            </span>
+            {unmatchedCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+                <AlertTriangle className="h-3 w-3" />
+                {unmatchedCount} trabajador(es) sin coincidencia
+              </span>
+            )}
+          </div>
+          {extractionNotes && (
+            <p className="mt-2 text-xs text-finca-500">{extractionNotes}</p>
+          )}
+        </div>
+
+        {/* Review table */}
+        <ReviewTable
+          rows={rows}
+          workers={workers}
+          activities={activities}
+          lotes={lotes}
+          payPeriods={payPeriods}
+          onUpdateRow={handleUpdateRow}
+          onDeleteRow={handleDeleteRow}
+        />
+
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSave}
+            disabled={validCount === 0}
+            className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800 disabled:opacity-50"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Guardar {validCount} Registros
+          </button>
+          <button
+            onClick={() => {
+              setStep("upload");
+              setRows([]);
+              setFile(null);
+              setPreview(null);
+            }}
+            className="rounded-lg border border-finca-200 px-4 py-2.5 text-sm font-medium text-finca-600 transition-colors hover:bg-finca-50"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STEP: Saving ──────────────────────────────────────────────────────────
+  if (step === "saving") {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Loader2 className="h-10 w-10 animate-spin text-finca-600" />
+        <p className="mt-4 text-sm font-medium text-finca-700">
+          Guardando registros...
+        </p>
+      </div>
+    );
+  }
+
+  // ── STEP: Done ────────────────────────────────────────────────────────────
+  return (
+    <div className="flex flex-col items-center justify-center py-16">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+        <CheckCircle className="h-8 w-8 text-emerald-600" />
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-finca-900">
+        {savedCount} registros guardados
+      </h3>
+      <p className="mt-1 text-sm text-finca-500">
+        Los datos del cuaderno fueron importados exitosamente.
+      </p>
+      <div className="mt-6 flex gap-3">
+        <button
+          onClick={() => {
+            setStep("upload");
+            setRows([]);
+            setFile(null);
+            setPreview(null);
+            setSavedCount(0);
+          }}
+          className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-finca-800"
+        >
+          <Camera className="h-4 w-4" />
+          Subir otra foto
+        </button>
+        <button
+          onClick={() => router.push("/planilla" as never)}
+          className="inline-flex items-center gap-2 rounded-lg border border-finca-200 px-4 py-2.5 text-sm font-medium text-finca-600 hover:bg-finca-50"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Ver Planilla
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -61,6 +61,24 @@ model SystemSetting {
 }
 
 // =============================================================================
+// NOTEBOOK DICTIONARY — learned corrections for handwritten data
+// =============================================================================
+
+model NotebookDictionary {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category     String   // "worker", "activity", "lote", "abbreviation"
+  handwritten  String   // What appears in the notebook (e.g. "Gildaverto", "B", "mg/Poda")
+  canonical    String   // Correct mapping (e.g. "GILDABERTO SOLANO", "Beneficio", "Mantenimiento General Poda")
+  referenceId  String?  @map("reference_id") @db.Uuid // Optional FK to worker/activity/lote
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([category, handwritten])
+  @@index([category])
+  @@map("notebook_dictionary")
+}
+
+// =============================================================================
 // FINCA STRUCTURE
 // =============================================================================
 

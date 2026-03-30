@@ -8,17 +8,20 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { ClipboardList, Camera } from "lucide-react";
 import { useSyncStatus } from "@/hooks/use-sync-status";
 import { offlineDb } from "@/lib/offline/db";
 import { addToOutbox } from "@/lib/offline/sync-engine";
 import { generateClientId } from "@/lib/utils/code-generators";
 import { calcTotalEarned } from "@/lib/utils/calculations";
 import { formatDateISO } from "@/lib/utils/format";
+import { UploadFoto } from "./upload-foto";
 import type { CachedWorker, CachedActivity, CachedLote, CachedPayPeriod } from "@/lib/offline/db";
 
 export default function NuevaActividadPage() {
   const router = useRouter();
   const { isOnline } = useSyncStatus();
+  const [mode, setMode] = useState<"manual" | "foto">("manual");
 
   // Reference data (from IndexedDB cache)
   const [workers, setWorkers] = useState<CachedWorker[]>([]);
@@ -198,7 +201,7 @@ export default function NuevaActividadPage() {
   };
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-8 sm:px-6">
+    <div className={`mx-auto px-4 py-8 sm:px-6 ${mode === "foto" ? "max-w-5xl" : "max-w-lg"}`}>
       <div className="mb-6">
         <button
           onClick={() => router.back()}
@@ -210,10 +213,42 @@ export default function NuevaActividadPage() {
           Nuevo Registro
         </h1>
         <p className="mt-1 text-sm text-finca-500">
-          {isOnline ? "En línea" : "Sin conexión — se guardará localmente"}
+          {mode === "manual"
+            ? isOnline ? "En línea" : "Sin conexión — se guardará localmente"
+            : "Subir foto del cuaderno para extraer datos automáticamente"}
         </p>
+
+        {/* Mode toggle */}
+        <div className="mt-4 flex rounded-lg border border-finca-200 bg-finca-50 p-1">
+          <button
+            onClick={() => setMode("manual")}
+            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              mode === "manual"
+                ? "bg-white text-finca-900 shadow-sm"
+                : "text-finca-500 hover:text-finca-700"
+            }`}
+          >
+            <ClipboardList className="h-4 w-4" />
+            Registro Manual
+          </button>
+          <button
+            onClick={() => setMode("foto")}
+            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              mode === "foto"
+                ? "bg-white text-finca-900 shadow-sm"
+                : "text-finca-500 hover:text-finca-700"
+            }`}
+          >
+            <Camera className="h-4 w-4" />
+            Subir Foto de Cuaderno
+          </button>
+        </div>
       </div>
 
+      {mode === "foto" ? (
+        <UploadFoto />
+      ) : (
+      <>
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
@@ -383,6 +418,8 @@ export default function NuevaActividadPage() {
               : "Guardar Offline"}
         </button>
       </form>
+      </>
+      )}
     </div>
   );
 }
