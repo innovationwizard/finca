@@ -175,6 +175,7 @@ export default async function PlanPage({ searchParams }: Props) {
             </h2>
           )}
           <PlanGrid
+            key={`${selectedYear}_${selectedLoteId ?? "general"}`}
             agriculturalYear={selectedYear}
             loteId={selectedLoteId}
             loteIds={loteIds}

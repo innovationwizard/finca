@@ -268,6 +268,7 @@ export default async function LotePlanPage({ params, searchParams }: Props) {
           Detalle semanal
         </h2>
         <PlanGrid
+          key={`${selectedYear}_${lote.id}`}
           agriculturalYear={selectedYear}
           loteId={lote.id}
           loteIds={[lote.id]}
