@@ -16,6 +16,7 @@ import { generateClientId } from "@/lib/utils/code-generators";
 import { calcTotalEarned } from "@/lib/utils/calculations";
 import { formatDateISO } from "@/lib/utils/format";
 import { UploadFoto } from "./upload-foto";
+import { CreatePayPeriodWizard } from "./create-pay-period-wizard";
 import type { CachedWorker, CachedActivity, CachedLote, CachedPayPeriod } from "@/lib/offline/db";
 
 export default function NuevaActividadPage() {
@@ -249,6 +250,29 @@ export default function NuevaActividadPage() {
         <UploadFoto />
       ) : (
       <>
+      {/* Wizard: shown when no pay period exists */}
+      {!form.payPeriodId && (
+        <div className="mb-6">
+          <CreatePayPeriodWizard
+            onCreated={(period) => {
+              setForm((f) => ({ ...f, payPeriodId: period.id }));
+              setPeriods((prev) => [
+                ...prev,
+                {
+                  id: period.id,
+                  type: "SEMANAL",
+                  periodNumber: period.periodNumber,
+                  agriculturalYear: "",
+                  startDate: period.startDate,
+                  endDate: period.endDate,
+                  isClosed: false,
+                },
+              ]);
+            }}
+          />
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}

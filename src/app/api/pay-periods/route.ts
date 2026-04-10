@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, READ_ALL_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
-import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
+import { getAgriculturalYear, getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 
 export async function GET(request: NextRequest) {
   const auth = await apiRequireRole(...READ_ALL_ROLES);
@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const year = getCurrentAgriculturalYear();
+  // Derive agricultural year from the period's start date, not from "today"
+  const year = getAgriculturalYear(new Date(startDate));
 
   // Get next period number
   const maxPeriod = await prisma.payPeriod.aggregate({
