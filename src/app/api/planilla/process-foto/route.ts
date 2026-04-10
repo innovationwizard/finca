@@ -1,7 +1,12 @@
 // =============================================================================
-// POST /api/planilla/upload-foto
-// Receives notebook photo, uploads to storage, extracts data via Claude Vision,
-// matches workers, returns structured data for user review.
+// POST /api/planilla/process-foto
+// Receives the storage path of an already-uploaded notebook photo, downloads it
+// from Supabase Storage, runs Claude Vision extraction, matches workers, and
+// returns structured data for the review UI.
+//
+// This route replaces upload-foto — the image is uploaded directly from the
+// browser to Supabase Storage via a signed URL, so the Vercel body-size limit
+// (4.5 MB on Hobby) is no longer a bottleneck.
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -17,68 +22,47 @@ export async function POST(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   try {
-    const formData = await request.formData();
-    const file = formData.get("image") as File | null;
-    const month = parseInt(formData.get("month") as string, 10);
-    const year = parseInt(formData.get("year") as string, 10);
-    const activityName = (formData.get("activityName") as string) || undefined;
-    const unitPrice = formData.get("unitPrice")
-      ? parseFloat(formData.get("unitPrice") as string)
-      : undefined;
+    const body = await request.json();
+    const { storagePath, contentType, month, year, activityName, unitPrice } =
+      body as {
+        storagePath: string;
+        contentType: string;
+        month: number;
+        year: number;
+        activityName?: string;
+        unitPrice?: number;
+      };
 
-    if (!file) {
-      return NextResponse.json({ error: "No se recibió imagen" }, { status: 400 });
-    }
-
-    if (!month || !year || isNaN(month) || isNaN(year)) {
-      return NextResponse.json({ error: "Mes y año son requeridos" }, { status: 400 });
-    }
-
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
+    if (!storagePath || !month || !year) {
       return NextResponse.json(
-        { error: "Formato de imagen no soportado. Use JPEG, PNG o WebP." },
+        { error: "storagePath, mes y año son requeridos" },
         { status: 400 },
       );
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: "La imagen es demasiado grande. Máximo 10MB." },
-        { status: 400 },
-      );
-    }
-
-    // 1. Upload image to Supabase Storage
+    // 1. Download image from Supabase Storage
     const supabase = createServiceClient();
-    const agYear = getCurrentAgriculturalYear();
-    const timestamp = Date.now();
-    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const storagePath = `planilla/${agYear}/${timestamp}.${ext}`;
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const { error: uploadError } = await supabase.storage
+    const { data: fileData, error: downloadError } = await supabase.storage
       .from("notebook-photos")
-      .upload(storagePath, buffer, {
-        contentType: file.type,
-        upsert: false,
-      });
+      .download(storagePath);
 
-    if (uploadError) {
-      console.error("Storage upload error:", uploadError);
+    if (downloadError || !fileData) {
+      console.error("Storage download error:", downloadError);
       return NextResponse.json(
-        { error: `Error al subir imagen: ${uploadError.message}` },
+        { error: `Error al descargar imagen: ${downloadError?.message || "Archivo no encontrado"}` },
         { status: 500 },
       );
     }
 
+    const arrayBuffer = await fileData.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
     // 2. Call Claude Vision to extract data
     const base64 = buffer.toString("base64");
-    const mediaType = file.type as "image/jpeg" | "image/png" | "image/webp";
+    const mediaType = (contentType || "image/jpeg") as
+      | "image/jpeg"
+      | "image/png"
+      | "image/webp";
 
     let extraction;
     try {
@@ -122,6 +106,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 5. Find or suggest pay period
+    const agYear = getCurrentAgriculturalYear();
     const payPeriods = await prisma.payPeriod.findMany({
       where: { agriculturalYear: agYear, isClosed: false },
       orderBy: { periodNumber: "desc" },
@@ -183,7 +168,7 @@ export async function POST(request: NextRequest) {
       csvUrl: csvPath,
     });
   } catch (error) {
-    console.error("Upload-foto error:", error);
+    console.error("Process-foto error:", error);
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 },

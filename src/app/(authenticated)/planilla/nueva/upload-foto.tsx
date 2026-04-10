@@ -70,23 +70,51 @@ export function UploadFoto() {
     reader.readAsDataURL(f);
   }, []);
 
-  // Step 1 → 2: Upload and extract
+  // Step 1 → 2: Upload directly to Supabase Storage, then process via AI
   const handleUpload = useCallback(async () => {
     if (!file) return;
     setError(null);
     setStep("processing");
 
-    const formData = new FormData();
-    formData.append("image", file);
-    formData.append("month", month.toString());
-    formData.append("year", year.toString());
-    if (selectedActivity) formData.append("activityName", selectedActivity);
-    if (selectedUnitPrice) formData.append("unitPrice", selectedUnitPrice);
+    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
 
     try {
-      const res = await fetch("/api/planilla/upload-foto", {
+      // 1. Get signed upload URL from our API
+      const urlRes = await fetch(
+        `/api/planilla/signed-upload-url?ext=${ext}&contentType=${encodeURIComponent(file.type)}`,
+      );
+      const urlData = await urlRes.json();
+      if (!urlRes.ok) {
+        setError(urlData.error || "Error al generar URL de subida");
+        setStep("upload");
+        return;
+      }
+
+      // 2. Upload image directly to Supabase Storage (bypasses Vercel 4.5 MB limit)
+      const uploadRes = await fetch(urlData.signedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        setError("Error al subir la imagen al almacenamiento");
+        setStep("upload");
+        return;
+      }
+
+      // 3. Tell our API to process the uploaded image
+      const res = await fetch("/api/planilla/process-foto", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storagePath: urlData.path,
+          contentType: file.type,
+          month,
+          year,
+          activityName: selectedActivity || undefined,
+          unitPrice: selectedUnitPrice ? parseFloat(selectedUnitPrice) : undefined,
+        }),
       });
 
       const data = await res.json();
@@ -282,7 +310,7 @@ export function UploadFoto() {
                   Tomar foto o seleccionar imagen
                 </p>
                 <p className="mt-1 text-xs text-finca-400">
-                  JPEG, PNG o WebP — Máximo 10MB
+                  JPEG, PNG o WebP
                 </p>
               </>
             )}
