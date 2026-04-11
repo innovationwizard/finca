@@ -36,6 +36,7 @@ const ROLES = [
   { value: "MANAGER", label: "Manager", icon: Shield, description: "Lectura, aprobaciones, dashboard" },
   { value: "FIELD", label: "Field", icon: Radio, description: "Ingreso de datos móvil" },
   { value: "CEO", label: "CEO", icon: Eye, description: "Solo dashboard (futuro)" },
+  { value: "CFO", label: "CFO", icon: Eye, description: "Solo lectura, supervisión financiera" },
 ] as const;
 
 const CREATABLE_ROLES = ROLES.filter((r) => r.value !== "MASTER");
@@ -47,6 +48,7 @@ function roleBadgeColor(role: string) {
     case "MANAGER": return "bg-earth-600 text-white";
     case "FIELD": return "bg-finca-500 text-white";
     case "CEO": return "bg-earth-400 text-white";
+    case "CFO": return "bg-earth-500 text-white";
     default: return "bg-finca-200 text-finca-800";
   }
 }

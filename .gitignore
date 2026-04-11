@@ -39,6 +39,10 @@ next-env.d.ts
 # prisma
 prisma/migrations/dev/
 
+# data files
+*.csv
+WhatsApp Image*
+
 # PWA
 public/sw.js
 public/sw.js.map

@@ -25,6 +25,7 @@ enum UserRole {
   MANAGER // Roberto — read-all, approve payroll, dashboards
   FIELD // Caporal — mobile data entry (activities, intake)
   CEO // Octavio — dashboard only (future)
+  CFO // José — read-all, no updates (financial oversight)
 }
 
 model User {

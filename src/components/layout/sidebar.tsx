@@ -18,6 +18,7 @@ import {
   Settings,
   Wrench,
   KeyRound,
+  Banknote,
   type LucideIcon,
 } from "lucide-react";
 import { SyncIndicator } from "./sync-indicator";
@@ -44,7 +45,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/estimaciones", label: "Estimaciones", icon: BarChart3 },
   { href: "/trabajadores", label: "Trabajadores", icon: Users },
   { href: "/lotes", label: "Lotes", icon: Map },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["MASTER", "ADMIN", "MANAGER", "CEO"] },
+  { href: "/pagos", label: "Pagos", icon: Banknote, roles: ["CFO", "MASTER"] },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["MASTER", "ADMIN", "MANAGER", "CEO", "CFO"] },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [

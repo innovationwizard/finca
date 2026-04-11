@@ -59,7 +59,7 @@ export async function requireRole(
 export const SETTINGS_ROLES: UserRole[] = ["MASTER", "ADMIN"];
 
 /** Roles that can view all data */
-export const READ_ALL_ROLES: UserRole[] = ["MASTER", "ADMIN", "MANAGER", "CEO"];
+export const READ_ALL_ROLES: UserRole[] = ["MASTER", "ADMIN", "MANAGER", "CEO", "CFO"];
 
 /** Roles that can create/edit operational data */
 export const WRITE_ROLES: UserRole[] = ["MASTER", "ADMIN", "FIELD"];
