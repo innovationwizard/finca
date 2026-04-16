@@ -115,6 +115,7 @@ model Worker {
   dpi         String?   @unique
   nit         String?
   bankAccount String?   @map("bank_account")
+  bankName    String?   @map("bank_name")
   phone       String?
   photoUrl    String?   @map("photo_url")
   isMinor     Boolean   @default(false) @map("is_minor")

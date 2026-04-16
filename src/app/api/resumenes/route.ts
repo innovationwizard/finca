@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
   const [workers, activities, lotes, payrollEntries] = await Promise.all([
     prisma.worker.findMany({
       where: { id: { in: workerIds.length > 0 ? workerIds : ["_"] } },
-      select: { id: true, fullName: true, dpi: true, bankAccount: true },
+      select: { id: true, fullName: true, dpi: true, bankAccount: true, bankName: true },
     }),
     prisma.activity.findMany({
       where: { id: { in: activityIds.length > 0 ? activityIds : ["_"] } },
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
         totalToPay: totalEarned + bonification - advances,
         dpi: worker?.dpi ?? "",
         bankAccount: worker?.bankAccount ?? "",
-        bank: "",
+        bank: worker?.bankName ?? "",
       };
     })
     .sort((a, b) => a.workerName.localeCompare(b.workerName));
