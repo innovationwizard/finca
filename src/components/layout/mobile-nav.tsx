@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Coffee,
   Users,
+  FileBarChart,
   LayoutDashboard,
   Banknote,
   type LucideIcon,
@@ -27,6 +28,7 @@ type MobileTab = {
 const MOBILE_TABS: MobileTab[] = [
   { href: "/planilla", label: "Planilla", icon: ClipboardList },
   { href: "/ingreso-cafe", label: "Café", icon: Coffee },
+  { href: "/resumenes", label: "Resúmenes", icon: FileBarChart },
   { href: "/trabajadores", label: "Personal", icon: Users },
   { href: "/pagos", label: "Pagos", icon: Banknote, roles: ["CFO", "MASTER"] },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
