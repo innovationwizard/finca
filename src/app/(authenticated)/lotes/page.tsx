@@ -135,6 +135,18 @@ export default async function LotesPage() {
   const totalLotes = allLotes.length;
   const activeLotes = allLotes.filter((l) => l.isActive).length;
 
+  // Summary totals (active lotes only)
+  const activeKpis = lotesWithKpis.filter((l) => l.isActive);
+  const totalAreaMz = activeKpis.reduce((s, l) => s + (l.areaManzanas ?? 0), 0);
+  const totalPlants = activeKpis.reduce((s, l) => s + (l.plantCount ?? 0), 0);
+  const totalPodaMz = activeKpis.reduce(
+    (s, l) => s + (l.areaManzanas !== null && l.podaPercent !== null ? l.areaManzanas * l.podaPercent / 100 : 0),
+    0,
+  );
+  const avgPodaPct = totalAreaMz > 0 ? (totalPodaMz / totalAreaMz) * 100 : 0;
+  const totalLaborCost = activeKpis.reduce((s, l) => s + l.totalLaborCost, 0);
+  const totalCoffeeQq = activeKpis.reduce((s, l) => s + l.totalCoffeeQq, 0);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
@@ -148,6 +160,66 @@ export default async function LotesPage() {
           {totalLotes} total
         </p>
       </div>
+
+      {/* Summary card */}
+      {activeKpis.length > 0 && (
+        <div className="mb-8 rounded-xl border border-earth-200 bg-earth-50 p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-earth-700">Totales Finca</h2>
+          <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            <div>
+              <p className="flex items-center gap-1 text-xs text-earth-500">
+                <MapPin className="h-3 w-3" /> Área total
+              </p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-earth-900">
+                {totalAreaMz.toLocaleString("es-GT", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} mz
+              </p>
+            </div>
+            <div>
+              <p className="flex items-center gap-1 text-xs text-earth-500">
+                <TreePine className="h-3 w-3" /> Plantas
+              </p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-earth-900">
+                {totalPlants.toLocaleString("es-GT")}
+              </p>
+            </div>
+            <div>
+              <p className="flex items-center gap-1 text-xs text-earth-500">
+                <Scissors className="h-3 w-3" /> Poda
+              </p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-earth-900">
+                {avgPodaPct.toLocaleString("es-GT", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%
+                <span className="ml-1 text-sm font-normal text-earth-500">
+                  · {totalPodaMz.toLocaleString("es-GT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mz
+                </span>
+              </p>
+            </div>
+            <div>
+              <p className="flex items-center gap-1 text-xs text-earth-500">
+                <DollarSign className="h-3 w-3" /> Costo Laboral
+              </p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-earth-900">
+                Q{totalLaborCost.toLocaleString("es-GT", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </p>
+            </div>
+            <div>
+              <p className="flex items-center gap-1 text-xs text-earth-500">
+                <Coffee className="h-3 w-3" /> Café total
+              </p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-earth-900">
+                {totalCoffeeQq.toLocaleString("es-GT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} qq
+              </p>
+            </div>
+            <div>
+              <p className="flex items-center gap-1 text-xs text-earth-500">
+                <TrendingUp className="h-3 w-3" /> Lotes activos
+              </p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-earth-900">
+                {activeLotes}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Grid of lot cards */}
       {lotesWithKpis.length === 0 ? (
