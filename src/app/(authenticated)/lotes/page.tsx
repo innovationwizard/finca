@@ -16,6 +16,7 @@ import {
   TreePine,
   Sprout,
   Mountain,
+  Scissors,
   AlertTriangle,
   ArrowRight,
   DollarSign,
@@ -117,6 +118,7 @@ export default async function LotesPage() {
       name: lote.name,
       slug: lote.slug,
       areaManzanas: lote.areaManzanas ? Number(lote.areaManzanas) : null,
+      podaPercent: lote.podaPercent ? Number(lote.podaPercent) : null,
       plantCount: lote.plantCount,
       density: lote.density,
       variety: lote.variety,
@@ -212,6 +214,19 @@ export default async function LotesPage() {
                       : "— plantas"}
                   </span>
                 </div>
+                {lote.podaPercent !== null && (
+                  <div className="flex items-center gap-1.5 text-finca-600">
+                    <Scissors className="h-3.5 w-3.5 flex-shrink-0 text-finca-400" />
+                    <span>
+                      Poda {lote.podaPercent}%
+                      {lote.areaManzanas !== null && (
+                        <span className="text-finca-400">
+                          {" "}· {(lote.areaManzanas * lote.podaPercent / 100).toLocaleString("es-GT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mz
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
                 {lote.density && (
                   <div className="flex items-center gap-1.5 text-finca-600">
                     <Sprout className="h-3.5 w-3.5 flex-shrink-0 text-finca-400" />

@@ -30,55 +30,55 @@ export async function GET(request: NextRequest) {
   });
   const validIds = periods.map((p) => p.id);
 
-  // ── Por Semana ────────────────────────────────────────────────────────────
+  // Run all queries sequentially to stay within Supabase pool_size (15).
+  // Each await releases the connection before the next query starts.
+
   const weeklyRaw = await prisma.activityRecord.groupBy({
     by: ["payPeriodId", "workerId"],
     where: { payPeriodId: { in: validIds } },
     _sum: { totalEarned: true },
   });
 
-  // ── Por Persona ───────────────────────────────────────────────────────────
-  const personalRaw = await prisma.activityRecord.groupBy({
-    by: ["workerId"],
-    where: { payPeriodId: { in: validIds } },
-    _sum: { totalEarned: true },
-  });
-
-  // ── Por Lote ──────────────────────────────────────────────────────────────
   const loteRaw = await prisma.activityRecord.groupBy({
     by: ["loteId", "activityId"],
     where: { payPeriodId: { in: validIds }, loteId: { not: null } },
     _sum: { totalEarned: true },
   });
 
+  // Derive personalRaw from weeklyRaw instead of a separate query
+  const personalMap = new Map<string, number>();
+  for (const r of weeklyRaw) {
+    personalMap.set(r.workerId, (personalMap.get(r.workerId) ?? 0) + Number(r._sum.totalEarned ?? 0));
+  }
+  const personalRaw = [...personalMap.entries()].map(([workerId, total]) => ({
+    workerId,
+    _sum: { totalEarned: total },
+  }));
+
   // Reference data
-  const workerIds = [
-    ...new Set([
-      ...weeklyRaw.map((r) => r.workerId),
-      ...personalRaw.map((r) => r.workerId),
-    ]),
-  ];
+  const workerIds = [...new Set(weeklyRaw.map((r) => r.workerId))];
   const activityIds = [...new Set(loteRaw.map((r) => r.activityId))];
   const loteIds = [...new Set(loteRaw.map((r) => r.loteId).filter(Boolean))] as string[];
 
-  const [workers, activities, lotes, payrollEntries] = await Promise.all([
-    prisma.worker.findMany({
-      where: { id: { in: workerIds.length > 0 ? workerIds : ["_"] } },
-      select: { id: true, fullName: true, dpi: true, bankAccount: true, bankName: true },
-    }),
-    prisma.activity.findMany({
-      where: { id: { in: activityIds.length > 0 ? activityIds : ["_"] } },
-      select: { id: true, name: true },
-    }),
-    prisma.lote.findMany({
-      where: { id: { in: loteIds.length > 0 ? loteIds : ["_"] } },
-      select: { id: true, name: true },
-    }),
-    prisma.payrollEntry.findMany({
-      where: { payPeriodId: { in: validIds } },
-      select: { workerId: true, bonification: true, advances: true, deductions: true, totalToPay: true },
-    }),
-  ]);
+  const workers = await prisma.worker.findMany({
+    where: { id: { in: workerIds.length > 0 ? workerIds : ["_"] } },
+    select: { id: true, fullName: true, dpi: true, bankAccount: true, bankName: true },
+  });
+
+  const activities = await prisma.activity.findMany({
+    where: { id: { in: activityIds.length > 0 ? activityIds : ["_"] } },
+    select: { id: true, name: true },
+  });
+
+  const lotes = await prisma.lote.findMany({
+    where: { id: { in: loteIds.length > 0 ? loteIds : ["_"] } },
+    select: { id: true, name: true },
+  });
+
+  const payrollEntries = await prisma.payrollEntry.findMany({
+    where: { payPeriodId: { in: validIds } },
+    select: { workerId: true, bonification: true, advances: true, deductions: true, totalToPay: true },
+  });
 
   const workerMap = new Map(workers.map((w) => [w.id, w]));
   const activityMap = new Map(activities.map((a) => [a.id, a.name]));

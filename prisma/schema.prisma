@@ -92,6 +92,7 @@ model Lote {
   density      String?
   altitudeMasl Int?     @map("altitude_masl")
   variety      String?
+  podaPercent  Decimal? @map("poda_percent") @db.Decimal(5, 2)
   isActive     Boolean  @default(true) @map("is_active")
   sortOrder    Int      @default(0) @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at")
