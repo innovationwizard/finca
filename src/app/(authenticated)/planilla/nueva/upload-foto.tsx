@@ -293,7 +293,6 @@ export function UploadFoto() {
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              capture="environment"
               onChange={handleFileSelect}
               className="hidden"
             />
