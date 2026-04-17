@@ -45,16 +45,6 @@ export async function GET(request: NextRequest) {
     _sum: { totalEarned: true },
   });
 
-  // Derive personalRaw from weeklyRaw instead of a separate query
-  const personalMap = new Map<string, number>();
-  for (const r of weeklyRaw) {
-    personalMap.set(r.workerId, (personalMap.get(r.workerId) ?? 0) + Number(r._sum.totalEarned ?? 0));
-  }
-  const personalRaw = [...personalMap.entries()].map(([workerId, total]) => ({
-    workerId,
-    _sum: { totalEarned: total },
-  }));
-
   // Reference data
   const workerIds = [...new Set(weeklyRaw.map((r) => r.workerId))];
   const activityIds = [...new Set(loteRaw.map((r) => r.activityId))];
