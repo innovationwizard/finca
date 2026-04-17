@@ -24,6 +24,7 @@ type FormState = {
   pricePerQq: string;
   bultos: string;
   pesoNetoQq: string;
+  pesoVerdeQq: string;
   notes: string;
 };
 
@@ -42,6 +43,7 @@ export default function NuevoIngresoPage() {
     pricePerQq: "",
     bultos: "",
     pesoNetoQq: "",
+    pesoVerdeQq: "",
     notes: "",
   });
 
@@ -109,6 +111,7 @@ export default function NuevoIngresoPage() {
           : null,
       bultos: form.bultos ? parseInt(form.bultos, 10) : null,
       pesoNetoQq: pesoNeto,
+      pesoVerdeQq: form.pesoVerdeQq ? parseFloat(form.pesoVerdeQq) : null,
       notes: form.notes.trim() || null,
     };
 
@@ -375,6 +378,26 @@ export default function NuevoIngresoPage() {
             />
           </div>
         </div>
+
+        {/* Peso Verde */}
+        {form.source === "COSECHA" && (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-finca-700">
+              Peso Verde (qq){" "}
+              <span className="font-normal text-finca-400">(opcional)</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.pesoVerdeQq}
+              onChange={(e) => setForm({ ...form, pesoVerdeQq: e.target.value })}
+              inputMode="decimal"
+              className="w-full rounded-lg border border-finca-200 bg-white px-4 py-2.5 text-sm tabular-nums text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400 touch-target"
+              placeholder="0.00"
+            />
+          </div>
+        )}
 
         {/* Calculated total for COMPRA */}
         {form.source === "COMPRA" &&

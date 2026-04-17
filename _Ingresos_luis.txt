@@ -1,0 +1,47 @@
+TRANSCRIPCIÓN — Explicación de hoja "5. INGRESOS DE CAFÉ"
+Finca Danilandia y Anexos, S.A.
+==========================================================
+
+Este es el ingreso. La fecha — entonces el 2 de octubre empezamos cosecha. Tipo de café: casi la mayoría en cereza. Código de ingreso — la verdad es que eso es para un control interno, en cualquier caso alguna partida sale a fermentar y lo vamos a buscar.
+
+Cantidad de bultos o sacos que llevaron — este lo grabamos en un principio, después la verdad es que en estos datos no nos sirven. Pero este sí, digamos que este: peso en quintales. Aquí está en quintales. La columna E está en quintales. Entonces son 255 libras, 100 libras, 330 libras — es como lo vemos.
+
+Luego el peso de pergamino. Que esto, si querés darle para abajo, aquí empiezan a sacar partidas. Entonces esto te da un rendimiento. Mira, es 5.06 — debería estar entre 4.50 a 5.50. Van a haber unas de 6 y cosas así, pero eso no se puede. Más o menos es el rango.
+
+Y aquí es de qué pantezón, de qué lote. Y este es el acumulado que vamos llevando: la suma del anterior, y así te vas. Pero realmente tampoco...
+
+Esta es la suma de verdes. Esto también es bien importante.
+
+Aquí son dos ingresos el mismo día: uno es cuadrilla y el otro es voluntarios.
+
+[Pregunta: ¿Estaban cortando en el mismo lote?]
+
+A veces en diferentes lotes. Puede ser el mismo o diferentes.
+
+[Sobre columna F, filas 71 y 72:]
+
+Así te van a salir varios, pero se unen porque... tienen como un orden. Como que la primera siempre es voluntarios y la otra es cuadrilla. O no necesariamente — aquí es el que sea mayor. El que sea mayor es cuadrilla, y el menor es voluntarios.
+
+[Ese criterio está difícil de automatizar.]
+
+Igual aquí, porque mira aquí: voluntarios, cuadrilla. Ah bueno, tal vez sí.
+
+Yo le tenía un comentario, pero creo que me lo borré.
+
+Entonces este es el dato importante. Aquí se produjo, por el ciclo: 183 maduros, 105 de verdes. Lo que nos da un total de cosecha de 4,088.
+
+Así lo llevan. Entonces son 4,000 quintales que se cosecharon. Pero lo importante es cuánto se metió de cada parte — cuánto pergamino tenemos de cada parte.
+
+Aquí falta meter datos, un montón. Pero independientemente, lo que nos interesa ahorita es saber cuánto de cada lote.
+
+[Pregunta: ¿Eso se puede hacer?]
+
+Sí, relativamente. Pero eso se debe bastante solo en esas casillas compartidas. Creo que lo expliqué: mita mita.
+
+[Aclaración: las filas donde hay dos ingresos el mismo día se reparten mitad y mitad.]
+
+Mita mita. No me va a mover mucho los números tampoco, porque son pocos. Pero sí, cabal. Lo único que es eso: desjuntar las casillas, mita mita. Y de ahí el remate se va.
+
+Correcto. Correcto.
+
+[El resto de la conversación se desvía a temas personales — incomprensible / irrelevante.]

@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
     ...i,
     date: i.date.toISOString().split("T")[0],
     pesoNetoQq: Number(i.pesoNetoQq),
+    pesoVerdeQq: i.pesoVerdeQq ? Number(i.pesoVerdeQq) : null,
     pesoPergaminoQq: i.pesoPergaminoQq ? Number(i.pesoPergaminoQq) : null,
     rendimiento: i.rendimiento ? Number(i.rendimiento) : null,
     pricePerQq: i.pricePerQq ? Number(i.pricePerQq) : null,
@@ -146,6 +147,7 @@ export async function POST(request: NextRequest) {
         pricePerQq: data.pricePerQq ?? null,
         bultos: data.bultos ?? null,
         pesoNetoQq: data.pesoNetoQq,
+        pesoVerdeQq: data.pesoVerdeQq ?? null,
         notes: data.notes ?? null,
         clientId: data.clientId ?? null,
         syncedAt: new Date(),
@@ -160,6 +162,7 @@ export async function POST(request: NextRequest) {
         ...intake,
         date: intake.date.toISOString().split("T")[0],
         pesoNetoQq: Number(intake.pesoNetoQq),
+        pesoVerdeQq: intake.pesoVerdeQq ? Number(intake.pesoVerdeQq) : null,
         pesoPergaminoQq: intake.pesoPergaminoQq
           ? Number(intake.pesoPergaminoQq)
           : null,

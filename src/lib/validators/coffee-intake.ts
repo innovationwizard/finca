@@ -32,6 +32,11 @@ export const coffeeIntakeCreateSchema = z
       .number()
       .positive("El peso neto debe ser mayor a 0")
       .max(9999, "Peso parece excesivo"),
+    pesoVerdeQq: z
+      .number()
+      .min(0, "El peso verde no puede ser negativo")
+      .nullable()
+      .optional(),
     notes: z.string().max(1000).nullable().optional(),
     clientId: z.string().uuid().nullable().optional(),
   })
@@ -115,6 +120,11 @@ export const coffeeIntakeUpdateSchema = z.object({
   pesoNetoQq: z
     .number()
     .positive("El peso neto debe ser mayor a 0")
+    .optional(),
+  pesoVerdeQq: z
+    .number()
+    .min(0, "El peso verde no puede ser negativo")
+    .nullable()
     .optional(),
 });
 

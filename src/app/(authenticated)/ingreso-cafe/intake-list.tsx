@@ -19,6 +19,7 @@ type IntakeRecord = {
   procedencia: string | null;
   bultos: number | null;
   pesoNetoQq: number;
+  pesoVerdeQq: number | null;
   pesoPergaminoQq: number | null;
   rendimiento: number | null;
   status: string;
@@ -63,6 +64,18 @@ export function IntakeList({ records }: { records: IntakeRecord[] }) {
     source: "",
     status: "",
   });
+
+  // Compute running total (acumulado) based on date-ascending order
+  const acumuladoMap = useMemo(() => {
+    const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date) || a.code.localeCompare(b.code));
+    const map = new Map<string, number>();
+    let running = 0;
+    for (const r of sorted) {
+      running += r.pesoNetoQq;
+      map.set(r.id, running);
+    }
+    return map;
+  }, [records]);
 
   const filtered = useMemo(() => {
     return records.filter((r) => {
@@ -164,6 +177,12 @@ export function IntakeList({ records }: { records: IntakeRecord[] }) {
               <th className="px-4 py-3 font-medium text-finca-600 text-right">
                 Peso QQ
               </th>
+              <th className="px-4 py-3 font-medium text-finca-600 text-right">
+                Verde QQ
+              </th>
+              <th className="px-4 py-3 font-medium text-finca-600 text-right">
+                Acumulado
+              </th>
               <th className="px-4 py-3 font-medium text-finca-600">
                 Lote / Proveedor
               </th>
@@ -196,6 +215,12 @@ export function IntakeList({ records }: { records: IntakeRecord[] }) {
                 <td className="px-4 py-2.5 text-right tabular-nums text-finca-700">
                   {formatDecimal(r.pesoNetoQq)}
                 </td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-finca-500">
+                  {r.pesoVerdeQq ? formatDecimal(r.pesoVerdeQq) : "—"}
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-finca-400">
+                  {formatDecimal(acumuladoMap.get(r.id) ?? 0)}
+                </td>
                 <td className="px-4 py-2.5 text-finca-700">
                   {r.source === "COSECHA"
                     ? r.lote?.name ?? "—"
@@ -225,7 +250,13 @@ export function IntakeList({ records }: { records: IntakeRecord[] }) {
                 )}{" "}
                 qq
               </td>
-              <td colSpan={2} />
+              <td className="px-4 py-3 text-right tabular-nums text-sm font-semibold text-finca-900">
+                {formatDecimal(
+                  filtered.reduce((s, r) => s + (r.pesoVerdeQq ?? 0), 0),
+                )}{" "}
+                qq
+              </td>
+              <td colSpan={3} />
             </tr>
           </tfoot>
         </table>

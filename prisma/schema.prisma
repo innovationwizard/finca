@@ -281,6 +281,7 @@ model CoffeeIntake {
   paymentStatus   String?      @map("payment_status") // "CANCELADO", "PENDIENTE"
   bultos          Int?
   pesoNetoQq      Decimal      @map("peso_neto_qq") @db.Decimal(10, 2)
+  pesoVerdeQq     Decimal?     @map("peso_verde_qq") @db.Decimal(10, 2)
   pesoPergaminoQq Decimal?     @map("peso_pergamino_qq") @db.Decimal(10, 2)
   rendimiento     Decimal?     @db.Decimal(6, 2)
   status          CoffeeStatus @default(RECIBIDO)
