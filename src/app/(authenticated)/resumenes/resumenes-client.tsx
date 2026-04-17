@@ -17,9 +17,12 @@ type Period = {
   isClosed: boolean;
 };
 
+type PersonalRow = { workerName: string; totalEarned: number; bonification: number; advances: number; totalToPay: number; dpi: string; bankAccount: string; bank: string };
+
 type ResumenData = {
   weeklyRows: { periodNumber: number; startDate: string; endDate: string; workerName: string; totalEarned: number; totalToPay: number }[];
-  personalRows: { workerName: string; totalEarned: number; bonification: number; advances: number; totalToPay: number; dpi: string; bankAccount: string; bank: string }[];
+  personalVoluntarios: PersonalRow[];
+  personalFijos: PersonalRow[];
   loteRows: { loteName: string; activityName: string; totalEarned: number }[];
 };
 
@@ -35,7 +38,7 @@ export function ResumenesClient({ periods }: { periods: Period[] }) {
 
   const fetchData = useCallback(async (ids: Set<string>) => {
     if (ids.size === 0) {
-      setData({ weeklyRows: [], personalRows: [], loteRows: [] });
+      setData({ weeklyRows: [], personalVoluntarios: [], personalFijos: [], loteRows: [] });
       return;
     }
 
@@ -150,7 +153,8 @@ export function ResumenesClient({ periods }: { periods: Period[] }) {
       ) : data ? (
         <ResumenTabs
           weeklyRows={data.weeklyRows}
-          personalRows={data.personalRows}
+          personalVoluntarios={data.personalVoluntarios}
+          personalFijos={data.personalFijos}
           loteRows={data.loteRows}
         />
       ) : null}

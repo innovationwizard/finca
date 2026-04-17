@@ -37,26 +37,16 @@ La app ya tiene el módulo `ingreso-café` con modelo `CoffeeIntake`, formulario
 | Pipeline de procesamiento | `CoffeeIntake.status` (6 estados) |
 | Despacho (código, fecha) | `CoffeeIntake.dispatchCode/Date` |
 
-### ❌ Gaps — Funciones del Excel que la app NO cubre
+### ✅ Gap 1: Verde — COMPLETADO (2026-04-17)
+Campo `pesoVerdeQq` agregado al modelo `CoffeeIntake`. 96 registros importados con datos de verde. Formulario de nuevo ingreso incluye campo "Peso Verde (qq)" opcional para COSECHA. KPIs muestran: Maduro, Verde, Total Cosecha, Pergamino, # Ingresos.
 
-#### Gap 1: Verde (café verde/inmaduro) — Columna K del Excel
-**Qué es:** Cada ingreso de cereza puede tener una porción de café verde separada. El Excel lo registra en columna K como peso adicional.
-**Total en Excel:** 105.61 qq de verde sobre 3,975.32 qq de maduro.
-**Impacto:** Sin esto no se puede calcular el total real de cosecha (maduro + verde) ni el % de verde por lote.
+### ✅ Gap 2: Acumulado — COMPLETADO (2026-04-17)
+Columna "Acumulado" calculada dinámicamente en el listado (running total por fecha, sin almacenar). Footer muestra total de verde.
 
-**Solución propuesta:** Agregar campo `pesoVerdeQq` (Decimal, nullable) al modelo `CoffeeIntake`. Mostrar en formulario como campo opcional debajo de Peso Neto. Los KPIs del listado mostrarían: Acumulado Maduro, Acumulado Verde, Total Cosecha.
+### ✅ Gap 3: Resumen por Lote — COMPLETADO (2026-04-17)
+Tabla "Cosecha por Lote" al final de la página de ingreso-café. Columnas: Lote, Cereza (qq), %, Verde (qq), Días de Corte. Calculado server-side sin queries adicionales.
 
-#### Gap 2: Acumulado (running total) — Columna J del Excel
-**Qué es:** Suma acumulada del peso a lo largo de la cosecha. Cada fila muestra el total histórico hasta ese punto.
-**Para qué sirve:** Control visual del avance de cosecha.
-
-**Solución propuesta:** No almacenar — calcular dinámicamente en el listado. Agregar columna "Acumulado" a la tabla que muestre `SUM(pesoNetoQq) WHERE date <= current_row.date` ordenado por fecha.
-
-#### Gap 3: Resumen por Lote — Sección 1 de hoja Resumen
-**Qué es:** Tabla pivot que muestra por cada lote: total qq cereza, % del total, días de corte.
-**Para qué sirve:** Ver la contribución de cada lote a la cosecha total.
-
-**Solución propuesta:** Nueva pestaña "Por Lote" en el listado de ingreso-café, o integrar en la página de Resúmenes existente. Query: `GROUP BY loteId`, `SUM(pesoNetoQq)`, calcular %. "Días de corte" = `COUNT(DISTINCT date) WHERE loteId = X`.
+### ❌ Gaps pendientes
 
 #### Gap 4: Rendimientos por Grado — Sección 2 de hoja Resumen
 **Qué es:** Breakdown del pergamino producido por calidad (Primera, Bolita, Natas, Flote, Escogida, etc.) con rendimiento cereza→pergamino y pergamino→oro por grado.
@@ -87,15 +77,23 @@ La Opción B es más limpia — un despacho puede incluir café de múltiples in
 
 ## Plan de Implementación
 
-### Fase 1: Completar datos base (inmediato)
-1. **Agregar campo `pesoVerdeQq`** al modelo CoffeeIntake (migración).
-2. **Importar los 188 registros** de `5. INGRESOS DE CAFE` y los 5 de `6. INGRESO DE COMPRA` al modelo existente, incluyendo verde (col K).
-3. **Actualizar formulario** de nuevo ingreso para incluir campo "Peso Verde (qq)" opcional.
-4. **Actualizar listado** para mostrar KPI de verde y columna de acumulado.
+### ✅ Fase 1: Completar datos base — COMPLETADO (2026-04-17)
+1. ~~Agregar campo `pesoVerdeQq` al modelo CoffeeIntake (migración).~~
+2. ~~Importar los 179 registros de cosecha y 5 de compra, incluyendo verde (96 registros con verde).~~
+3. ~~Actualizar formulario de nuevo ingreso para incluir campo "Peso Verde (qq)" opcional.~~
+4. ~~Actualizar listado: 5 KPIs (Maduro, Verde, Total Cosecha, Pergamino, # Ingresos), columnas Verde QQ y Acumulado en tabla.~~
 
-### Fase 2: Resumen por Lote (corto plazo)
-5. **Agregar vista** de cosecha por lote: tabla con lote, total qq, %, días de corte.
-6. **Integrar** en la página de Resúmenes existente como nueva pestaña "Por Lote (Café)", o como sección en la página de ingreso-café.
+**Datos importados:**
+- 179 registros cosecha propia (IC-2526-01 → IC-2526-179)
+- 5 registros compra (ICC-2526-01 → ICC-2526-05)
+- 96 registros con peso verde
+- 114 registros con peso pergamino
+- Pante "Vuelta Grande" → loteId null (no se puede determinar VG1 vs VG2)
+- Pante "ROBUSTA" → loteId null, preservado en notes
+
+### ✅ Fase 2: Resumen por Lote — COMPLETADO (2026-04-17)
+5. ~~Tabla "Cosecha por Lote" al final de la página ingreso-café.~~
+6. ~~Columnas: Lote, Cereza (qq), %, Verde (qq), Días de Corte. Footer con totales.~~
 
 ### Fase 3: Grados de Pergamino (mediano plazo)
 7. **Diseñar modelo** para registrar producción de pergamino por grado.

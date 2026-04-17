@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
   const payrollEntries = await prisma.payrollEntry.findMany({
     where: { payPeriodId: { in: validIds } },
-    select: { workerId: true, bonification: true, advances: true, deductions: true, totalToPay: true },
+    select: { workerId: true, category: true, totalEarned: true, bonification: true, advances: true, deductions: true, totalToPay: true },
   });
 
   const workerMap = new Map(workers.map((w) => [w.id, w]));
@@ -85,13 +85,17 @@ export async function GET(request: NextRequest) {
   const loteMap = new Map(lotes.map((l) => [l.id, l.name]));
   const periodMap = new Map(periods.map((p) => [p.id, p]));
 
-  // Payroll aggregation
-  const payrollByWorker = new Map<string, { bonification: number; advances: number }>();
+  // Payroll aggregation by category
+  type PayrollAgg = { totalEarned: number; bonification: number; advances: number; totalToPay: number };
+  const payrollByCategory = new Map<string, PayrollAgg>();
   for (const pe of payrollEntries) {
-    const existing = payrollByWorker.get(pe.workerId) ?? { bonification: 0, advances: 0 };
+    const key = `${pe.workerId}:${pe.category}`;
+    const existing = payrollByCategory.get(key) ?? { totalEarned: 0, bonification: 0, advances: 0, totalToPay: 0 };
+    existing.totalEarned += Number(pe.totalEarned);
     existing.bonification += Number(pe.bonification);
     existing.advances += Number(pe.advances);
-    payrollByWorker.set(pe.workerId, existing);
+    existing.totalToPay += Number(pe.totalToPay);
+    payrollByCategory.set(key, existing);
   }
 
   // Build rows
@@ -110,25 +114,31 @@ export async function GET(request: NextRequest) {
     })
     .sort((a, b) => a.periodNumber - b.periodNumber || a.workerName.localeCompare(b.workerName));
 
-  const personalRows = personalRaw
-    .map((r) => {
-      const worker = workerMap.get(r.workerId);
-      const payroll = payrollByWorker.get(r.workerId);
-      const totalEarned = Number(r._sum.totalEarned ?? 0);
-      const bonification = payroll?.bonification ?? 0;
-      const advances = payroll?.advances ?? 0;
-      return {
-        workerName: worker?.fullName ?? "Desconocido",
-        totalEarned,
-        bonification,
-        advances,
-        totalToPay: totalEarned + bonification - advances,
-        dpi: worker?.dpi ?? "",
-        bankAccount: worker?.bankAccount ?? "",
-        bank: worker?.bankName ?? "",
-      };
-    })
-    .sort((a, b) => a.workerName.localeCompare(b.workerName));
+  // Personal rows — build from payroll entries grouped by category
+  function buildPersonalRows(category: "VOLUNTARIO" | "FIJO") {
+    const workerIds = [...new Set(
+      payrollEntries.filter((pe) => pe.category === category).map((pe) => pe.workerId),
+    )];
+    return workerIds
+      .map((wid) => {
+        const worker = workerMap.get(wid);
+        const payroll = payrollByCategory.get(`${wid}:${category}`);
+        return {
+          workerName: worker?.fullName ?? "Desconocido",
+          totalEarned: payroll?.totalEarned ?? 0,
+          bonification: payroll?.bonification ?? 0,
+          advances: payroll?.advances ?? 0,
+          totalToPay: payroll?.totalToPay ?? 0,
+          dpi: worker?.dpi ?? "",
+          bankAccount: worker?.bankAccount ?? "",
+          bank: worker?.bankName ?? "",
+        };
+      })
+      .sort((a, b) => a.workerName.localeCompare(b.workerName));
+  }
+
+  const personalVoluntarios = buildPersonalRows("VOLUNTARIO");
+  const personalFijos = buildPersonalRows("FIJO");
 
   const loteRows = loteRaw
     .map((r) => ({
@@ -138,5 +148,5 @@ export async function GET(request: NextRequest) {
     }))
     .sort((a, b) => a.loteName.localeCompare(b.loteName) || b.totalEarned - a.totalEarned);
 
-  return NextResponse.json({ weeklyRows, personalRows, loteRows });
+  return NextResponse.json({ weeklyRows, personalVoluntarios, personalFijos, loteRows });
 }

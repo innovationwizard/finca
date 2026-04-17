@@ -223,24 +223,30 @@ model ActivityRecord {
 }
 
 model PayrollEntry {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  payPeriodId  String    @map("pay_period_id") @db.Uuid
-  workerId     String    @map("worker_id") @db.Uuid
-  totalEarned  Decimal   @map("total_earned") @db.Decimal(10, 2)
-  bonification Decimal   @default(0) @db.Decimal(10, 2)
-  advances     Decimal   @default(0) @db.Decimal(10, 2)
-  deductions   Decimal   @default(0) @db.Decimal(10, 2)
-  totalToPay   Decimal   @map("total_to_pay") @db.Decimal(10, 2)
-  isPaid       Boolean   @default(false) @map("is_paid")
-  paidAt       DateTime? @map("paid_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payPeriodId  String          @map("pay_period_id") @db.Uuid
+  workerId     String          @map("worker_id") @db.Uuid
+  category     WorkerCategory  @default(VOLUNTARIO)
+  totalEarned  Decimal         @map("total_earned") @db.Decimal(10, 2)
+  bonification Decimal         @default(0) @db.Decimal(10, 2)
+  advances     Decimal         @default(0) @db.Decimal(10, 2)
+  deductions   Decimal         @default(0) @db.Decimal(10, 2)
+  totalToPay   Decimal         @map("total_to_pay") @db.Decimal(10, 2)
+  isPaid       Boolean         @default(false) @map("is_paid")
+  paidAt       DateTime?       @map("paid_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
 
   payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
   worker    Worker    @relation(fields: [workerId], references: [id])
 
-  @@unique([payPeriodId, workerId])
+  @@unique([payPeriodId, workerId, category])
   @@map("payroll_entries")
+}
+
+enum WorkerCategory {
+  VOLUNTARIO
+  FIJO
 }
 
 // =============================================================================

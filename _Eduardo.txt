@@ -1,0 +1,326 @@
+Está como 58. Mira, mira, si hablamos de esto, son...
+Hola, ¿me escuchan?
+Hola, Jorge, ¿cómo estás?
+Bien, bien, muy buenas tardes.
+Buenas tardes.
+Muy buenas tardes.
+Aquí está Eduardo Sampaio, de Brasil.
+Mucho gusto, Eduardo.
+Gracias, Rimani.
+¿Cómo estás?
+Bien, bien.
+Sí.
+¿Podemos hablar un poquito de la historia de desarrollo de softwares de mantenimiento y administración de fincas de café?
+Sí, por favor.
+Porque aquí estamos empezando algunas planillas que son hechas con base en actividades, por lotes, y la performance de las jornadas y de las tareas.
+Este es el paso inicial de la construcción del software.
+Entonces, ¿qué pasó en Brasil?
+Fue una contribución de personas de softwares, de ingenieros, doños de otros tipos de construcción, de actividad,
+y realmente lucharon para tener softwares de mantenimiento y gestión.
+Esto ocurrió en los años 80.
+Es siempre con el concepto de tener despesas, son las compras.
+Pero el costo es cuando una despesa está ubicada en un lote, un recurso humano y una máquina.
+Por ejemplo, aquí estamos con el lote Volta Grande, que son 10 manzanas.
+Compramos un nitrato, es despesa.
+Después usamos parte de él en el lote, con transporte y con jornadas.
+Entonces, el costo está.
+El software tiene que tener el costo de mano de obra, el costo de la adquisición del insumo,
+y el costo de transporte interno en la finca para la aplicación en el lote.
+Este punto es clave para indicar benchmarking a través de los años
+y apurar la performance anual de las jornadas.
+¿Sí?
+Entonces, aquí estamos preparando planillas Excel para usted,
+porque el software puede absorber las planillas Excel y también producir relatorios en Excel.
+Correcto.
+Este es un punto.
+Y, más que todo en Brasil, se desarrolló una línea de pensamiento de hacer benchmarking
+entre los mejores productores de un cierto arquetipo.
+Y entender qué tipo de actividades de performance tienen los mejores,
+como fincas vitrinas, para que los extensionistas capaciten a otros finqueiros.
+Y así por 30 años, hasta un punto que llegó, incluso los pequeños productores,
+a un promedio muy alto en la cafeicultura.
+En todos los tipos, arábicos, robustas, pequeños, montañas, planos, con rego o sin rego.
+Esta es una norma en Brasil.
+Y acá vamos a empezar con esta filosofía de trabajo.
+Necesitamos también que el software tenga una proposición que es compatible con contabilidad y con financiero.
+Y también con trazabilidad.
+Por ejemplo, sacamos a X number de quintales uva de un lote en un determinado día, lunes,
+que va al despropador uva, que tiene un rendimiento X.
+Tenemos tantos quintales, pergamino.
+Este va a la guardiola.
+Y de la guardiola puede ser mezclado con otros lotes y así sucesivamente.
+Esto es importante para tener trazabilidad y mensurar las performances.
+Y también conectar la catación, los defectos, las tasas, con el año agrícola, a tiempo, clima, nutrición y tasa.
+Entonces, es un software que va a nos poner en contacto financiero, contabilidad y técnico, administrativo.
+Para tener una noción de custo, porcentaje de utilidad por lote,
+también para hacer benchmarks internos entre lotes en la finca.
+Y para facilitar el trabajo del consejo y de la trading, de la exportadora.
+Ahí está abierto.
+Entonces, es la idea general del concepto del software.
+Aquí estamos trabajando todos nosotros,
+Luis, Castellani, Arimani, Dono y Willy.
+Y yo, haciendo las primeras planillas por lote, con todas las actividades empezando en marzo hasta febrero,
+como nos indicó Leonea Molina.
+¿Sí?
+¿Por qué?
+Porque generalmente finalizamos el corte en febrero, un poquito mediano marzo,
+y vamos hasta febrero del año subsecuente.
+¿Sí?
+Entonces, vamos a construir el software con ustedes.
+Va a ser una jornada, yo creo que un o dos años para el software.
+Pero podemos tener muchas sesiones online también.
+Y voy también fornecer a ustedes algunas pantallas de softwares de Brasil,
+para que usted se pueda basear en términos de relatorios, reports, rendimientos y todo más.
+Porque en Brasil los softwares producen relatorios, por ejemplo,
+cuántas hectáreas un trator chapea por día, cuántos litros de diésel por trator,
+cuánto de abono, cuánto de corte, todo es mesurado.
+Y el contador tiene una contraseña de acceso para hacer vendas también.
+Y el software permite, por ejemplo, vamos a transportar un lote listo, pergamino,
+a cuántos secas, 11.5, 12% un pergamino, humedad.
+12%
+12% de humedad al beneficio de Gabriel.
+EDA lo compra la exportadora y vende a Europa.
+Entonces también el software es un ambiente de trabajo conectando la finca
+a la exportadora, al cliente final.
+Si el cliente final, por ejemplo, quieres hacer un teste de residuos de agroquímicos,
+glifosato, por ejemplo, y hay un problema,
+se puede trasear all the way back
+hasta el origen.
+Hasta el origen.
+Y entender qué pasó.
+Esto está de acuerdo con las regulaciones de UIDR de Europa.
+Esto va a facilitar nuestra vida con los tostadores también.
+El objetivo es tener la finca de Anilán en cuatro o cinco años
+con una fortaleza, una vitrina,
+trabajando mano a mano con la exportadora
+e influenciando las vicinanzas.
+Entonces, ¿qué vamos a hacer?
+Después nos habla, por favor, Jorge,
+qué tipo de plataforma, procesamiento que está acostumbrado
+o que nos sugera como sugerencia para trabajar en este tipo de desarrollo.
+¿Qué piensa usted?
+La verdad es que la trazabilidad no es ningún problema
+dada la experiencia de la industria.
+Hay, tal como dijiste, tenemos 50 años de casos de estudio,
+de producción de café en Brasil, documentados por universidades.
+Entonces, ya el esquema está claro.
+Es algo que ya se entiende.
+No hay nada por descubrir.
+La forma de llevarlo en los sistemas también está muy clara,
+muy documentada y bastante estudiada.
+Solo es de adoptarla.
+Sin importar cuál sea la marca de software que usemos,
+ahora estamos estrenándonos.
+¿Listos? ¿Cuándo te vas?
+Estamos con Eduardo.
+Dale, terminé.
+¿Cuándo terminás?
+Pronto.
+Te espero.
+Gracias.
+Entonces, ya sea que lo hagamos sobre UDU,
+que es lo que estamos estrenando esta semana,
+o que hagamos un desarrollo personalizado,
+del cual yo también estaría a cargo,
+la estructura es bastante conocida.
+No hay algo que yo dijera,
+podemos perdernos o tenemos que investigar cómo se hace,
+de ninguna manera.
+El cuello de botella en estos sistemas es el ingreso de la data en campo.
+Correcto.
+Donde suelen fracasar las implementaciones es cuando la persona que está en la finca
+debe ingresar los datos y no lo hace.
+Sí.
+O lo hace deficientemente,
+o de pronto el software le pide la unidad de medida y él ingresa solamente el número.
+Ahí es donde está realmente la parte débil,
+el eslabón débil de esta cadena.
+Pero el software va a tener unidades fijas,
+por ejemplo,
+quintares oro,
+quintares cuba,
+Ah, sí, sí, por supuesto.
+Kilos.
+Eso lo diseñamos a la medida hasta el fondo.
+Sí, va a ser un poco imposible hacer unidades con errores,
+pero es posible tener, por ejemplo,
+vírgulas,
+errores de números.
+Sí.
+Todo empieza en la finca.
+Sí, correcto.
+Entonces, esto está muy desarrollado en Brasil.
+Aquí nosotros vamos con las unidades de ustedes, de Guatemala,
+como es claro y limpio para los finqueros y para los de las bodegas de comercio.
+¿Sí?
+Sí, sí, sí.
+Perfecto.
+Entonces, te diría eso.
+Si logramos que la persona a cargo de ingresar la data en la finca
+lo haga en el tiempo correcto y de la forma correcta,
+el sistema no va a ser ningún problema.
+Ajá.
+Ajá.
+Ajá.
+Y hablas un poquito de la compatibilidad con la contabilidad,
+con financiero y todo más.
+Porque aquí planeamos un budget anual por lote y por la finca.
+Y dividimos en tres dimensiones.
+De mantenimiento, que hablamos como costeo, mantenimiento más costo financiero y, si quisemos, mantenimiento,
+costo financiero y depreciación.
+Por ejemplo, aquí vamos a sembrar un nuevo lote, es una inversión, no es mantenimiento.
+Así es.
+¿Sí?
+Sí.
+Compramos una camioneta, es una inversión prorratiata.
+Y así sucesivamente, ¿eh?
+Para que nosotros tengamos la habilidad de comparar mantenimiento.
+Después, más para el consejo, los ejecutivos, es importante tener en cuenta que el costo es mayor porque tiene un costo financiero y hay una depreciación.
+Pero para nosotros en la finca, en Brasil, estamos acostumbrados.
+Es mantenimiento para comparar fincas, para hacer capacitaciones, para poner indicadores de performance.
+Sí.
+¿Sí?
+Entonces, aquí estamos produciendo cuatro o cinco planillas de, por ejemplo, promedio de producción en quintales o por manzana,
+precios, promedios, costo por actividad, número de jornadas, y un plan de cuatro años.
+Y vamos a tener una otra planilla de inversiones, pulperos, oficina, nuevas plantaciones, afuera un poquito de esto.
+Y vamos a tener una otra planilla de estimados de corte.
+Cuántas libras, uva por mata, por lote, en los cuatro años.
+Hoy estamos haciendo un ejercicio, un ejemplo por actividad.
+Chapear, abonar, fumegar, corte, desigues, de todo.
+Hay un estado de todas las actividades con niveles ideales de performance, para tener en cuenta cuántas jornadas, que es multiplicada por el pago, por manzana, por actividad.
+Esto va a ser como un cardápio, un menú de actividades en el software.
+El software puede avaliar rojo, si está malo, amarillo, atención, verde está bueno.
+Correcto.
+Para que nosotros podamos también usar el software para mejorar las performance y la administración de la finca.
+Tiene que ser simple y que los que preenchen los datos de la finca entiendan que lo hacen y viceversa.
+Sí, pero hay casos, por ejemplo, de capacitadores en Brasil, que son todos locos por planillas, que los fiqueros se quedan bravos, porque toma mucho tiempo para hacerlo.
+Sí.
+Que concluimos al final, cuáles son las mejores actividades e indicadores para las circunstancias y condiciones de Danilandia.
+¿Sí?
+Sí.
+Básicamente esto.
+Entonces, vámonos a poner más en contacto, Leonel, Jorge, Luis Arimani, Luis Castellani y Tono, para construir juntos el software.
+De regreso a Brasil, vamos a marcar una reunión después que ellos estén listos con todas las planillas necesarias.
+Y empezamos.
+Establecer un plazo para alcanzar por lo menos un módulo mínimo por tiempo.
+Sí.
+¿Sí?
+Sí.
+Y me voy a hacer algunas fotos para ustedes de reports de softwares de Brasil que están en más de 500 fincas, que tienen más de 10 años de uso, para que didáticamente usted tiene una visión general de qué estamos hablando.
+Yo voy a empezar con un software que es este, pero adaptado a vino, café y vino.
+Entonces, voy a estar más acostumbrado con esto en junio, empezando en junio.
+Pero antes de esto, vamos compartiendo algunas fotos de reports de softwares.
+Claro, por supuesto.
+Sí.
+De mirada esto.
+Solamente para retroalimentación, la parte financiera que mencionabas es el esquema típico estadounidense, que es ganancias operativas, después ganancias menos intereses, después ganancias menos intereses de procesos, amortización.
+Y finalmente le evita, después de los taxes.
+Así que eso también no hay que inventarlo, no hay que pensarlo, es lo que viene de fábrica en todos los modelos financieros que usamos.
+Sí.
+Luego, cuando hablabas de las actividades, supongo que los Excel ya tienen un catálogo de las actividades que yo puedo solamente copiar.
+Perfecto.
+Sí.
+Entonces, las importamos al software y él corre sin ningún problema.
+Creo que la base va a ser las plantillas que nos van a pasar, ¿verdad, Jorge Luis?
+Así es.
+Porque las plantillas de Excel es el que te va a dar el mapping de qué es realmente lo que tenemos que volcar al sistema.
+Así es.
+Entonces, creo que una vez tengamos las plantillas de Excel, ya será una manera de ver cómo lo podemos automatizar en el sistema y que sea lo menos espantoso.
+Y que nos pueda dar error en el taipeo, en la finca, ¿verdad?
+Correcto.
+Como tratar de ir cerrando esos caps para que sea solo puro taipeo y como ahí alertas de que no suena lógico que hoy cortamos mil quintales cuando hemos venido cortando 300, ¿verdad?
+Entonces, ahí debería de dar.
+Y también nosotros, los papelitos con carbono, por ejemplo, el capataz corta 42 quintales de un lote, la marca 42.
+Y hay una prueba física para la oficina en la finca, para que la persona que está haciendo el reporte de número para hacer el taipeo.
+Pero hay una prueba física que está archivada todavía también para minimizar los errores.
+Y los softs tienen filtros, por ejemplo.
+Podemos colocar, no acepten más de 500 quintales.
+Claro.
+Porque nunca ocurrió.
+Es una faja mínima también.
+Es vírgulas de todo más.
+¿Sí?
+Para minimizar los errores, ¿verdad?
+Perfecto.
+Sí.
+Entonces, creería que dependemos de las plantillas que tú nos pases y sobre eso ya podemos ir armando un esquemita.
+Sí.
+Y Jorge ya ir armando el tema.
+Etapa uno.
+Aquí estamos trabajando con dos, tres, cuatro planillas.
+Pero estoy haciendo en cada una un ejemplo de actividad completa.
+Ellos van a adelantar hasta semana que adelante y proyectar una producción 2027, 28, 29, 30, con un primero estimado potencial, con todas las actividades ejecutadas a tiempo, para condiciones climáticas buenas.
+Escenar.
+Escenar.
+Al final.
+Sí.
+Sería como presupuesto, ¿no, Jorge Hernández?
+Sí, son presupuestos, sí.
+Escenario más probable, luego un optimista, luego un pesimista y poder...
+Pero estimado de corte, vamos a tener cuatro.
+Un, al final del corte.
+Dos, durante la floración.
+Tres, en desarrollo de las uvas y un poco más adelante.
+Y hacemos ajustes, ¿eh?
+Y vamos a crear una planilla de ocho años.
+Cuatro en el pasado y cuatro adelante.
+Dos más próximos, más cerca de nosotros para vender café.
+Y dos más adelante como potencial de ingreso a mediano prazo.
+Es una planilla ocho años, cuatro adelante, cuatro consolidado en el pasado.
+Y así seguimos.
+¿Sí?
+Clarísimo.
+Va a ser una unificación de contabilidad financiera, exportadora, vendas, compras.
+En compras tenemos los precios obtidos, fornecedores, tipos y todo más.
+Catálogo de portafolio de productos, catálogo de fornecedores y todo más.
+¿Sí?
+Entonces, básicamente esto.
+Vamos a establecer un ciclo de reuniones online para...
+Para crear una cadencia de trabajo, ¿verdad?
+Perfecto.
+Sí.
+Entonces, comentarios, Leonel.
+Perfecto, quedamos al pendiente entonces y...
+Y habíamos hablado, bueno, pero esto es de la otra reunión normal, de operaciones.
+Luego, pues, ya vemos entre nosotros cuál es el día y la hora que más podemos compaginar para darle el seguimiento al software, que sería aparte de lo operativo de la finca.
+Lo mejor día para nosotros en Brasil es lunes.
+Lunes, por la mañana tengo reuniones, pero por la tarde hay un fuso de tres horas.
+Sí.
+Yo creo que por la tarde, después del almuerzo de ustedes, va a ser como cuatro o cinco de la tarde en Brasil.
+Es bueno.
+Vale.
+Entonces, por ahí sería más o menos el...
+Sí.
+Ok, perfecto.
+Y así seguimos.
+Muy bien.
+Excelente.
+Sí.
+Perfecto.
+Muy bien.
+Perfecto.
+Entonces, la próxima etapa es ponerse a ustedes las planillas completas de cuatro años por lote.
+¿Sí?
+Vale.
+Y así empezamos.
+Estamos.
+Perfecto.
+Gracias entonces.
+¿Cómo está el clima?
+Mucho gusto.
+Rico.
+Gracias.
+Ayer mucho...
+¿Hay viento o hay calor?
+Pero no había baño caliente acá.
+¡Ja, ja, ja!
+Un minuto de flama.
+Es esto, es esto.
+Se paga las flamas.
+Es para que te despertes.
+Voy a morir en la finca.
+Bueno, que estén muy bien.
+Un abrazo.
+Saludos.
+Gracias.
+Gracias.

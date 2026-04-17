@@ -281,9 +281,9 @@ export function PagosView({
     const periodCode = buildPeriodCode(paymentType, codeMonth, codeYear);
 
     const csvLines = filteredRows
-      .filter((r) => r.bankAccount && r.totalToPay > 0)
+      .filter((r) => r.totalToPay > 0)
       .map((r) => {
-        const acctType = getAccountType(r.bankAccount);
+        const acctType = r.bankAccount ? getAccountType(r.bankAccount) : "";
         const amount = r.totalToPay.toFixed(2);
         // Use first name only (match CSV pattern)
         const name = r.workerName.split(" ")[0].toUpperCase();

@@ -43,11 +43,13 @@ const TABS: { key: Tab; label: string }[] = [
 
 export function ResumenTabs({
   weeklyRows,
-  personalRows,
+  personalVoluntarios,
+  personalFijos,
   loteRows,
 }: {
   weeklyRows: WeeklyRow[];
-  personalRows: PersonalRow[];
+  personalVoluntarios: PersonalRow[];
+  personalFijos: PersonalRow[];
   loteRows: LoteRow[];
 }) {
   const [tab, setTab] = useState<Tab>("semana");
@@ -72,7 +74,7 @@ export function ResumenTabs({
       </div>
 
       {tab === "semana" && <TabSemana rows={weeklyRows} />}
-      {tab === "persona" && <TabPersona rows={personalRows} />}
+      {tab === "persona" && <TabPersona voluntarios={personalVoluntarios} fijos={personalFijos} />}
       {tab === "lote" && <TabLote rows={loteRows} />}
     </div>
   );
@@ -171,11 +173,9 @@ function TabSemana({ rows }: { rows: WeeklyRow[] }) {
 
 // ── Por Persona ─────────────────────────────────────────────────────────────
 
-function TabPersona({ rows }: { rows: PersonalRow[] }) {
-  const grandTotalEarned = rows.reduce((s, r) => s + r.totalEarned, 0);
-  const grandBonification = rows.reduce((s, r) => s + r.bonification, 0);
-  const grandAdvances = rows.reduce((s, r) => s + r.advances, 0);
-  const grandTotalToPay = rows.reduce((s, r) => s + r.totalToPay, 0);
+function TabPersona({ voluntarios, fijos }: { voluntarios: PersonalRow[]; fijos: PersonalRow[] }) {
+  const allRows = [...voluntarios, ...fijos];
+  const grandTotalToPay = allRows.reduce((s, r) => s + r.totalToPay, 0);
 
   return (
     <div className="space-y-6">
@@ -186,8 +186,41 @@ function TabPersona({ rows }: { rows: PersonalRow[] }) {
           {formatGTQ(grandTotalToPay)}
         </p>
         <p className="mt-1 text-xs text-earth-500">
-          {rows.length} trabajadores
+          {voluntarios.length} voluntarios · {fijos.length} fijos · {allRows.length} total
         </p>
+      </div>
+
+      {/* Voluntarios block */}
+      {voluntarios.length > 0 && (
+        <PersonalTable title="Voluntarios" rows={voluntarios} />
+      )}
+
+      {/* Fijos block */}
+      {fijos.length > 0 && (
+        <PersonalTable title="Fijos" rows={fijos} />
+      )}
+    </div>
+  );
+}
+
+function PersonalTable({ title, rows }: { title: string; rows: PersonalRow[] }) {
+  const totalEarned = rows.reduce((s, r) => s + r.totalEarned, 0);
+  const totalBonification = rows.reduce((s, r) => s + r.bonification, 0);
+  const totalAdvances = rows.reduce((s, r) => s + r.advances, 0);
+  const totalToPay = rows.reduce((s, r) => s + r.totalToPay, 0);
+
+  return (
+    <div>
+      <div className="mb-2 flex items-baseline justify-between">
+        <h3 className="text-sm font-semibold text-finca-900">
+          {title}
+          <span className="ml-2 font-normal text-finca-400">
+            {rows.length} trabajadores
+          </span>
+        </h3>
+        <span className="text-sm font-semibold tabular-nums text-finca-700">
+          {formatGTQ(totalToPay)}
+        </span>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-finca-200 bg-white shadow-sm">
@@ -236,16 +269,16 @@ function TabPersona({ rows }: { rows: PersonalRow[] }) {
             <tr className="border-t border-finca-200 bg-finca-50/30">
               <td className="px-4 py-3 font-semibold text-finca-900">Total</td>
               <td className="px-4 py-3 text-right tabular-nums font-semibold text-finca-900">
-                {formatGTQ(grandTotalEarned)}
+                {formatGTQ(totalEarned)}
               </td>
               <td className="px-4 py-3 text-right tabular-nums font-semibold text-finca-900">
-                {grandBonification > 0 ? formatGTQ(grandBonification) : "—"}
+                {totalBonification > 0 ? formatGTQ(totalBonification) : "—"}
               </td>
               <td className="px-4 py-3 text-right tabular-nums font-semibold text-finca-900">
-                {grandAdvances > 0 ? formatGTQ(grandAdvances) : "—"}
+                {totalAdvances > 0 ? formatGTQ(totalAdvances) : "—"}
               </td>
               <td className="px-4 py-3 text-right tabular-nums font-bold text-finca-900">
-                {formatGTQ(grandTotalToPay)}
+                {formatGTQ(totalToPay)}
               </td>
               <td colSpan={3} />
             </tr>
