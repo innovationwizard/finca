@@ -30,7 +30,7 @@ const MOBILE_TABS: MobileTab[] = [
   { href: "/ingreso-cafe", label: "Café", icon: Coffee },
   { href: "/resumenes", label: "Resúmenes", icon: FileBarChart },
   { href: "/trabajadores", label: "Personal", icon: Users },
-  { href: "/pagos", label: "Pagos", icon: Banknote, roles: ["CFO", "MASTER"] },
+  { href: "/pagos", label: "Pagos", icon: Banknote, roles: ["CFO", "MASTER", "CONSULTANT"] },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
 ];
 

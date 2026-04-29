@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { apiRequireRole } from "@/lib/auth/guards";
 
 export async function GET(request: NextRequest) {
-  const auth = await apiRequireRole("CFO", "MASTER");
+  const auth = await apiRequireRole("CFO", "MASTER", "CONSULTANT");
   if (auth instanceof NextResponse) return auth;
 
   const { searchParams } = new URL(request.url);

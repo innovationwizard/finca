@@ -10,7 +10,7 @@ import { PagosView } from "./pagos-view";
 export const metadata = { title: "Pagos" };
 
 export default async function PagosPage() {
-  await requireRole("CFO", "MASTER");
+  await requireRole("CFO", "MASTER", "CONSULTANT");
 
   const year = getCurrentAgriculturalYear();
 

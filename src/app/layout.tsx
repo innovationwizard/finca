@@ -4,7 +4,6 @@
 
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
 import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
 
@@ -55,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="es-GT"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      className={GeistSans.variable}
     >
       <head>
         <link rel="apple-touch-icon" href="/apple-icon.png" />

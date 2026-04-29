@@ -42,7 +42,7 @@ const createUserSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   name: z.string().min(1, "El nombre es requerido").max(100),
-  role: z.enum(["ADMIN", "MANAGER", "FIELD", "CEO", "CFO"]),
+  role: z.enum(["ADMIN", "MANAGER", "FIELD", "CEO", "CFO", "CONSULTANT"]),
 });
 
 export async function POST(request: NextRequest) {
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 const updateUserSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(100).optional(),
-  role: z.enum(["MASTER", "ADMIN", "MANAGER", "FIELD", "CEO", "CFO"]).optional(),
+  role: z.enum(["MASTER", "ADMIN", "MANAGER", "FIELD", "CEO", "CFO", "CONSULTANT"]).optional(),
   isActive: z.boolean().optional(),
 });
 
