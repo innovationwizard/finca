@@ -184,7 +184,7 @@ export default async function LotesPage() {
             </div>
             <div>
               <p className="flex items-center gap-1 text-xs text-earth-500">
-                <Scissors className="h-3 w-3" /> Poda
+                <Scissors className="h-3 w-3" /> Manejo de Tejido
               </p>
               <p className="mt-0.5 text-lg font-bold tabular-nums text-earth-900">
                 {avgPodaPct.toLocaleString("es-GT", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%
@@ -290,7 +290,7 @@ export default async function LotesPage() {
                   <div className="flex items-center gap-1.5 text-finca-600">
                     <Scissors className="h-3.5 w-3.5 flex-shrink-0 text-finca-400" />
                     <span>
-                      Poda {lote.podaPercent}%
+                      Manejo de Tejido {lote.podaPercent}%
                       {lote.areaManzanas !== null && (
                         <span className="text-finca-400">
                           {" "}· {(lote.areaManzanas * lote.podaPercent / 100).toLocaleString("es-GT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mz
