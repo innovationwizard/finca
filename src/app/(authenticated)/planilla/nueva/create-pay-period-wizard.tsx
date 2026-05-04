@@ -11,6 +11,8 @@ import { formatDateISO } from "@/lib/utils/format";
 
 type Props = {
   onCreated: (period: { id: string; periodNumber: number; startDate: string; endDate: string }) => void;
+  suggestedStartDate?: string;
+  initialStep?: 1 | 2 | 3;
 };
 
 type Step = 1 | 2 | 3;
@@ -21,9 +23,9 @@ const STEP_LABELS: Record<Step, string> = {
   3: "Crear período",
 };
 
-export function CreatePayPeriodWizard({ onCreated }: Props) {
-  const [step, setStep] = useState<Step>(1);
-  const [startDate, setStartDate] = useState("");
+export function CreatePayPeriodWizard({ onCreated, suggestedStartDate, initialStep = 1 }: Props) {
+  const [step, setStep] = useState<Step>(initialStep);
+  const [startDate, setStartDate] = useState(suggestedStartDate ?? "");
   const [endDate, setEndDate] = useState("");
   const [periodType, setPeriodType] = useState<"SEMANAL" | "CATORCENA">("SEMANAL");
   const [saving, setSaving] = useState(false);
@@ -46,12 +48,12 @@ export function CreatePayPeriodWizard({ onCreated }: Props) {
       .catch(() => {});
   }, []);
 
-  // Auto-suggest: today as start date
+  // Auto-suggest: use suggestedStartDate if provided, otherwise today
   useEffect(() => {
     if (!startDate) {
-      setStartDate(formatDateISO(new Date()));
+      setStartDate(suggestedStartDate ?? formatDateISO(new Date()));
     }
-  }, [startDate]);
+  }, [startDate, suggestedStartDate]);
 
   // Auto-calculate end date when start date or period type changes
   useEffect(() => {

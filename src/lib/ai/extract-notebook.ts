@@ -31,6 +31,8 @@ export type ExtractedRow = {
 
 export type ExtractionResult = {
   rows: ExtractedRow[];
+  month: number;  // 1-12, extracted from image header
+  year: number;   // 4-digit, extracted from image header
   confidence: "high" | "medium" | "low";
   notes: string;
 };
@@ -39,9 +41,15 @@ const SYSTEM_PROMPT = `Eres un experto leyendo cuadernos de planilla de fincas c
 
 Recibirás una foto de una página de cuaderno con una tabla/cuadrícula escrita a mano.
 
+FECHA DEL CUADERNO:
+- En la esquina superior izquierda hay un mes y año escritos a mano (ej: "ABRIL 2026", "MARZO 2025")
+- Lee el mes y conviértelo a número (ENERO=1, FEBRERO=2, MARZO=3, ABRIL=4, MAYO=5, JUNIO=6, JULIO=7, AGOSTO=8, SEPTIEMBRE=9, OCTUBRE=10, NOVIEMBRE=11, DICIEMBRE=12)
+- Lee el año tal como está escrito. Si parece un error tipográfico (ej: 3026), corrígelo al año más cercano razonable (2026)
+- Incluye "month" y "year" en el JSON de respuesta
+
 Estructura de la cuadrícula:
 - Columna izquierda: nombres de trabajadores (escritos a mano)
-- Fila superior: días del mes (números)
+- Fila(s) superior(es): días del mes (números). Puede haber una fila de iniciales de días (L M M J V S D) seguida de una fila de números, o solo una fila con los números directamente
 - Valores en celdas: cantidades trabajadas ese día
 - Puede haber una columna de totales a la derecha (ignórala, nosotros calculamos)
 
@@ -66,6 +74,8 @@ Para cada celda, determina la unidad:
 
 Responde SIEMPRE con un JSON válido con esta estructura exacta:
 {
+  "month": 4,
+  "year": 2026,
   "rows": [
     {
       "workerName": "Nombre del trabajador",
@@ -159,6 +169,16 @@ export async function extractNotebookData(
   if (!Array.isArray(parsed.rows)) {
     throw new Error("La respuesta no contiene un array 'rows'");
   }
+
+  // Validate extracted month/year; fall back to context values if AI missed or mangled them
+  const extractedMonth = typeof parsed.month === "number" && parsed.month >= 1 && parsed.month <= 12
+    ? parsed.month
+    : context.month;
+  const extractedYear = typeof parsed.year === "number" && parsed.year >= 2020 && parsed.year <= 2040
+    ? parsed.year
+    : context.year;
+  parsed.month = extractedMonth;
+  parsed.year = extractedYear;
 
   // Post-processing: apply dictionary and normalize values
   for (const row of parsed.rows) {

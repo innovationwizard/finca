@@ -4,13 +4,13 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { apiRequireRole, SETTINGS_ROLES } from "@/lib/auth/guards";
+import { apiRequireRole, WRITE_ROLES } from "@/lib/auth/guards";
 import { prisma } from "@/lib/prisma";
 import { batchInsertSchema } from "@/lib/validators/notebook-upload";
 import { learnCorrection } from "@/lib/ai/notebook-dictionary";
 
 export async function POST(request: NextRequest) {
-  const auth = await apiRequireRole(...SETTINGS_ROLES);
+  const auth = await apiRequireRole(...WRITE_ROLES);
   if (auth instanceof NextResponse) return auth;
 
   const body = await request.json();
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   // Insert all records in a transaction
   try {
     const result = await prisma.$transaction(
-      rows.map((r) =>
+      rows.map((r, i) =>
         prisma.activityRecord.create({
           data: {
             date: new Date(r.date),
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
             quantity: r.quantity,
             unitPrice: r.unitPrice,
             totalEarned: r.totalEarned,
-            clientId: `notebook-${r.date}-${r.workerId}-${r.activityId}-${r.quantity}`,
+            clientId: `notebook-${r.date}-${r.workerId}-${r.activityId}-${r.quantity}-${i}`,
             syncedAt: new Date(),
           },
         }),

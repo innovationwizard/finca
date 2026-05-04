@@ -5,12 +5,12 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { apiRequireRole, SETTINGS_ROLES } from "@/lib/auth/guards";
+import { apiRequireRole, WRITE_ROLES } from "@/lib/auth/guards";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 
 export async function GET(request: NextRequest) {
-  const auth = await apiRequireRole(...SETTINGS_ROLES);
+  const auth = await apiRequireRole(...WRITE_ROLES);
   if (auth instanceof NextResponse) return auth;
 
   const { searchParams } = request.nextUrl;

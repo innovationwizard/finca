@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { PlanillaList } from "./planilla-list";
+import { NewPeriodModal } from "./new-period-modal";
 import Link from "next/link";
 
 export const metadata = { title: "Planilla" };
@@ -15,11 +16,28 @@ export default async function PlanillaPage() {
 
   const year = getCurrentAgriculturalYear();
 
-  // Get current open period
-  const currentPeriod = await prisma.payPeriod.findFirst({
-    where: { agriculturalYear: year, isClosed: false },
-    orderBy: { periodNumber: "desc" },
-  });
+  const canWrite = user.role === "MASTER" || user.role === "ADMIN" || user.role === "FIELD";
+  const canCreatePeriod = user.role === "MASTER" || user.role === "ADMIN";
+
+  // Get current open period + last closed period to suggest next start date
+  const [currentPeriod, lastPeriod] = await Promise.all([
+    prisma.payPeriod.findFirst({
+      where: { agriculturalYear: year, isClosed: false },
+      orderBy: { periodNumber: "desc" },
+    }),
+    prisma.payPeriod.findFirst({
+      where: { agriculturalYear: year },
+      orderBy: { periodNumber: "desc" },
+      select: { endDate: true },
+    }),
+  ]);
+
+  // Day after the last period ended
+  const suggestedStartDate = lastPeriod
+    ? new Date(lastPeriod.endDate.getTime() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0]
+    : null;
 
   // Get recent records (last 7 days or current period)
   const records = await prisma.activityRecord.findMany({
@@ -60,8 +78,6 @@ export default async function PlanillaPage() {
     updatedAt: r.updatedAt.toISOString(),
   }));
 
-  const canWrite = user.role === "MASTER" || user.role === "ADMIN" || user.role === "FIELD";
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
@@ -76,14 +92,19 @@ export default async function PlanillaPage() {
               : `Año agrícola ${year} · Sin período abierto`}
           </p>
         </div>
-        {canWrite && (
-          <Link
-            href="/planilla/nueva"
-            className="inline-flex items-center justify-center rounded-lg bg-finca-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800 touch-target"
-          >
-            + Nuevo Registro
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {canCreatePeriod && currentPeriod && (
+            <NewPeriodModal suggestedStartDate={suggestedStartDate} />
+          )}
+          {canWrite && (
+            <Link
+              href="/planilla/nueva"
+              className="inline-flex items-center justify-center rounded-lg bg-finca-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800 touch-target"
+            >
+              + Nuevo Registro
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -118,11 +139,12 @@ export default async function PlanillaPage() {
       <div className="mt-6">
         {currentPeriod ? (
           <PlanillaList records={serialized} canWrite={canWrite} />
+        ) : canCreatePeriod ? (
+          <NewPeriodModal inline suggestedStartDate={suggestedStartDate} />
         ) : (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-8 text-center">
             <p className="text-sm text-amber-800">
-              No hay un período de pago abierto. Crear uno desde Configuración de
-              Planilla para comenzar a registrar actividades.
+              No hay un período de pago abierto. Contacte a un administrador para crear uno.
             </p>
           </div>
         )}

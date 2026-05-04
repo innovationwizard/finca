@@ -33,8 +33,10 @@ export default async function LotesPage() {
   const yearStart = getAgriculturalYearStart(currentYear);
   const yearEnd = getAgriculturalYearEnd(currentYear);
 
-  // Fetch all lotes with aggregated KPIs for the current agricultural year
-  const lotes = await prisma.lote.findMany({
+  // Fetch pruning activity name dynamically so renaming it in the DB propagates here
+  const [pruningActivity, lotes] = await Promise.all([
+    prisma.activity.findFirst({ where: { sortOrder: 5 }, select: { name: true } }),
+    prisma.lote.findMany({
     where: { isActive: true },
     orderBy: { sortOrder: "asc" },
     include: {
@@ -61,7 +63,10 @@ export default async function LotesPage() {
         take: 1,
       },
     },
-  });
+  }),
+  ]);
+
+  const pruningLabel = pruningActivity?.name ?? "Manejo de Tejido";
 
   // Also include inactive lotes
   const inactiveLotes = await prisma.lote.findMany({
@@ -184,7 +189,7 @@ export default async function LotesPage() {
             </div>
             <div>
               <p className="flex items-center gap-1 text-xs text-earth-500">
-                <Scissors className="h-3 w-3" /> Manejo de Tejido
+                <Scissors className="h-3 w-3" /> {pruningLabel}
               </p>
               <p className="mt-0.5 text-lg font-bold tabular-nums text-earth-900">
                 {avgPodaPct.toLocaleString("es-GT", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%
@@ -290,7 +295,7 @@ export default async function LotesPage() {
                   <div className="flex items-center gap-1.5 text-finca-600">
                     <Scissors className="h-3.5 w-3.5 flex-shrink-0 text-finca-400" />
                     <span>
-                      Manejo de Tejido {lote.podaPercent}%
+                      {pruningLabel} {lote.podaPercent}%
                       {lote.areaManzanas !== null && (
                         <span className="text-finca-400">
                           {" "}· {(lote.areaManzanas * lote.podaPercent / 100).toLocaleString("es-GT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mz

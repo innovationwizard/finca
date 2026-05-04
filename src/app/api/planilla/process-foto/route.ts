@@ -10,7 +10,7 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { apiRequireRole, SETTINGS_ROLES } from "@/lib/auth/guards";
+import { apiRequireRole, WRITE_ROLES } from "@/lib/auth/guards";
 import { createServiceClient } from "@/lib/supabase/service";
 import { extractNotebookData } from "@/lib/ai/extract-notebook";
 import { matchAllWorkers } from "@/lib/ai/match-workers";
@@ -18,7 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 
 export async function POST(request: NextRequest) {
-  const auth = await apiRequireRole(...SETTINGS_ROLES);
+  const auth = await apiRequireRole(...WRITE_ROLES);
   if (auth instanceof NextResponse) return auth;
 
   try {
@@ -92,6 +92,24 @@ export async function POST(request: NextRequest) {
     const extractedNames = extraction.rows.map((r) => r.workerName);
     const workerMatches = matchAllWorkers(extractedNames, workers);
 
+    // 3.5. Check which extracted dates already have records in the DB
+    const uniqueExtractedDates = [
+      ...new Set(
+        extraction.rows.flatMap((row) =>
+          row.entries.map(
+            (e) =>
+              `${extraction.year}-${String(extraction.month).padStart(2, "0")}-${String(e.day).padStart(2, "0")}`,
+          ),
+        ),
+      ),
+    ];
+    const existingRecords = await prisma.activityRecord.findMany({
+      where: { date: { in: uniqueExtractedDates.map((d) => new Date(d)) } },
+      select: { date: true },
+      distinct: ["date"],
+    });
+    const existingDates = existingRecords.map((r) => r.date.toISOString().split("T")[0]);
+
     // 4. Fetch activities and lotes for the review UI
     const activities = await prisma.activity.findMany({
       where: { isActive: true },
@@ -164,6 +182,7 @@ export async function POST(request: NextRequest) {
         startDate: p.startDate.toISOString().split("T")[0],
         endDate: p.endDate.toISOString().split("T")[0],
       })),
+      existingDates,
       imageUrl: storagePath,
       csvUrl: csvPath,
     });

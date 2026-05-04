@@ -8,6 +8,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Upload, Loader2, CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react";
 import { ReviewTable, type ReviewRow } from "./review-table";
+import { CreatePayPeriodWizard } from "./create-pay-period-wizard";
 
 type WorkerOption = { id: string; fullName: string };
 type ActivityOption = { id: string; name: string; defaultPrice: number | null };
@@ -22,6 +23,8 @@ type WorkerMatch = {
 type ExtractionResponse = {
   extraction: {
     rows: { workerName: string; entries: { day: number; quantity: number }[] }[];
+    month?: number;
+    year?: number;
     confidence: string;
     notes: string;
   };
@@ -29,11 +32,115 @@ type ExtractionResponse = {
   activities: ActivityOption[];
   lotes: LoteOption[];
   payPeriods: PeriodOption[];
+  existingDates: string[];
   imageUrl: string;
   csvUrl: string;
 };
 
-type Step = "upload" | "processing" | "review" | "saving" | "done";
+type Step = "upload" | "processing" | "review" | "saving" | "done" | "no-period";
+
+// =============================================================================
+// Module-level helpers — no component state captured
+// =============================================================================
+
+function periodCoversDate(dateStr: string, period: PeriodOption): boolean {
+  return dateStr >= period.startDate && dateStr <= period.endDate;
+}
+
+function getUncoveredDates(
+  result: ExtractionResponse,
+  allPeriods: PeriodOption[],
+  effMonth: number,
+  effYear: number,
+): string[] {
+  const existingDateSet = new Set(result.existingDates ?? []);
+  const allDates = [
+    ...new Set(
+      result.extraction.rows.flatMap((row) =>
+        row.entries.map(
+          (e) =>
+            `${effYear}-${String(effMonth).padStart(2, "0")}-${String(e.day).padStart(2, "0")}`,
+        ),
+      ),
+    ),
+  ];
+  return allDates.filter(
+    (d) => !existingDateSet.has(d) && !allPeriods.some((p) => periodCoversDate(d, p)),
+  );
+}
+
+function addOneDay(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+}
+
+async function buildReviewRows(
+  result: ExtractionResponse,
+  allPeriods: PeriodOption[],
+  effMonth: number,
+  effYear: number,
+  activityFilter: string,
+  priceFilter: string,
+): Promise<{
+  reviewRows: ReviewRow[];
+  skippedDays: number[];
+  workers: WorkerOption[];
+}> {
+  const existingDateSet = new Set(result.existingDates ?? []);
+  const collectedSkippedDays = new Set<number>();
+  const defaultActivity = result.activities[0];
+  let rowId = 0;
+  const reviewRows: ReviewRow[] = [];
+
+  for (const extractedRow of result.extraction.rows) {
+    const match = result.workerMatches[extractedRow.workerName];
+    const matchedWorker = match?.exactMatch;
+    const actObj = activityFilter
+      ? result.activities.find((a) => a.name === activityFilter) || defaultActivity
+      : defaultActivity;
+    const price = priceFilter ? parseFloat(priceFilter) : actObj?.defaultPrice ?? 0;
+
+    for (const entry of extractedRow.entries) {
+      const dateStr = `${effYear}-${String(effMonth).padStart(2, "0")}-${String(entry.day).padStart(2, "0")}`;
+      if (existingDateSet.has(dateStr)) {
+        collectedSkippedDays.add(entry.day);
+        continue;
+      }
+      const period = allPeriods.find((p) => periodCoversDate(dateStr, p));
+      if (!period) continue;
+      reviewRows.push({
+        id: `row-${rowId++}`,
+        workerName: extractedRow.workerName,
+        workerId: matchedWorker?.id || null,
+        workerConfidence: matchedWorker ? "exact" : match?.candidates.length ? "partial" : "none",
+        activityId: actObj?.id || "",
+        loteId: null,
+        date: dateStr,
+        quantity: entry.quantity,
+        unitPrice: price,
+        totalEarned: Math.round(entry.quantity * price * 100) / 100,
+        payPeriodId: period.id,
+      });
+    }
+  }
+
+  const workersRes = await fetch("/api/workers");
+  const workersData = workersRes.ok ? await workersRes.json() : [];
+  const workers: WorkerOption[] = workersData.map(
+    (w: { id: string; fullName: string }) => ({ id: w.id, fullName: w.fullName }),
+  );
+
+  return {
+    reviewRows,
+    skippedDays: [...collectedSkippedDays].sort((a, b) => a - b),
+    workers,
+  };
+}
+
+// =============================================================================
+// Component
+// =============================================================================
 
 export function UploadFoto() {
   const router = useRouter();
@@ -48,6 +155,11 @@ export function UploadFoto() {
   const [selectedActivity, setSelectedActivity] = useState("");
   const [selectedUnitPrice, setSelectedUnitPrice] = useState("");
 
+  // Pending extraction — kept while user creates periods
+  const [pendingResult, setPendingResult] = useState<ExtractionResponse | null>(null);
+  const [createdPeriods, setCreatedPeriods] = useState<PeriodOption[]>([]);
+  const [wizardSuggestedStart, setWizardSuggestedStart] = useState<string | undefined>(undefined);
+
   // Review state
   const [rows, setRows] = useState<ReviewRow[]>([]);
   const [workers, setWorkers] = useState<WorkerOption[]>([]);
@@ -59,6 +171,7 @@ export function UploadFoto() {
   const [imageUrl, setImageUrl] = useState("");
   const [csvUrl, setCsvUrl] = useState("");
   const [savedCount, setSavedCount] = useState(0);
+  const [skippedDates, setSkippedDates] = useState<string[]>([]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -79,7 +192,7 @@ export function UploadFoto() {
     const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
 
     try {
-      // 1. Get signed upload URL from our API
+      // 1. Get signed upload URL
       const urlRes = await fetch(
         `/api/planilla/signed-upload-url?ext=${ext}&contentType=${encodeURIComponent(file.type)}`,
       );
@@ -96,14 +209,13 @@ export function UploadFoto() {
         headers: { "Content-Type": file.type },
         body: file,
       });
-
       if (!uploadRes.ok) {
         setError("Error al subir la imagen al almacenamiento");
         setStep("upload");
         return;
       }
 
-      // 3. Tell our API to process the uploaded image
+      // 3. Process via AI
       const res = await fetch("/api/planilla/process-foto", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -126,55 +238,43 @@ export function UploadFoto() {
 
       const result = data as ExtractionResponse;
 
-      // Build review rows from extraction
-      const defaultActivity = result.activities[0];
-      const defaultPeriod = result.payPeriods[0];
+      // Use AI-extracted month/year if valid; otherwise keep form values
+      const effMonth =
+        typeof result.extraction.month === "number" &&
+        result.extraction.month >= 1 &&
+        result.extraction.month <= 12
+          ? result.extraction.month
+          : month;
+      const effYear =
+        typeof result.extraction.year === "number" &&
+        result.extraction.year >= 2020 &&
+        result.extraction.year <= 2040
+          ? result.extraction.year
+          : year;
+      setMonth(effMonth);
+      setYear(effYear);
 
-      if (!defaultPeriod) {
-        setError("No hay período de pago abierto. Cree uno primero desde Configuración.");
-        setStep("upload");
+      // 4. Check if all needed dates are covered by existing open periods
+      const uncovered = getUncoveredDates(result, result.payPeriods, effMonth, effYear);
+
+      if (uncovered.length > 0) {
+        // Need to create one or more periods before we can proceed
+        setPendingResult(result);
+        setCreatedPeriods([]);
+        setWizardSuggestedStart(uncovered.sort()[0]);
+        setStep("no-period");
         return;
       }
 
-      let rowId = 0;
-      const reviewRows: ReviewRow[] = [];
-      for (const extractedRow of result.extraction.rows) {
-        const match = result.workerMatches[extractedRow.workerName];
-        const matchedWorker = match?.exactMatch;
-
-        // Find the selected activity or use default
-        const actObj = selectedActivity
-          ? result.activities.find((a) => a.name === selectedActivity) || defaultActivity
-          : defaultActivity;
-
-        const price = selectedUnitPrice
-          ? parseFloat(selectedUnitPrice)
-          : actObj?.defaultPrice ?? 0;
-
-        for (const entry of extractedRow.entries) {
-          const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(entry.day).padStart(2, "0")}`;
-          reviewRows.push({
-            id: `row-${rowId++}`,
-            workerName: extractedRow.workerName,
-            workerId: matchedWorker?.id || null,
-            workerConfidence: matchedWorker ? "exact" : match?.candidates.length ? "partial" : "none",
-            activityId: actObj?.id || "",
-            loteId: null,
-            date: dateStr,
-            quantity: entry.quantity,
-            unitPrice: price,
-            totalEarned: Math.round(entry.quantity * price * 100) / 100,
-            payPeriodId: defaultPeriod.id,
-          });
-        }
-      }
-
-      setRows(reviewRows);
-      setWorkers(
-        result.activities.length > 0
-          ? await fetchWorkers()
-          : [],
+      // All dates covered — build review rows directly
+      const { reviewRows, skippedDays, workers: workerList } = await buildReviewRows(
+        result, result.payPeriods, effMonth, effYear, selectedActivity, selectedUnitPrice,
       );
+      setSkippedDates(
+        skippedDays.map((d) => `${effYear}-${String(effMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`),
+      );
+      setRows(reviewRows);
+      setWorkers(workerList);
       setActivities(result.activities);
       setLotes(result.lotes);
       setPayPeriods(result.payPeriods);
@@ -189,14 +289,42 @@ export function UploadFoto() {
     }
   }, [file, month, year, selectedActivity, selectedUnitPrice]);
 
-  async function fetchWorkers(): Promise<WorkerOption[]> {
-    const res = await fetch("/api/workers");
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.map((w: { id: string; fullName: string }) => ({
-      id: w.id,
-      fullName: w.fullName,
-    }));
+  // Called by CreatePayPeriodWizard each time a period is successfully created
+  async function handlePeriodCreated(newPeriod: PeriodOption) {
+    if (!pendingResult) return;
+
+    const allCreated = [...createdPeriods, newPeriod];
+    setCreatedPeriods(allCreated);
+
+    const allPeriods = [...pendingResult.payPeriods, ...allCreated];
+    const uncovered = getUncoveredDates(pendingResult, allPeriods, month, year);
+
+    if (uncovered.length > 0) {
+      // More periods needed — suggest starting the day after the latest period ends
+      const latestEnd = allPeriods.map((p) => p.endDate).sort().at(-1)!;
+      setWizardSuggestedStart(addOneDay(latestEnd));
+      // key={createdPeriods.length} on the wizard causes remount with fresh state
+      return;
+    }
+
+    // All dates now covered — build review rows
+    setStep("processing");
+    const { reviewRows, skippedDays, workers: workerList } = await buildReviewRows(
+      pendingResult, allPeriods, month, year, selectedActivity, selectedUnitPrice,
+    );
+    setSkippedDates(
+      skippedDays.map((d) => `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`),
+    );
+    setRows(reviewRows);
+    setWorkers(workerList);
+    setActivities(pendingResult.activities);
+    setLotes(pendingResult.lotes);
+    setPayPeriods(allPeriods);
+    setExtractionNotes(pendingResult.extraction.notes);
+    setConfidence(pendingResult.extraction.confidence);
+    setImageUrl(pendingResult.imageUrl);
+    setCsvUrl(pendingResult.csvUrl);
+    setStep("review");
   }
 
   // Step 3 → 4: Save confirmed rows
@@ -206,21 +334,14 @@ export function UploadFoto() {
       setError("No hay filas válidas para guardar");
       return;
     }
-
     setError(null);
     setStep("saving");
 
-    // Collect worker name corrections to persist in dictionary
     const correctionMap = new Map<string, { workerId: string; workerFullName: string }>();
     for (const r of validRows) {
-      if (r.workerId && r.workerName) {
-        const existing = correctionMap.get(r.workerName);
-        if (!existing) {
-          const worker = workers.find((w) => w.id === r.workerId);
-          if (worker) {
-            correctionMap.set(r.workerName, { workerId: r.workerId, workerFullName: worker.fullName });
-          }
-        }
+      if (r.workerId && r.workerName && !correctionMap.has(r.workerName)) {
+        const worker = workers.find((w) => w.id === r.workerId);
+        if (worker) correctionMap.set(r.workerName, { workerId: r.workerId, workerFullName: worker.fullName });
       }
     }
     const corrections = Array.from(correctionMap.entries()).map(([handwritten, { workerId, workerFullName }]) => ({
@@ -251,20 +372,19 @@ export function UploadFoto() {
         }),
       });
 
-      const data = await res.json();
+      const saveData = await res.json();
       if (!res.ok) {
-        setError(data.error || "Error al guardar");
+        setError(saveData.error || "Error al guardar");
         setStep("review");
         return;
       }
-
-      setSavedCount(data.count);
+      setSavedCount(saveData.count);
       setStep("done");
     } catch {
       setError("Error de conexión");
       setStep("review");
     }
-  }, [rows, imageUrl, csvUrl]);
+  }, [rows, workers, imageUrl, csvUrl]);
 
   const handleUpdateRow = useCallback((id: string, updates: Partial<ReviewRow>) => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
@@ -284,7 +404,6 @@ export function UploadFoto() {
           </div>
         )}
 
-        {/* File input */}
         <div>
           <label className="mb-2 block text-sm font-medium text-finca-700">
             Foto del cuaderno
@@ -297,26 +416,17 @@ export function UploadFoto() {
               className="hidden"
             />
             {preview ? (
-              <img
-                src={preview}
-                alt="Vista previa"
-                className="max-h-64 rounded-lg object-contain"
-              />
+              <img src={preview} alt="Vista previa" className="max-h-64 rounded-lg object-contain" />
             ) : (
               <>
                 <Camera className="mb-3 h-10 w-10 text-finca-400" />
-                <p className="text-sm font-medium text-finca-700">
-                  Tomar foto o seleccionar imagen
-                </p>
-                <p className="mt-1 text-xs text-finca-400">
-                  JPEG, PNG o WebP
-                </p>
+                <p className="text-sm font-medium text-finca-700">Tomar foto o seleccionar imagen</p>
+                <p className="mt-1 text-xs text-finca-400">JPEG, PNG o WebP</p>
               </>
             )}
           </label>
         </div>
 
-        {/* Context fields */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-finca-700">Mes</label>
@@ -371,7 +481,6 @@ export function UploadFoto() {
           </div>
         </div>
 
-        {/* Upload button */}
         <button
           onClick={handleUpload}
           disabled={!file}
@@ -384,17 +493,69 @@ export function UploadFoto() {
     );
   }
 
+  // ── STEP: No open pay period — show wizard inline ─────────────────────────
+  if (step === "no-period") {
+    const MONTH_NAMES = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    ];
+    const detectedLabel = `${MONTH_NAMES[(month - 1) % 12]} ${year}`;
+
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="text-sm text-amber-800">
+              {createdPeriods.length === 0 ? (
+                <>
+                  No hay período de pago abierto para <strong>{detectedLabel}</strong>.
+                  Créelo a continuación para continuar.
+                </>
+              ) : (
+                <>
+                  <span className="font-medium">
+                    {createdPeriods.length === 1
+                      ? `Período ${createdPeriods[0].periodNumber} creado.`
+                      : `${createdPeriods.length} períodos creados.`}
+                  </span>
+                  {" Hay fechas de "}
+                  <strong>{detectedLabel}</strong>
+                  {" que aún no tienen período. Cree el siguiente."}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <CreatePayPeriodWizard
+          key={createdPeriods.length}
+          onCreated={handlePeriodCreated}
+          suggestedStartDate={wizardSuggestedStart}
+          initialStep={2}
+        />
+
+        <button
+          onClick={() => {
+            setStep("upload");
+            setPendingResult(null);
+            setCreatedPeriods([]);
+          }}
+          className="text-sm text-finca-500 hover:text-finca-700 underline"
+        >
+          Cancelar y volver
+        </button>
+      </div>
+    );
+  }
+
   // ── STEP: Processing ──────────────────────────────────────────────────────
   if (step === "processing") {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <Loader2 className="h-10 w-10 animate-spin text-finca-600" />
-        <p className="mt-4 text-sm font-medium text-finca-700">
-          Procesando imagen con IA...
-        </p>
-        <p className="mt-1 text-xs text-finca-400">
-          Esto puede tomar 10-30 segundos
-        </p>
+        <p className="mt-4 text-sm font-medium text-finca-700">Procesando imagen con IA...</p>
+        <p className="mt-1 text-xs text-finca-400">Esto puede tomar 10-30 segundos</p>
       </div>
     );
   }
@@ -412,7 +573,17 @@ export function UploadFoto() {
           </div>
         )}
 
-        {/* Extraction info */}
+        {skippedDates.length > 0 && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <span className="font-medium">
+              {skippedDates.length === 1 ? "1 día omitido" : `${skippedDates.length} días omitidos`}
+            </span>
+            {" — ya importados previamente (días: "}
+            {skippedDates.map((d) => parseInt(d.split("-")[2], 10)).join(", ")}
+            {")"}
+          </div>
+        )}
+
         <div className="rounded-lg border border-finca-200 bg-finca-50/50 px-4 py-3">
           <div className="flex items-center gap-2 text-sm">
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -436,7 +607,6 @@ export function UploadFoto() {
           )}
         </div>
 
-        {/* Review table */}
         <ReviewTable
           rows={rows}
           workers={workers}
@@ -447,7 +617,6 @@ export function UploadFoto() {
           onDeleteRow={handleDeleteRow}
         />
 
-        {/* Actions */}
         <div className="flex items-center gap-3">
           <button
             onClick={handleSave}
@@ -478,9 +647,7 @@ export function UploadFoto() {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <Loader2 className="h-10 w-10 animate-spin text-finca-600" />
-        <p className="mt-4 text-sm font-medium text-finca-700">
-          Guardando registros...
-        </p>
+        <p className="mt-4 text-sm font-medium text-finca-700">Guardando registros...</p>
       </div>
     );
   }
@@ -505,6 +672,8 @@ export function UploadFoto() {
             setFile(null);
             setPreview(null);
             setSavedCount(0);
+            setPendingResult(null);
+            setCreatedPeriods([]);
           }}
           className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-finca-800"
         >
