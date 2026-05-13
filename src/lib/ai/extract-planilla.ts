@@ -53,7 +53,6 @@ REGLAS POR CELDA DE DATOS:
 - Unidades: convierte a número — vacío o "TAREA" → 1; número → ese número
 - Si Lote y Actividad contienen el mismo valor (ej: "CP" y "CP"), es un Caporal:
   usa lote="" (cadena vacía) y actividad="CP"
-- Omite la entrada si Actividad dice "FERIADO" o "HERIDO"
 - Omite la entrada si tanto Lote como Actividad están vacíos
 
 Devuelve SIEMPRE un JSON válido con esta estructura exacta (sin texto adicional):
@@ -126,7 +125,7 @@ export async function extractPlanillaData(
         /^\d{4}-\d{2}-\d{2}$/.test(e.date) &&
         e.activity &&
         typeof e.units === "number" &&
-        e.units > 0,
+        e.units >= 0,
     );
   }
   parsed.rows = parsed.rows.filter((r) => r.workerName && r.entries.length > 0);

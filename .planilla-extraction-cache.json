@@ -1,0 +1,5903 @@
+[
+  {
+    "file": "3fcb7dcd-b081-44ff-8a12-4f8ffd40918d.JPG",
+    "rows": [
+      {
+        "workerName": "Marco Antonio Solano",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Roberto Solano Jimenez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Herni Fandolfo Hernandez Solano",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CASA",
+            "activity": "BE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CASA",
+            "activity": "BE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CASA",
+            "activity": "BE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "BE",
+            "activity": "BE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "BE",
+            "activity": "BE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "BE",
+            "activity": "BE",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elvin Nolman Alvarez Jimenez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-26",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-27",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Estil Samuel Jimenez Jimenez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Erma Magnolia Perez Najera",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "German Nolman Solano Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jaime Anibal Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Alberto Arnulfo Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "BF",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Edgar Rolando Navas Chacon",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Gerson Alvarez Lopez",
+        "entries": [
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Erick Ronaldo Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "AGENERA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Erica Yanik Garcia Lopez",
+        "entries": [
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elmer Alexander Hernandez Falloni",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "BENEFICIO",
+            "activity": "EN",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jose Arnulfo Morales Morales",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Carlos Albino Garcia Mendez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Dario Emiliano Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Mirian Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Villindo Hernandez Palloni",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Diego Amilito Navas Sanchez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Luz De Maria Martinez Solano",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jaime Elizabeth Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elder Eduardo Hernandez Navas",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Francisco Alejandro Navas Juarez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elder Josue Hernandez Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jorge Luis Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Santiago Solano Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Ladij Susana Solano Perez",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Emilio Orellana Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Maria Flordama Alvarez Morales",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Euler Gonzalo Aguil Sanchez",
+        "entries": [
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Maria Ricmman Hernandez Perez De Solano",
+        "entries": [
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elider Nolman Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Wilson Orlando Garcia Mendez",
+        "entries": [
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Balumira Marroquin Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jonathan Aguilar",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Artemio Daniel Isaao Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-20",
+            "lote": "CANOA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-21",
+            "lote": "CANOA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-22",
+            "lote": "CANOA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-23",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-24",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-25",
+            "lote": "VUELTA GP",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      }
+    ],
+    "dateRange": {
+      "start": "2026-04-20",
+      "end": "2026-04-27"
+    },
+    "confidence": "high",
+    "notes": "Planilla clara con datos bien definidos. Se observan patrones consistentes de actividades por trabajador y fechas."
+  },
+  {
+    "file": "4a316f7c-afac-43e1-b721-4cff5281da9c.JPG",
+    "rows": [
+      {
+        "workerName": "Marco Antonio Solano",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Santiago Solano Mendez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Henry Fandolfo Hernandez Solano",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "EE",
+            "activity": "EE",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "EE",
+            "activity": "EE",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "EE",
+            "activity": "EE",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "EE",
+            "activity": "EE",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "EE",
+            "activity": "EE",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "EE",
+            "activity": "EE",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Belgaro Nodwin Alvarez Jimenez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Baby Madelin Alvarez Jimenez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Emily Marcela Perez Najera",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "VUELTA PEÑA",
+            "activity": "FE 4",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Dany Samuel Anel Perez Najera",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jaime Anibal Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Erwin Samuel Perez Marroquin",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Edgar Rolando Navas Chacon",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "HACIENDA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Ethel Roxana Marroquin Lopez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "VUELTA PEÑA",
+            "activity": "FE 4",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Carmelo Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Ervin Ronaldo Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Rosaria Martinez Salazar",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "FE 6",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elmer Alejandro Hernandez Rellosa",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "BENEFICIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "BENEFICIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "HORNOS",
+            "activity": "CA",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elvir Amilcar Perez Morales",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "SAN EMILIO",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Carlos Albino Garcia Mendez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "HACIENDA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elton Rene Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "SAN EMILIO",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jose alexander Navas Martinez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "BENEFICIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "SAN EMILIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Wilfrido Hernandez Relloso",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "FE 6",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Eliseo Jose Diaz Perez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "VUELTA PEÑA",
+            "activity": "FE 4",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "FE 3",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Luz De Maria Martinez Solano",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "FE 3",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Mayrin Del Carmen Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "VUELTA PEÑA",
+            "activity": "FE 4",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "FE 9",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CANOA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elder Eduardo Hernandez Navas",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "BENEFICIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Francisco Arevalo Navas Juarez",
+        "entries": [
+          {
+            "date": "2026-05-05",
+            "lote": "HERIDO",
+            "activity": "D",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "HERIDO",
+            "activity": "D",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "BENEFICIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Fernando Adefides Guamuch Perez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jose Luis Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "BENEFICIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Dilmer Agustin Fuentes Mendez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "FE 6",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Leidy Siurana Solano Perez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "VUELTA PEÑA",
+            "activity": "FE 4",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "FE 6",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elda Marisol Jimenez Marroquin",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Maria Floridama Alvarez Morales",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "VUELTA PEÑA",
+            "activity": "FE 4",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Alver Gerardo Mendez Sanchez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "BENEFICIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Julia Yanira Marroquin",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "VUELTA PEÑA",
+            "activity": "FE 4",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Maria Marbelis Hernandez Perez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "VUELTA PEÑA",
+            "activity": "FE 4",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "FE 8",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Yelson Elizeo Hernandez Perez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "BENEFICIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Vilison Orlando Garcia Mendez",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "BENEFICIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Suleima Areli Guamuch Marroquin",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CRUZ 2",
+            "activity": "FE 4",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jonathan Aguilar",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "HERIDO",
+            "activity": "D",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "HERIDO",
+            "activity": "D",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Artemio Danilo Solano Marroquin",
+        "entries": [
+          {
+            "date": "2026-05-04",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-05",
+            "lote": "CRUZ 1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-06",
+            "lote": "CRUZ 2",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-07",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-08",
+            "lote": "CANOA",
+            "activity": "TZ",
+            "units": 1
+          },
+          {
+            "date": "2026-05-09",
+            "lote": "MIRASOL",
+            "activity": "MS",
+            "units": 1
+          }
+        ]
+      }
+    ],
+    "dateRange": {
+      "start": "2026-05-04",
+      "end": "2026-05-09"
+    },
+    "confidence": "high",
+    "notes": "Planilla con estructura clara. Se detectaron algunos trabajadores lesionados/heridos marcados con actividad 'D' en columna HERIDO. Todas las fechas corresponden a la semana del 4 al 9 de mayo de 2026."
+  },
+  {
+    "file": "d5f8f002-2d10-4d9e-903d-dc9aa942b1f1.JPG",
+    "rows": [
+      {
+        "workerName": "Marco Antonio Solano",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Ronaldo Solano Ximenez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Henry Randolfo Hernandez Solano",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "BE",
+            "activity": "BE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "BE",
+            "activity": "BE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "BE",
+            "activity": "BE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "BE",
+            "activity": "BE",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "BE",
+            "activity": "BE",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Rafael Nohemi Solano Jimenez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Gady Marbely Alvarez Jimenez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Marin Margarita Perez Garcia",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jaime Anibal Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Adriano Antonio Solano",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Edgar Rolando Navas Chacon",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elvia Roxana Alvarez Juarez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Carmelo Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elver Ronaldo Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "CABEZONEL",
+            "activity": "CA",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CABEZONEL",
+            "activity": "CA",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Deyvi Martinez Solano",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elmer Alexander Hernandez Flaillos",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "BENEFICI",
+            "activity": "BN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "BENEFICI",
+            "activity": "BN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Raul Ricardo Salazar Perez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Carlos Albino Garcia Mendez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elber Rene Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "CABEZONEL",
+            "activity": "CA",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jose Alexander Navas Martinez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Wilnifer Hernandez Garcia",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Kevin Joel Salazar Martinez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Luz De Maria Martinez Solano",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Telma Elizabeth Hernandez Marentel",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elder Eduardo Hernandez Navas",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Francisco Alexander Navas Juarez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Fernando Adelso Guzman Perez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jorge Luis Marroquin Jimenez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CABEZONEL",
+            "activity": "CA",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Balmore Andres Hernandez Villatoro",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Ledy Susana Solano Perez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Rodolfo Solano Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Maria Floridama Alvarez Morales",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Oliver Gerardo Aguilar Sanchez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Julia Yanira Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Paula Esperanza Hernandez Perez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elder Ricardo Salazar Ramirez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Wilson Orlando Garcia Mendez",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Suleimy Xirel Guzman Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jonathan Aguilar",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CABEZONEL",
+            "activity": "CA",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Artemio Danilo Solano Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-27",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-28",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-29",
+            "lote": "VUELTA",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-04-30",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-01",
+            "lote": "CRUZ1",
+            "activity": "MS",
+            "units": 1
+          },
+          {
+            "date": "2026-05-02",
+            "lote": "FERRADO",
+            "activity": "FERRADO",
+            "units": 1
+          }
+        ]
+      }
+    ],
+    "dateRange": {
+      "start": "2026-04-27",
+      "end": "2026-05-02"
+    },
+    "confidence": "high",
+    "notes": "Planilla semanal bien estructurada con trabajadores realizando principalmente actividad MS (maquinaria/limpieza) en lotes VUELTA y CRUZ1, con algunos trabajadores en actividades especializadas como CP (Caporal), BE (beneficio), MG (mantenimiento general), BN (beneficio), y CA (cabezonel). El último día (sábado) muchos trabajadores realizan actividad FERRADO."
+  },
+  {
+    "file": "fb1d036c-5775-4e2c-83c9-c0f7f52c169d.JPG",
+    "rows": [
+      {
+        "workerName": "Marco Antonio Solano",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Gualberto Difonzo Xinas",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "",
+            "activity": "CP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Heng Randolfo Hernandez Solano",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CASA",
+            "activity": "RE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CASA",
+            "activity": "RE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CASA",
+            "activity": "RE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CASA",
+            "activity": "RE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CASA",
+            "activity": "RE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CASA",
+            "activity": "RE",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Fruth Wilfredo Muñoz Jimenez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CASA",
+            "activity": "MG",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Ever Patrocinio Perez Herrera",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "SAN EMILIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "SAN EMILIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "SAN EMILIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "SAN EMILIO",
+            "activity": "MG",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "SAN EMILIO",
+            "activity": "MG",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Enna Grabiela Perez Najera",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "APRENER",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Genaro Norberto Solano Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jaime Anibal Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Adister Gilberto Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CRUZ 2",
+            "activity": "RP",
+            "units": 15
+          }
+        ]
+      },
+      {
+        "workerName": "Edgar Rolando Najera Chacon",
+        "entries": [
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Deyli Floriana Alvarez Lopez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elmer Alexander Hernandez Raticios",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "RE",
+            "activity": "RE",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "EN",
+            "activity": "EN",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Axel Arnaldo Muñoz Morales",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "SAN EMILIO",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "SAN EMILIO",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "SAN EMILIO",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CRUZ 2",
+            "activity": "RP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Carlos Albino Garcia Mendez",
+        "entries": [
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Dino René Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Emerenciano Muñoz Juanez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Vilfrido Hernandez Paticios",
+        "entries": [
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Alvaro Arnulfo Najera Sanchez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Luz De Maria Martinez Solano",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "APRENER",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "APRENER",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Nancy Elizabeth Hernandez Martinez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "APRENER",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Elder Eduardo Hernandez Navas",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Francelina Hernandez Navas Juarez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Dorinda Lisbeth Hernandez Perez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jorge Luiz Marroquin Salazar",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Baldomero Solano Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Lady Susana Solano Perez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "APRENER",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Lolita Celestina Solano Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Maria Floridalma Alvarez Morales",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "APRENER",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Oliver Gerardo Aguilar Sanchez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Mario Lisandro Navas Perez",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "APRENER",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Maria Rosemerij Hernandez Perez De Solano",
+        "entries": [
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Marlon Matías Marroquín Salazar",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "APRENER",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Suleima Areli Guamuch Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "APRENER",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "SAN EMILIA",
+            "activity": "RP",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Jonathan Aguilar",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-18",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      },
+      {
+        "workerName": "Artemio Danilo Solano Marroquin",
+        "entries": [
+          {
+            "date": "2026-04-13",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-14",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-15",
+            "lote": "CANADA",
+            "activity": "RP",
+            "units": 1
+          },
+          {
+            "date": "2026-04-16",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          },
+          {
+            "date": "2026-04-17",
+            "lote": "CANADA",
+            "activity": "LL",
+            "units": 1
+          }
+        ]
+      }
+    ],
+    "dateRange": {
+      "start": "2026-04-13",
+      "end": "2026-04-18"
+    },
+    "confidence": "high",
+    "notes": "Planilla clara y legible. Se detectaron algunos trabajadores con entradas vacías (Erick Ronaldo Hernandez Martinez, Erick Tomas Alvarez Lopez, Wilson Dilando Garcia Mendez)."
+  }
+]

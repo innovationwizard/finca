@@ -1,0 +1,2 @@
+Using Claude Vision to ETL four images, screenshots from xlsx sheets images, meaning NO handwriting issues possible, containing 39 rows each, an objectively small number of rows, took us FOUR HOURS due to increasing enthropy of Claude Vision hallucinations. We ended up manually resolving to a map and removing the API from the process. Only then were we able to complete this tiny ETL. 
+HARD DECISION: REPLACE CLAUDE VISION WITH AWS TEXTRACT ASAP. 
