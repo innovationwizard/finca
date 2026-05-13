@@ -1,7 +1,24 @@
 // =============================================================================
 // src/lib/ai/match-workers.ts — Fuzzy worker name matching
 // Maps handwritten names from notebook photos to Worker DB records.
+//
+// Algorithm: per-token Levenshtein.
+//   For each extracted token, find the closest token in the worker's full name.
+//   A worker is scored as the average of its best per-token similarities.
+//   Auto-select when score ≥ AUTO_MATCH_MIN AND the top match beats the
+//   runner-up by ≥ UNIQUE_MARGIN (prevents false positives when multiple
+//   workers share the same first name).
+//
+// Thresholds (tuned against real notebook names):
+//   TOKEN_FUZZY_MIN  0.65 — "noami" ↔ "nohemi" = 0.67 ✓
+//                           "wuilfido" ↔ "wilfrido" = 0.75 ✓
+//   AUTO_MATCH_MIN   0.70 — must pass before auto-selecting
+//   UNIQUE_MARGIN    0.15 — gap required between 1st and 2nd candidate
 // =============================================================================
+
+const TOKEN_FUZZY_MIN = 0.65;
+const AUTO_MATCH_MIN = 0.70;
+const UNIQUE_MARGIN = 0.15;
 
 type WorkerRecord = {
   id: string;
@@ -16,7 +33,7 @@ type MatchResult = {
 function normalize(name: string): string {
   return name
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // strip accents
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
@@ -44,6 +61,13 @@ function levenshtein(a: string, b: string): number {
   return d[m][n];
 }
 
+function tokenSimilarity(te: string, tw: string): number {
+  if (tw === te) return 1.0;
+  if (tw.startsWith(te) || te.startsWith(tw)) return 1.0;
+  const dist = levenshtein(te, tw);
+  return 1 - dist / Math.max(te.length, tw.length);
+}
+
 export function matchWorkerName(
   extractedName: string,
   workers: WorkerRecord[],
@@ -51,53 +75,52 @@ export function matchWorkerName(
   const normExtracted = normalize(extractedName);
   const tokensExtracted = tokenize(extractedName);
 
-  // 1. Exact match on normalized name
+  // 1. Exact match on normalized full name
   const exact = workers.find((w) => normalize(w.fullName) === normExtracted);
   if (exact) {
     return { exactMatch: exact, candidates: [] };
   }
 
-  // 2. Token-based partial match
-  const tokenMatches: { worker: WorkerRecord; score: number }[] = [];
+  // 2. Per-token fuzzy scoring
+  const scored: { worker: WorkerRecord; score: number }[] = [];
+
   for (const w of workers) {
     const tokensWorker = tokenize(w.fullName);
-    let matchCount = 0;
+    let totalScore = 0;
+    let allMatched = true;
+
     for (const te of tokensExtracted) {
+      let bestForToken = 0;
       for (const tw of tokensWorker) {
-        if (tw === te || tw.startsWith(te) || te.startsWith(tw)) {
-          matchCount++;
-          break;
-        }
+        const sim = tokenSimilarity(te, tw);
+        if (sim > bestForToken) bestForToken = sim;
       }
+      if (bestForToken < TOKEN_FUZZY_MIN) {
+        allMatched = false;
+        break;
+      }
+      totalScore += bestForToken;
     }
-    if (matchCount >= Math.min(2, tokensExtracted.length)) {
-      const score = matchCount / Math.max(tokensExtracted.length, tokensWorker.length);
-      tokenMatches.push({ worker: w, score });
-    }
+
+    if (!allMatched) continue;
+    scored.push({ worker: w, score: totalScore / tokensExtracted.length });
   }
 
-  if (tokenMatches.length > 0) {
-    tokenMatches.sort((a, b) => b.score - a.score);
-    if (tokenMatches[0].score >= 0.6) {
-      return { exactMatch: tokenMatches[0].worker, candidates: tokenMatches };
-    }
-    return { exactMatch: null, candidates: tokenMatches };
+  scored.sort((a, b) => b.score - a.score);
+
+  if (scored.length === 0) {
+    return { exactMatch: null, candidates: [] };
   }
 
-  // 3. Levenshtein distance fallback
-  const levMatches: { worker: WorkerRecord; score: number }[] = [];
-  for (const w of workers) {
-    const normWorker = normalize(w.fullName);
-    const dist = levenshtein(normExtracted, normWorker);
-    const maxLen = Math.max(normExtracted.length, normWorker.length);
-    const similarity = 1 - dist / maxLen;
-    if (similarity >= 0.5) {
-      levMatches.push({ worker: w, score: similarity });
-    }
-  }
-  levMatches.sort((a, b) => b.score - a.score);
+  const best = scored[0];
+  const runnerUp = scored[1];
+  const isUnambiguous = !runnerUp || best.score - runnerUp.score >= UNIQUE_MARGIN;
 
-  return { exactMatch: null, candidates: levMatches.slice(0, 5) };
+  if (best.score >= AUTO_MATCH_MIN && isUnambiguous) {
+    return { exactMatch: best.worker, candidates: scored };
+  }
+
+  return { exactMatch: null, candidates: scored };
 }
 
 export function matchAllWorkers(

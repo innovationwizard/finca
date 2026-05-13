@@ -92,7 +92,20 @@ export async function POST(request: NextRequest) {
     const extractedNames = extraction.rows.map((r) => r.workerName);
     const workerMatches = matchAllWorkers(extractedNames, workers);
 
-    // 3.5. Check which extracted dates already have records in the DB
+    // Dictionary always overrides fuzzy matching — apply learned corrections first
+    for (const row of extraction.rows) {
+      if (row.workerId && row.wasLearned) {
+        const worker = workers.find((w) => w.id === row.workerId);
+        if (worker) {
+          workerMatches[row.workerName] = {
+            exactMatch: worker,
+            candidates: workerMatches[row.workerName]?.candidates ?? [],
+          };
+        }
+      }
+    }
+
+    // 3.5. Check which (date, workerId) pairs already have records in the DB
     const uniqueExtractedDates = [
       ...new Set(
         extraction.rows.flatMap((row) =>
@@ -105,10 +118,12 @@ export async function POST(request: NextRequest) {
     ];
     const existingRecords = await prisma.activityRecord.findMany({
       where: { date: { in: uniqueExtractedDates.map((d) => new Date(d)) } },
-      select: { date: true },
-      distinct: ["date"],
+      select: { date: true, workerId: true },
     });
-    const existingDates = existingRecords.map((r) => r.date.toISOString().split("T")[0]);
+    // Format: "YYYY-MM-DD|workerId" — checked per-entry, not per-date
+    const existingKeys = existingRecords.map(
+      (r) => `${r.date.toISOString().split("T")[0]}|${r.workerId}`,
+    );
 
     // 4. Fetch activities and lotes for the review UI
     const activities = await prisma.activity.findMany({
@@ -182,7 +197,7 @@ export async function POST(request: NextRequest) {
         startDate: p.startDate.toISOString().split("T")[0],
         endDate: p.endDate.toISOString().split("T")[0],
       })),
-      existingDates,
+      existingKeys,
       imageUrl: storagePath,
       csvUrl: csvPath,
     });

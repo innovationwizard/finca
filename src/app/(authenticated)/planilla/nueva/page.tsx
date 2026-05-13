@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Camera } from "lucide-react";
+import { ClipboardList, Camera, FileSpreadsheet } from "lucide-react";
 import { useSyncStatus } from "@/hooks/use-sync-status";
 import { offlineDb } from "@/lib/offline/db";
 import { addToOutbox } from "@/lib/offline/sync-engine";
@@ -16,13 +16,14 @@ import { generateClientId } from "@/lib/utils/code-generators";
 import { calcTotalEarned } from "@/lib/utils/calculations";
 import { formatDateISO } from "@/lib/utils/format";
 import { UploadFoto } from "./upload-foto";
+import { UploadPlanilla } from "./upload-planilla";
 import { CreatePayPeriodWizard } from "./create-pay-period-wizard";
 import type { CachedWorker, CachedActivity, CachedLote, CachedPayPeriod } from "@/lib/offline/db";
 
 export default function NuevaActividadPage() {
   const router = useRouter();
   const { isOnline } = useSyncStatus();
-  const [mode, setMode] = useState<"manual" | "foto">("manual");
+  const [mode, setMode] = useState<"manual" | "foto" | "planilla">("manual");
 
   // Reference data (from IndexedDB cache)
   const [workers, setWorkers] = useState<CachedWorker[]>([]);
@@ -202,7 +203,7 @@ export default function NuevaActividadPage() {
   };
 
   return (
-    <div className={`mx-auto px-4 py-8 sm:px-6 ${mode === "foto" ? "max-w-5xl" : "max-w-lg"}`}>
+    <div className={`mx-auto px-4 py-8 sm:px-6 ${mode === "manual" ? "max-w-lg" : "max-w-5xl"}`}>
       <div className="mb-6">
         <button
           onClick={() => router.back()}
@@ -216,7 +217,9 @@ export default function NuevaActividadPage() {
         <p className="mt-1 text-sm text-finca-500">
           {mode === "manual"
             ? isOnline ? "En línea" : "Sin conexión — se guardará localmente"
-            : "Subir foto del cuaderno para extraer datos automáticamente"}
+            : mode === "foto"
+              ? "Subir foto del cuaderno para extraer datos automáticamente"
+              : "Subir foto de la planilla semanal para extraer datos automáticamente"}
         </p>
 
         {/* Mode toggle */}
@@ -230,7 +233,7 @@ export default function NuevaActividadPage() {
             }`}
           >
             <ClipboardList className="h-4 w-4" />
-            Registro Manual
+            Manual
           </button>
           <button
             onClick={() => setMode("foto")}
@@ -241,13 +244,26 @@ export default function NuevaActividadPage() {
             }`}
           >
             <Camera className="h-4 w-4" />
-            Subir Foto de Cuaderno
+            Cuaderno
+          </button>
+          <button
+            onClick={() => setMode("planilla")}
+            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              mode === "planilla"
+                ? "bg-white text-finca-900 shadow-sm"
+                : "text-finca-500 hover:text-finca-700"
+            }`}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Planilla Semanal
           </button>
         </div>
       </div>
 
       {mode === "foto" ? (
         <UploadFoto />
+      ) : mode === "planilla" ? (
+        <UploadPlanilla />
       ) : (
       <>
       {/* Wizard: shown when no pay period exists */}

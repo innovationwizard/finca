@@ -1,12 +1,26 @@
 "use client";
 
 // =============================================================================
-// Upload notebook photo, extract via AI, review, and save to DB.
+// Upload a printed weekly schedule (planilla semanal), extract via AI,
+// review, and save to DB.
+//
+// Parallel to upload-foto.tsx but for the new digital/printed format.
+// Key differences:
+//   - No month/year/activity/price selectors: all extracted from the document
+//   - Each row has pre-resolved activityId and loteId from the API
+//   - Date coverage check uses full ISO dates from the extraction
 // =============================================================================
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Upload, Loader2, CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react";
+import {
+  FileSpreadsheet,
+  Upload,
+  Loader2,
+  CheckCircle,
+  AlertTriangle,
+  ArrowLeft,
+} from "lucide-react";
 import { ReviewTable, type ReviewRow } from "./review-table";
 import { CreatePayPeriodWizard } from "./create-pay-period-wizard";
 import { WorkerResolution, type UnmatchedItem, type WorkerResolutionResult } from "./worker-resolution";
@@ -21,19 +35,29 @@ type WorkerMatch = {
   candidates: { id: string; fullName: string; score: number }[];
 };
 
-type ExtractionResponse = {
-  extraction: {
-    rows: { workerName: string; entries: { day: number; quantity: number }[] }[];
-    month?: number;
-    year?: number;
-    confidence: string;
-    notes: string;
-  };
+type EnrichedEntry = {
+  date: string;
+  lote: string;
+  activity: string;
+  units: number;
+  resolvedActivityId: string | null;
+  resolvedActivityName: string;
+  resolvedActivityPrice: number;
+  resolvedLoteId: string | null;
+};
+
+type PlanillaApiResponse = {
+  rows: { workerName: string; entries: EnrichedEntry[] }[];
   workerMatches: Record<string, WorkerMatch>;
   activities: ActivityOption[];
   lotes: LoteOption[];
   payPeriods: PeriodOption[];
-  existingKeys: string[];  // "YYYY-MM-DD|workerId" — one entry per saved record
+  existingKeys: string[];
+  unresolvedActivities: string[];
+  unresolvedLotes: string[];
+  dateRange: { start: string; end: string };
+  confidence: string;
+  notes: string;
   imageUrl: string;
   csvUrl: string;
 };
@@ -41,34 +65,18 @@ type ExtractionResponse = {
 type Step = "upload" | "processing" | "worker-resolution" | "review" | "saving" | "done" | "no-period";
 
 // =============================================================================
-// Module-level helpers — no component state captured
+// Module-level helpers
 // =============================================================================
 
-function periodCoversDate(dateStr: string, period: PeriodOption): boolean {
-  return dateStr >= period.startDate && dateStr <= period.endDate;
-}
-
-function getUncoveredDates(
-  result: ExtractionResponse,
-  allPeriods: PeriodOption[],
-  effMonth: number,
-  effYear: number,
-): string[] {
-  // Derive date-level set from the per-entry keys for the period coverage check
+function getUncoveredDates(result: PlanillaApiResponse, allPeriods: PeriodOption[]): string[] {
   const existingDateSet = new Set((result.existingKeys ?? []).map((k) => k.split("|")[0]));
   const allDates = [
-    ...new Set(
-      result.extraction.rows.flatMap((row) =>
-        row.entries.map(
-          (e) =>
-            `${effYear}-${String(effMonth).padStart(2, "0")}-${String(e.day).padStart(2, "0")}`,
-        ),
-      ),
-    ),
+    ...new Set(result.rows.flatMap((row) => row.entries.map((e) => e.date))),
   ];
-  // A date needs a period if it has new data (not all workers already saved) and no period covers it
   return allDates.filter(
-    (d) => !existingDateSet.has(d) && !allPeriods.some((p) => periodCoversDate(d, p)),
+    (d) =>
+      !existingDateSet.has(d) &&
+      !allPeriods.some((p) => d >= p.startDate && d <= p.endDate),
   );
 }
 
@@ -79,55 +87,43 @@ function addOneDay(dateStr: string): string {
 }
 
 async function buildReviewRows(
-  result: ExtractionResponse,
+  result: PlanillaApiResponse,
   allPeriods: PeriodOption[],
-  effMonth: number,
-  effYear: number,
-  activityFilter: string,
-  priceFilter: string,
 ): Promise<{
   reviewRows: ReviewRow[];
   skippedCount: number;
   workers: WorkerOption[];
 }> {
-  // Per-entry deduplication: "YYYY-MM-DD|workerId" — only skip if THIS worker
-  // already has a record for THIS date. Unmatched workers are never skipped.
   const existingKeySet = new Set(result.existingKeys ?? []);
   let skippedCount = 0;
-  const defaultActivity = result.activities[0];
   let rowId = 0;
   const reviewRows: ReviewRow[] = [];
 
-  for (const extractedRow of result.extraction.rows) {
+  for (const extractedRow of result.rows) {
     const match = result.workerMatches[extractedRow.workerName];
     const matchedWorker = match?.exactMatch;
-    const actObj = activityFilter
-      ? result.activities.find((a) => a.name === activityFilter) || defaultActivity
-      : defaultActivity;
-    const price = priceFilter ? parseFloat(priceFilter) : actObj?.defaultPrice ?? 0;
 
     for (const entry of extractedRow.entries) {
-      const dateStr = `${effYear}-${String(effMonth).padStart(2, "0")}-${String(entry.day).padStart(2, "0")}`;
-
-      // Skip only when the matched worker already has a record for this date
-      if (matchedWorker && existingKeySet.has(`${dateStr}|${matchedWorker.id}`)) {
+      if (matchedWorker && existingKeySet.has(`${entry.date}|${matchedWorker.id}`)) {
         skippedCount++;
         continue;
       }
-
-      const period = allPeriods.find((p) => periodCoversDate(dateStr, p));
+      const period = allPeriods.find(
+        (p) => entry.date >= p.startDate && entry.date <= p.endDate,
+      );
       if (!period) continue;
+
       reviewRows.push({
         id: `row-${rowId++}`,
         workerName: extractedRow.workerName,
         workerId: matchedWorker?.id || null,
         workerConfidence: matchedWorker ? "exact" : match?.candidates.length ? "partial" : "none",
-        activityId: actObj?.id || "",
-        loteId: null,
-        date: dateStr,
-        quantity: entry.quantity,
-        unitPrice: price,
-        totalEarned: Math.round(entry.quantity * price * 100) / 100,
+        activityId: entry.resolvedActivityId || "",
+        loteId: entry.resolvedLoteId,
+        date: entry.date,
+        quantity: entry.units,
+        unitPrice: entry.resolvedActivityPrice,
+        totalEarned: Math.round(entry.units * entry.resolvedActivityPrice * 100) / 100,
         payPeriodId: period.id,
       });
     }
@@ -146,25 +142,18 @@ async function buildReviewRows(
 // Component
 // =============================================================================
 
-export function UploadFoto() {
+export function UploadPlanilla() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("upload");
   const [error, setError] = useState<string | null>(null);
 
-  // Upload form state
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [selectedActivity, setSelectedActivity] = useState("");
-  const [selectedUnitPrice, setSelectedUnitPrice] = useState("");
 
-  // Pending extraction — kept while user creates periods
-  const [pendingResult, setPendingResult] = useState<ExtractionResponse | null>(null);
+  const [pendingResult, setPendingResult] = useState<PlanillaApiResponse | null>(null);
   const [createdPeriods, setCreatedPeriods] = useState<PeriodOption[]>([]);
   const [wizardSuggestedStart, setWizardSuggestedStart] = useState<string | undefined>(undefined);
 
-  // Review state
   const [rows, setRows] = useState<ReviewRow[]>([]);
   const [workers, setWorkers] = useState<WorkerOption[]>([]);
   const [activities, setActivities] = useState<ActivityOption[]>([]);
@@ -176,6 +165,9 @@ export function UploadFoto() {
   const [csvUrl, setCsvUrl] = useState("");
   const [savedCount, setSavedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
+  const [unresolvedActivities, setUnresolvedActivities] = useState<string[]>([]);
+  const [unresolvedLotes, setUnresolvedLotes] = useState<string[]>([]);
+  const [detectedRange, setDetectedRange] = useState<{ start: string; end: string } | null>(null);
   const [unmatchedWorkers, setUnmatchedWorkers] = useState<UnmatchedItem[]>([]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,7 +180,6 @@ export function UploadFoto() {
     reader.readAsDataURL(f);
   }, []);
 
-  // Step 1 → 2: Upload directly to Supabase Storage, then process via AI
   const handleUpload = useCallback(async () => {
     if (!file) return;
     setError(null);
@@ -197,7 +188,7 @@ export function UploadFoto() {
     const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
 
     try {
-      // 1. Get signed upload URL
+      // Get signed upload URL
       const urlRes = await fetch(
         `/api/planilla/signed-upload-url?ext=${ext}&contentType=${encodeURIComponent(file.type)}`,
       );
@@ -208,7 +199,7 @@ export function UploadFoto() {
         return;
       }
 
-      // 2. Upload image directly to Supabase Storage (bypasses Vercel 4.5 MB limit)
+      // Upload directly to Supabase Storage
       const uploadRes = await fetch(urlData.signedUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type },
@@ -220,18 +211,11 @@ export function UploadFoto() {
         return;
       }
 
-      // 3. Process via AI
-      const res = await fetch("/api/planilla/process-foto", {
+      // Process via AI
+      const res = await fetch("/api/planilla/process-planilla", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storagePath: urlData.path,
-          contentType: file.type,
-          month,
-          year,
-          activityName: selectedActivity || undefined,
-          unitPrice: selectedUnitPrice ? parseFloat(selectedUnitPrice) : undefined,
-        }),
+        body: JSON.stringify({ storagePath: urlData.path, contentType: file.type }),
       });
 
       const data = await res.json();
@@ -241,23 +225,8 @@ export function UploadFoto() {
         return;
       }
 
-      const result = data as ExtractionResponse;
-
-      // Use AI-extracted month/year if valid; otherwise keep form values
-      const effMonth =
-        typeof result.extraction.month === "number" &&
-        result.extraction.month >= 1 &&
-        result.extraction.month <= 12
-          ? result.extraction.month
-          : month;
-      const effYear =
-        typeof result.extraction.year === "number" &&
-        result.extraction.year >= 2020 &&
-        result.extraction.year <= 2040
-          ? result.extraction.year
-          : year;
-      setMonth(effMonth);
-      setYear(effYear);
+      const result = data as PlanillaApiResponse;
+      setDetectedRange(result.dateRange ?? null);
       setPendingResult(result);
 
       // Check for unmatched workers — show resolution screen before proceeding
@@ -271,22 +240,16 @@ export function UploadFoto() {
         return;
       }
 
-      await continueAfterWorkers(result, effMonth, effYear, selectedActivity, selectedUnitPrice);
+      await continueAfterWorkers(result, result.payPeriods);
     } catch {
       setError("Error de conexión");
       setStep("upload");
     }
-  }, [file, month, year, selectedActivity, selectedUnitPrice]);
+  }, [file]);
 
   // Shared: proceed from a validated result to period-check → review
-  async function continueAfterWorkers(
-    result: ExtractionResponse,
-    effMonth: number,
-    effYear: number,
-    activityFilter: string,
-    priceFilter: string,
-  ) {
-    const uncovered = getUncoveredDates(result, result.payPeriods, effMonth, effYear);
+  async function continueAfterWorkers(result: PlanillaApiResponse, allPeriods: PeriodOption[]) {
+    const uncovered = getUncoveredDates(result, allPeriods);
     if (uncovered.length > 0) {
       setCreatedPeriods([]);
       setWizardSuggestedStart(uncovered.sort()[0]);
@@ -294,18 +257,21 @@ export function UploadFoto() {
       return;
     }
     const { reviewRows, skippedCount: sc, workers: workerList } = await buildReviewRows(
-      result, result.payPeriods, effMonth, effYear, activityFilter, priceFilter,
+      result,
+      allPeriods,
     );
     setSkippedCount(sc);
     setRows(reviewRows);
     setWorkers(workerList);
     setActivities(result.activities);
     setLotes(result.lotes);
-    setPayPeriods(result.payPeriods);
-    setExtractionNotes(result.extraction.notes);
-    setConfidence(result.extraction.confidence);
+    setPayPeriods(allPeriods);
+    setExtractionNotes(result.notes);
+    setConfidence(result.confidence);
     setImageUrl(result.imageUrl);
     setCsvUrl(result.csvUrl);
+    setUnresolvedActivities(result.unresolvedActivities ?? []);
+    setUnresolvedLotes(result.unresolvedLotes ?? []);
     setStep("review");
   }
 
@@ -314,7 +280,6 @@ export function UploadFoto() {
     if (!pendingResult) return;
     setStep("processing");
 
-    // Inject resolved workers into the workerMatches map
     const updatedMatches = { ...pendingResult.workerMatches };
     for (const r of results) {
       updatedMatches[r.extractedName] = {
@@ -325,10 +290,9 @@ export function UploadFoto() {
     const updatedResult = { ...pendingResult, workerMatches: updatedMatches };
     setPendingResult(updatedResult);
 
-    await continueAfterWorkers(updatedResult, month, year, selectedActivity, selectedUnitPrice);
+    await continueAfterWorkers(updatedResult, updatedResult.payPeriods);
   }
 
-  // Called by CreatePayPeriodWizard each time a period is successfully created
   async function handlePeriodCreated(newPeriod: PeriodOption) {
     if (!pendingResult) return;
 
@@ -336,35 +300,18 @@ export function UploadFoto() {
     setCreatedPeriods(allCreated);
 
     const allPeriods = [...pendingResult.payPeriods, ...allCreated];
-    const uncovered = getUncoveredDates(pendingResult, allPeriods, month, year);
+    const uncovered = getUncoveredDates(pendingResult, allPeriods);
 
     if (uncovered.length > 0) {
-      // More periods needed — suggest starting the day after the latest period ends
       const latestEnd = allPeriods.map((p) => p.endDate).sort().at(-1)!;
       setWizardSuggestedStart(addOneDay(latestEnd));
-      // key={createdPeriods.length} on the wizard causes remount with fresh state
       return;
     }
 
-    // All dates now covered — build review rows
     setStep("processing");
-    const { reviewRows, skippedCount: sc, workers: workerList } = await buildReviewRows(
-      pendingResult, allPeriods, month, year, selectedActivity, selectedUnitPrice,
-    );
-    setSkippedCount(sc);
-    setRows(reviewRows);
-    setWorkers(workerList);
-    setActivities(pendingResult.activities);
-    setLotes(pendingResult.lotes);
-    setPayPeriods(allPeriods);
-    setExtractionNotes(pendingResult.extraction.notes);
-    setConfidence(pendingResult.extraction.confidence);
-    setImageUrl(pendingResult.imageUrl);
-    setCsvUrl(pendingResult.csvUrl);
-    setStep("review");
+    await continueAfterWorkers(pendingResult, allPeriods);
   }
 
-  // Step 3 → 4: Save confirmed rows
   const handleSave = useCallback(async () => {
     const validRows = rows.filter((r) => r.workerId && r.activityId && r.payPeriodId);
     if (validRows.length === 0) {
@@ -378,15 +325,18 @@ export function UploadFoto() {
     for (const r of validRows) {
       if (r.workerId && r.workerName && !correctionMap.has(r.workerName)) {
         const worker = workers.find((w) => w.id === r.workerId);
-        if (worker) correctionMap.set(r.workerName, { workerId: r.workerId, workerFullName: worker.fullName });
+        if (worker)
+          correctionMap.set(r.workerName, { workerId: r.workerId, workerFullName: worker.fullName });
       }
     }
-    const corrections = Array.from(correctionMap.entries()).map(([handwritten, { workerId, workerFullName }]) => ({
-      handwritten,
-      canonical: workerFullName,
-      category: "worker" as const,
-      referenceId: workerId,
-    }));
+    const corrections = Array.from(correctionMap.entries()).map(
+      ([handwritten, { workerId, workerFullName }]) => ({
+        handwritten,
+        canonical: workerFullName,
+        category: "worker" as const,
+        referenceId: workerId,
+      }),
+    );
 
     try {
       const res = await fetch("/api/planilla/batch", {
@@ -443,7 +393,7 @@ export function UploadFoto() {
 
         <div>
           <label className="mb-2 block text-sm font-medium text-finca-700">
-            Foto del cuaderno
+            Foto de la planilla semanal
           </label>
           <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-finca-300 bg-finca-50/50 px-6 py-8 transition-colors hover:border-finca-500 hover:bg-finca-50">
             <input
@@ -456,66 +406,17 @@ export function UploadFoto() {
               <img src={preview} alt="Vista previa" className="max-h-64 rounded-lg object-contain" />
             ) : (
               <>
-                <Camera className="mb-3 h-10 w-10 text-finca-400" />
-                <p className="text-sm font-medium text-finca-700">Tomar foto o seleccionar imagen</p>
+                <FileSpreadsheet className="mb-3 h-10 w-10 text-finca-400" />
+                <p className="text-sm font-medium text-finca-700">
+                  Tomar foto o seleccionar imagen
+                </p>
                 <p className="mt-1 text-xs text-finca-400">JPEG, PNG o WebP</p>
+                <p className="mt-2 text-xs text-finca-400">
+                  Las fechas y actividades se extraen automáticamente
+                </p>
               </>
             )}
           </label>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-finca-700">Mes</label>
-            <select
-              value={month}
-              onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-              className="w-full rounded-lg border border-finca-200 px-3 py-2 text-sm"
-            >
-              {[
-                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-              ].map((name, i) => (
-                <option key={i} value={i + 1}>{name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-finca-700">Año</label>
-            <input
-              type="number"
-              value={year}
-              onChange={(e) => setYear(parseInt(e.target.value, 10))}
-              min={2024}
-              max={2030}
-              className="w-full rounded-lg border border-finca-200 px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-finca-700">
-              Actividad principal (opcional)
-            </label>
-            <input
-              type="text"
-              value={selectedActivity}
-              onChange={(e) => setSelectedActivity(e.target.value)}
-              placeholder="Ej: Corte de Café"
-              className="w-full rounded-lg border border-finca-200 px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-finca-700">
-              Precio unitario (opcional)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={selectedUnitPrice}
-              onChange={(e) => setSelectedUnitPrice(e.target.value)}
-              placeholder="Ej: 70"
-              className="w-full rounded-lg border border-finca-200 px-3 py-2 text-sm"
-            />
-          </div>
         </div>
 
         <button
@@ -524,7 +425,7 @@ export function UploadFoto() {
           className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800 disabled:opacity-50"
         >
           <Upload className="h-4 w-4" />
-          Procesar Foto
+          Procesar Planilla
         </button>
       </div>
     );
@@ -545,13 +446,11 @@ export function UploadFoto() {
     );
   }
 
-  // ── STEP: No open pay period — show wizard inline ─────────────────────────
+  // ── STEP: No open pay period ──────────────────────────────────────────────
   if (step === "no-period") {
-    const MONTH_NAMES = [
-      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-    ];
-    const detectedLabel = `${MONTH_NAMES[(month - 1) % 12]} ${year}`;
+    const rangeLabel = detectedRange
+      ? `${detectedRange.start} – ${detectedRange.end}`
+      : "las fechas detectadas";
 
     return (
       <div className="space-y-4">
@@ -561,7 +460,7 @@ export function UploadFoto() {
             <div className="text-sm text-amber-800">
               {createdPeriods.length === 0 ? (
                 <>
-                  No hay período de pago abierto para <strong>{detectedLabel}</strong>.
+                  No hay período de pago abierto para <strong>{rangeLabel}</strong>.
                   Créelo a continuación para continuar.
                 </>
               ) : (
@@ -571,9 +470,7 @@ export function UploadFoto() {
                       ? `Período ${createdPeriods[0].periodNumber} creado.`
                       : `${createdPeriods.length} períodos creados.`}
                   </span>
-                  {" Hay fechas de "}
-                  <strong>{detectedLabel}</strong>
-                  {" que aún no tienen período. Cree el siguiente."}
+                  {" Hay fechas que aún no tienen período. Cree el siguiente."}
                 </>
               )}
             </div>
@@ -606,7 +503,7 @@ export function UploadFoto() {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <Loader2 className="h-10 w-10 animate-spin text-finca-600" />
-        <p className="mt-4 text-sm font-medium text-finca-700">Procesando imagen con IA...</p>
+        <p className="mt-4 text-sm font-medium text-finca-700">Procesando planilla con IA...</p>
         <p className="mt-1 text-xs text-finca-400">Esto puede tomar 10-30 segundos</p>
       </div>
     );
@@ -616,6 +513,7 @@ export function UploadFoto() {
   if (step === "review") {
     const validCount = rows.filter((r) => r.workerId).length;
     const unmatchedCount = rows.filter((r) => !r.workerId).length;
+    const missingActivity = rows.filter((r) => !r.activityId).length;
 
     return (
       <div className="space-y-6">
@@ -634,21 +532,46 @@ export function UploadFoto() {
           </div>
         )}
 
+        {(unresolvedActivities.length > 0 || unresolvedLotes.length > 0) && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="font-medium">Códigos no reconocidos — verifique en la tabla:</p>
+            {unresolvedActivities.length > 0 && (
+              <p className="mt-1">
+                Actividades: <span className="font-mono">{unresolvedActivities.join(", ")}</span>
+              </p>
+            )}
+            {unresolvedLotes.length > 0 && (
+              <p className="mt-1">
+                Lotes: <span className="font-mono">{unresolvedLotes.join(", ")}</span>
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="rounded-lg border border-finca-200 bg-finca-50/50 px-4 py-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-              confidence === "high"
-                ? "bg-emerald-100 text-emerald-700"
-                : confidence === "medium"
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-red-100 text-red-700"
-            }`}>
-              Confianza: {confidence === "high" ? "Alta" : confidence === "medium" ? "Media" : "Baja"}
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                confidence === "high"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : confidence === "medium"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-red-100 text-red-700"
+              }`}
+            >
+              Confianza:{" "}
+              {confidence === "high" ? "Alta" : confidence === "medium" ? "Media" : "Baja"}
             </span>
             {unmatchedCount > 0 && (
               <span className="inline-flex items-center gap-1 text-xs text-amber-600">
                 <AlertTriangle className="h-3 w-3" />
                 {unmatchedCount} trabajador(es) sin coincidencia
+              </span>
+            )}
+            {missingActivity > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+                <AlertTriangle className="h-3 w-3" />
+                {missingActivity} fila(s) sin actividad
               </span>
             )}
           </div>
@@ -712,7 +635,7 @@ export function UploadFoto() {
         {savedCount} registros guardados
       </h3>
       <p className="mt-1 text-sm text-finca-500">
-        Los datos del cuaderno fueron importados exitosamente.
+        Los datos de la planilla fueron importados exitosamente.
       </p>
       <div className="mt-6 flex gap-3">
         <button
@@ -727,8 +650,8 @@ export function UploadFoto() {
           }}
           className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-finca-800"
         >
-          <Camera className="h-4 w-4" />
-          Subir otra foto
+          <FileSpreadsheet className="h-4 w-4" />
+          Subir otra planilla
         </button>
         <button
           onClick={() => router.push("/planilla" as never)}

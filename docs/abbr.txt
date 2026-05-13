@@ -1,0 +1,27 @@
+| name                               |abbr.	|unidades
+| ---------------------------------- |------|----------
+| Corte de Café                      |CC	|
+| Pepena                             |PP 	|
+| Caporal                            |CP 	|
+| Beneficio                          |BE 	|
+| Encargado Beneficio                |EB 	|
+| Muestreo de Suelos                 |MU 	|
+| Repaso Poda                        |RP 	|
+| Chapea y Desbejucar                |CD 	|
+| Fertilización                      |FE 	|
+| Limpia Manual                      |LM 	|
+| Deshije                            |DH 	|
+| Manejo de Sombra                   |MS 	|
+| Herbicida                          |HB 	|
+| Monitoreo de Plagas y Enfermedades |MIP 	|
+| Aplicación de Fungicida            |FG 	|
+| Análisis de Suelos y Foliar        |AN 	|
+| Fertilización Foliar               |FF 	|
+| Enmiendas                          |EM 	|
+| Mantenimiento General              |MG 	|
+| Manejo de Tejido                   |MT 	|
+| Limpia lote                        |LL 	|
+| Trazado para siembra               |TZ 	|
+| Ahoyado                            |AH 	|
+| Siembra                            |SI 	|
+| Trabajos varios Carbón             |CA 	|

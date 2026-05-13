@@ -1,0 +1,74 @@
+Add planilla semanal import + worker resolution flow
+
+NEW: Printed weekly schedule (planilla semanal) format support
+
+Field workers are now using a new printed/digital weekly schedule format
+alongside the handwritten notebook. This commit adds full support for
+uploading, extracting, and importing data from that format.
+
+New files:
+- src/lib/ai/extract-planilla.ts
+  Claude Vision extraction prompt for the printed format. Reads column
+  headers ("lunes, 13 de abril de 2026") as full ISO dates — no month/year
+  input needed. Returns per-worker, per-day entries with raw Lote and
+  Actividad abbreviation values.
+
+- src/app/api/planilla/process-planilla/route.ts
+  POST /api/planilla/process-planilla. Resolves activity abbreviations
+  (docs/abbr.txt: CC, MS, LL, RP, MG …) to Activity DB records, strips
+  pass-number suffixes ("FE 4" → "FE"), resolves lote names
+  case-insensitively against DB slugs and names, and returns enriched rows
+  with resolved IDs ready for the review UI. Per-entry (date|workerId)
+  deduplication matches the notebook flow.
+
+- src/app/(authenticated)/planilla/nueva/upload-planilla.tsx
+  Upload component parallel to upload-foto.tsx. No month/year/activity
+  selectors — everything is extracted from the document. Shares the
+  ReviewTable, CreatePayPeriodWizard, and batch save API with the
+  notebook flow.
+
+- src/app/(authenticated)/planilla/nueva/worker-resolution.tsx
+  New step between AI extraction and the review table. When extracted
+  names have no DB match, shows all unmatched names at once with a
+  checkbox per row (default checked = "Agregar como nueva persona").
+  Unchecking reveals an inline searchable dropdown: fuzzy match candidates
+  (score ≥ 65%) appear first, then all active workers. Progress bar tracks
+  resolved/total. "Continuar" is disabled until every name is resolved.
+  On submit, creates new Worker records via POST /api/workers and returns
+  the complete extractedName → workerId map to the parent. Design rationale
+  documented in docs/ux-worker-resolution.md.
+
+- docs/abbr.txt
+  Reference table of activity abbreviations used in the new format.
+
+- docs/ux-worker-resolution.md
+  Research-backed UX reference for the worker resolution pattern:
+  staged-funnel model, why "create new" is the safer default, batch
+  all-at-once interaction, and visual hierarchy guidelines.
+
+Modified:
+- src/app/(authenticated)/planilla/nueva/page.tsx
+  Added "Planilla Semanal" as a third mode tab (alongside Manual and
+  Cuaderno). Max-width now widens for both foto and planilla modes.
+
+- src/app/(authenticated)/planilla/nueva/upload-foto.tsx
+  Wired the worker-resolution step into the existing notebook photo flow.
+  New step order: processing → worker-resolution (if needed) → no-period
+  (if needed) → review → save. Extracted continueAfterWorkers() to
+  eliminate duplicated review-building logic between the post-resolution
+  and post-period-creation paths.
+
+- src/app/api/planilla/process-foto/route.ts
+  Two fixes carried over from prior session:
+  (1) Switched existingDates (date-level dedup) to existingKeys
+      ("YYYY-MM-DD|workerId"), so re-uploading a page only skips
+      worker+date pairs already saved — not entire dates.
+  (2) Dictionary-learned corrections now override fuzzy matching results.
+
+- src/lib/ai/match-workers.ts
+  Replaced token-count heuristic with per-token Levenshtein similarity
+  scoring. Thresholds tuned against real notebook names:
+    TOKEN_FUZZY_MIN  0.65 — "noami" ↔ "nohemi" passes
+    AUTO_MATCH_MIN   0.70 — minimum score to auto-select
+    UNIQUE_MARGIN    0.15 — gap required vs. runner-up to prevent false
+                            positives when multiple workers share a name

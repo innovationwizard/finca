@@ -1,0 +1,39 @@
+Notebook photo import: auto-extract dates, deduplicate, inline period creation
+
+AI extraction (extract-notebook.ts):
+- Extended ExtractionResult with month and year fields
+- Prompt now reads the handwritten month/year from the notebook's top-left
+  corner and converts it to numeric values; typos like "3026" are corrected
+- Validated against 1-12 / 2020-2040 bounds; falls back to form values if
+  the model omits or garbles the fields
+
+Date construction (upload-foto.tsx, process-foto/route.ts):
+- Dates are now built from AI-extracted month/year, not from the form
+  defaulting to the current calendar month
+- process-foto queries activityRecord for all extracted dates and returns
+  existingDates so the client can filter before showing the review table
+
+Deduplication:
+- Rows whose date is already in the DB are silently skipped during review
+  row construction; a blue banner lists the skipped day numbers
+- Coverage check (getUncoveredDates) handles partial overlap correctly:
+  each entry is checked individually, not by whole-page date ranges
+
+Inline period creation (upload-foto.tsx):
+- When extracted dates are not fully covered by open pay periods, the
+  CreatePayPeriodWizard renders inline — no navigation away from the page
+- Multiple periods can be created in sequence: after each creation the
+  coverage check reruns; if dates still uncovered the wizard remounts
+  (key={createdPeriods.length}) with suggestedStartDate = day after the
+  last created period's end
+- buildReviewRows extracted to module level so both the upload path and
+  the period-creation path share identical logic without stale closures;
+  each row's payPeriodId is assigned to the period that actually covers
+  its date
+
+Other fixes in this branch:
+- clientId now includes row index to prevent intra-batch unique-constraint
+  collisions that caused silent full-transaction rollback
+- Photo upload routes changed from SETTINGS_ROLES to WRITE_ROLES
+- New-period modal wired into planilla page header and empty state
+- Lote card pruning label is DB-driven (sortOrder 5), not hardcoded
