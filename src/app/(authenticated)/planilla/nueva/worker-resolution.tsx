@@ -14,7 +14,7 @@
 // Design rationale: docs/ux-worker-resolution.md
 // =============================================================================
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle, UserPlus, Link, AlertCircle, Loader2 } from "lucide-react";
 
 export type UnmatchedItem = {

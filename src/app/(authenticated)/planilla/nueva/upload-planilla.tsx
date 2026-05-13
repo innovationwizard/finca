@@ -13,6 +13,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   FileSpreadsheet,
   Upload,
@@ -403,7 +404,7 @@ export function UploadPlanilla() {
               className="hidden"
             />
             {preview ? (
-              <img src={preview} alt="Vista previa" className="max-h-64 rounded-lg object-contain" />
+              <Image src={preview} alt="Vista previa" width={400} height={256} className="max-h-64 rounded-lg object-contain" unoptimized />
             ) : (
               <>
                 <FileSpreadsheet className="mb-3 h-10 w-10 text-finca-400" />

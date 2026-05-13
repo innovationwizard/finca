@@ -218,8 +218,6 @@ const NAME_CORRECTIONS: Record<string, string | null> = {
   "villindo hernandez pallozo":       "Wilfrido Hernandez Ralios",
   "wilfredo hernandez rallon":        "Wilfrido Hernandez Ralios",
   "wulfing hernandez palma":          "Wilfrido Hernandez Ralios",
-  // Row 24 — Elderr Eduardo Hernandez Navas
-  "elder eduardo hernandez navas":    "Elderr Eduardo Hernandez Navas",
   // Row 26 — Fernando Adelder Guamush Perez
   "fernando adelbel guamuush perez":  "Fernando Adelder Guamush Perez",
   "fernando adelber guamush perez":   "Fernando Adelder Guamush Perez",
@@ -228,7 +226,6 @@ const NAME_CORRECTIONS: Record<string, string | null> = {
   "jorge luiz marroquin salazar":     "Jorge Luis Marroquin Salazar",
   // Row 29 — Leidy Susana Solano Perez
   "lesly susana solano perez":        "Leidy Susana Solano Perez",
-  "ledy susana solano perez":         "Leidy Susana Solano Perez",
   // Row 31 — Maria Floridalma Alvarez Morales
   "maria flordelma alvarez morales":  "Maria Floridalma Alvarez Morales",
   // Row 36 — Vilson Orlando Garcia Mendez
