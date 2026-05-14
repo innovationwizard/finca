@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     where,
     include: {
       worker: { select: { id: true, fullName: true } },
-      activity: { select: { id: true, name: true, unit: true } },
+      activity: { select: { id: true, name: true, unit: true, description: true } },
       lote: { select: { id: true, name: true } },
     },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     },
     include: {
       worker: { select: { id: true, fullName: true } },
-      activity: { select: { id: true, name: true, unit: true } },
+      activity: { select: { id: true, name: true, unit: true, description: true } },
       lote: { select: { id: true, name: true } },
     },
   });
@@ -165,7 +165,7 @@ export async function PATCH(request: NextRequest) {
     data,
     include: {
       worker: { select: { id: true, fullName: true } },
-      activity: { select: { id: true, name: true, unit: true } },
+      activity: { select: { id: true, name: true, unit: true, description: true } },
       lote: { select: { id: true, name: true } },
     },
   });

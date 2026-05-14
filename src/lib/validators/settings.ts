@@ -32,14 +32,13 @@ export const ACTIVITY_UNITS = [
   { value: "QUINTAL", label: "Quintal (qq)", abbr: "qq" },
   { value: "MANZANA", label: "Manzana (mz)", abbr: "mz" },
   { value: "HECTAREA", label: "Hectárea (ha)", abbr: "ha" },
-  { value: "JORNAL", label: "Jornal", abbr: "jor" },
   { value: "DIA", label: "Día", abbr: "día" },
 ] as const;
 
 export const activityUpdateSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, "El nombre es requerido").max(100),
-  unit: z.enum(["QUINTAL", "MANZANA", "HECTAREA", "JORNAL", "DIA"]),
+  unit: z.enum(["QUINTAL", "MANZANA", "HECTAREA", "DIA"]),
   defaultPrice: z
     .number()
     .min(0, "El precio no puede ser negativo")

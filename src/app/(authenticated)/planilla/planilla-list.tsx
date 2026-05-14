@@ -4,9 +4,9 @@
 // src/app/(authenticated)/planilla/planilla-list.tsx — Records table with edit/delete
 // =============================================================================
 
-import { useState, useMemo, useCallback, useTransition } from "react";
+import { useState, useMemo, useCallback, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Check, X, Loader2, Info } from "lucide-react";
 import { formatGTQ, formatQuantity, formatDateShort } from "@/lib/utils/format";
 
 type Record = {
@@ -18,9 +18,44 @@ type Record = {
   notes: string | null;
   syncedAt: string | null;
   worker: { id: string; fullName: string };
-  activity: { id: string; name: string; unit: string };
+  activity: { id: string; name: string; unit: string; description: string | null };
   lote: { id: string; name: string } | null;
 };
+
+function ActivityCell({ name, description }: { name: string; description: string | null }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  if (!description) return <span>{name}</span>;
+
+  return (
+    <div ref={ref} className="relative inline-flex items-center gap-1">
+      <span>{name}</span>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-finca-400 hover:text-finca-600 focus:outline-none"
+        aria-label="Más información"
+      >
+        <Info size={13} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border border-finca-200 bg-white px-3 py-2 text-xs text-finca-700 shadow-lg">
+          {description}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type FilterState = {
   search: string;
@@ -219,7 +254,9 @@ export function PlanillaList({ records, canWrite }: { records: Record[]; canWrit
                 >
                   <td className="px-4 py-2.5 text-finca-600">{formatDateShort(r.date)}</td>
                   <td className="px-4 py-2.5 font-medium text-finca-900">{r.worker.fullName}</td>
-                  <td className="px-4 py-2.5 text-finca-700">{r.activity.name}</td>
+                  <td className="px-4 py-2.5 text-finca-700">
+                    <ActivityCell name={r.activity.name} description={r.activity.description} />
+                  </td>
                   <td className="px-4 py-2.5 text-finca-500">{r.lote?.name ?? "—"}</td>
 
                   {/* Quantity */}

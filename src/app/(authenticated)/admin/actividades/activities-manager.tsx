@@ -12,7 +12,6 @@ const UNIT_OPTIONS = [
   { value: "QUINTAL", label: "Quintal (qq)" },
   { value: "MANZANA", label: "Manzana (mz)" },
   { value: "HECTAREA", label: "Hectárea (ha)" },
-  { value: "JORNAL", label: "Jornal" },
   { value: "DIA", label: "Día" },
 ] as const;
 
@@ -20,7 +19,6 @@ const UNIT_ABBR: Record<string, string> = {
   QUINTAL: "qq",
   MANZANA: "mz",
   HECTAREA: "ha",
-  JORNAL: "jor",
   DIA: "día",
 };
 

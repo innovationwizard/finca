@@ -20,7 +20,6 @@ export function formatQuantity(qty: number, unit: string): string {
     QUINTAL: "qq",
     MANZANA: "mz",
     HECTAREA: "ha",
-    JORNAL: "jor",
     DIA: "día",
   };
   return `${qty.toLocaleString("es-GT", {

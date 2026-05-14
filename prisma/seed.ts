@@ -112,7 +112,7 @@ async function main() {
     { name: "Corte de Café",       unit: ActivityUnit.QUINTAL,  defaultPrice: 70,  isHarvest: true,  isBeneficio: false, sortOrder: 1  },
     { name: "Pepena",              unit: ActivityUnit.QUINTAL,  defaultPrice: 0,   isHarvest: true,  isBeneficio: false, sortOrder: 2  },
     { name: "Fertilización",       unit: ActivityUnit.HECTAREA, defaultPrice: 150, isHarvest: false, isBeneficio: false, sortOrder: 3  },
-    { name: "Limpia Manual",       unit: ActivityUnit.JORNAL,   defaultPrice: 50,  isHarvest: false, isBeneficio: false, sortOrder: 4  },
+    { name: "Limpia Manual",       unit: ActivityUnit.DIA,      defaultPrice: 50,  isHarvest: false, isBeneficio: false, sortOrder: 4  },
     { name: "Poda",                unit: ActivityUnit.MANZANA,  defaultPrice: 110, isHarvest: false, isBeneficio: false, sortOrder: 5  },
     { name: "Caporal",             unit: ActivityUnit.DIA,      defaultPrice: 100, isHarvest: false, isBeneficio: false, sortOrder: 6  },
     { name: "Beneficio",           unit: ActivityUnit.DIA,      defaultPrice: 100, isHarvest: false, isBeneficio: true,  sortOrder: 7  },

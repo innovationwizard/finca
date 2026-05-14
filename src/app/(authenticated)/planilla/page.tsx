@@ -50,7 +50,7 @@ export default async function PlanillaPage() {
         },
     include: {
       worker: { select: { id: true, fullName: true } },
-      activity: { select: { id: true, name: true, unit: true } },
+      activity: { select: { id: true, name: true, unit: true, description: true } },
       lote: { select: { id: true, name: true } },
     },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],

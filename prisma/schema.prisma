@@ -141,8 +141,7 @@ enum ActivityUnit {
   QUINTAL // qq
   MANZANA // mz
   HECTAREA // ha
-  JORNAL // day-labor (task-based day)
-  DIA // fixed daily rate
+  DIA // día trabajado
 }
 
 model Activity {
@@ -154,6 +153,7 @@ model Activity {
   isBeneficio  Boolean      @default(false) @map("is_beneficio")
   sortOrder    Int          @default(0) @map("sort_order")
   isActive     Boolean      @default(true) @map("is_active")
+  description  String?      @map("description")
   minQtyAlert  Decimal?     @map("min_qty_alert") @db.Decimal(10, 2)
   maxQtyAlert  Decimal?     @map("max_qty_alert") @db.Decimal(10, 2)
   createdAt    DateTime     @default(now()) @map("created_at")

@@ -40,7 +40,7 @@ type CachedImage = {
 const ACTIVITY_ABBR: Record<string, string> = {
   CC: "Corte de Café",   PP: "Pepena",             CP: "Caporal",
   BE: "Beneficio",       EB: "Encargado Beneficio", MU: "Muestreo de Suelos",
-  RP: "Repaso Poda",     CD: "Chapea y Desbejucar", FE: "Fertilización",
+  RP: "Repaso Poda",     CD: "Chapea y Desbejucar", FE: "Fertilización 1.5 oz",
   LM: "Limpia Manual",   DH: "Deshije",             MS: "Manejo de Sombra",
   HB: "Herbicida",       MIP: "Monitoreo de Plagas y Enfermedades",
   FG: "Aplicación de Fungicida",
@@ -61,8 +61,8 @@ function resolveAbbrToName(raw: string): string {
 }
 
 // ── Canonical name corrections — maps OCR variants to confirmed spellings ─────
-// Keys are normalize()'d. Value null = hallucinated name, discard the row.
-const NAME_CORRECTIONS: Record<string, string | null> = {
+// Keys are normalize()'d.
+const NAME_CORRECTIONS: Record<string, string> = {
   // Row 3 — Henry Randolfo
   "henry fandolfo hernandez solano":  "Henry Randolfo Hernandez Solano",
   "henry pandolfo hernandez solano":  "Henry Randolfo Hernandez Solano",
@@ -93,8 +93,6 @@ const NAME_CORRECTIONS: Record<string, string | null> = {
   "elmer alexander hernandez flattoni": "Elmer Alexander Hernandez Raliois",
   "elmer alexander hernandez raliceo":  "Elmer Alexander Hernandez Raliois",
   "elmer alexander hernandez palicio":  "Elmer Alexander Hernandez Raliois",
-  // Hallucination — never in any image
-  "daniel alexander hernandez alvarado": null,
   // Row 16 — Axel Amildo
   "axel amleto alvarez morales":      "Axel Amildo Alvarez Morales",
   "jose amilcar alvarez morales":     "Axel Amildo Alvarez Morales",
@@ -265,9 +263,9 @@ const NAME_CORRECTIONS: Record<string, string | null> = {
   "rolando marfrlin marroquin salazar": "Maria Marleni Marroquin Salazar",
 };
 
-function correctWorkerName(raw: string): string | null {
+function correctWorkerName(raw: string): string {
   const key = normalize(raw);
-  return key in NAME_CORRECTIONS ? NAME_CORRECTIONS[key] : raw;
+  return NAME_CORRECTIONS[key] ?? raw;
 }
 
 // ── Lote aliases — maps known planilla values to DB slugs ─────────────────────
@@ -408,10 +406,6 @@ async function main() {
 
     for (const row of imageData.rows) {
       const canonicalName = correctWorkerName(row.workerName);
-      if (canonicalName === null) {
-        console.log(`  → Discarding hallucinated name: "${row.workerName}"`);
-        continue;
-      }
       for (const entry of row.entries) {
         rawEntries.push({
           file,
