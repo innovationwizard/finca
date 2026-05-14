@@ -59,6 +59,7 @@ function ActivityCell({ name, description }: { name: string; description: string
 
 type FilterState = {
   search: string;
+  worker: string;
   date: string;
   lote: string;
 };
@@ -72,7 +73,7 @@ type EditState = {
 export function PlanillaList({ records, canWrite }: { records: Record[]; canWrite: boolean }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [filter, setFilter] = useState<FilterState>({ search: "", date: "", lote: "" });
+  const [filter, setFilter] = useState<FilterState>({ search: "", worker: "", date: "", lote: "" });
   const [editing, setEditing] = useState<EditState | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +88,10 @@ export function PlanillaList({ records, canWrite }: { records: Record[]; canWrit
   // Unique dates and lotes for filter dropdowns
   const uniqueDates = useMemo(
     () => [...new Set(records.map((r) => r.date))].sort().reverse(),
+    [records],
+  );
+  const uniqueWorkers = useMemo(
+    () => [...new Set(records.map((r) => r.worker.fullName))].sort(),
     [records],
   );
   const uniqueLotes = useMemo(
@@ -104,6 +109,7 @@ export function PlanillaList({ records, canWrite }: { records: Record[]; canWrit
         )
           return false;
       }
+      if (filter.worker && r.worker.fullName !== filter.worker) return false;
       if (filter.date && r.date !== filter.date) return false;
       if (filter.lote && r.lote?.name !== filter.lote) return false;
       return true;
@@ -191,6 +197,16 @@ export function PlanillaList({ records, canWrite }: { records: Record[]; canWrit
           className="w-full rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm placeholder:text-finca-300 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400 sm:w-64"
         />
         <select
+          value={filter.worker}
+          onChange={(e) => setFilter({ ...filter, worker: e.target.value })}
+          className="rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-700 focus:border-earth-400 focus:outline-none"
+        >
+          <option value="">Todos los trabajadores</option>
+          {uniqueWorkers.map((w) => (
+            <option key={w} value={w}>{w}</option>
+          ))}
+        </select>
+        <select
           value={filter.date}
           onChange={(e) => setFilter({ ...filter, date: e.target.value })}
           className="rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-700 focus:border-earth-400 focus:outline-none"
@@ -210,9 +226,9 @@ export function PlanillaList({ records, canWrite }: { records: Record[]; canWrit
             <option key={l} value={l}>{l}</option>
           ))}
         </select>
-        {(filter.search || filter.date || filter.lote) && (
+        {(filter.search || filter.worker || filter.date || filter.lote) && (
           <button
-            onClick={() => setFilter({ search: "", date: "", lote: "" })}
+            onClick={() => setFilter({ search: "", worker: "", date: "", lote: "" })}
             className="rounded-lg border border-finca-200 bg-white px-3 py-2 text-xs font-medium text-finca-500 hover:bg-finca-50"
           >
             Limpiar filtros
