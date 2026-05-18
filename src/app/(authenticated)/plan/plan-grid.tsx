@@ -59,6 +59,12 @@ function cellKey(activityId: string, month: number, week: number) {
   return `${activityId}_${month}_${week}`;
 }
 
+// Round to max 2 decimal places, strip trailing zeros.
+// Prevents floating-point artifacts (e.g. 99.75000000000003 → "99.75").
+function fmtJ(n: number): string {
+  return parseFloat(n.toFixed(2)).toString();
+}
+
 // Over-execution (actual >= planned) is good (green).
 // Under-execution uses deficit ratio for RAG coloring.
 function semaforoClass(planned: number, actual: number): string {
@@ -255,14 +261,14 @@ export function PlanGrid({
                           <div className="flex flex-col items-center gap-px py-0.5 leading-none">
                             <span className="tabular-nums">
                               {planned > 0
-                                ? planned
+                                ? fmtJ(planned)
                                 : actual > 0
                                   ? <span className="text-gray-300">—</span>
                                   : ""}
                             </span>
                             {actual > 0 && (
                               <span className="text-[10px] tabular-nums leading-none text-gray-500">
-                                {actual}
+                                {fmtJ(actual)}
                               </span>
                             )}
                           </div>
@@ -274,10 +280,10 @@ export function PlanGrid({
                 {/* Total column: plan (top) + actual (bottom) */}
                 <td className="border-l border-gray-300 px-2 py-1.5 text-center font-semibold tabular-nums text-finca-900">
                   <div className="flex flex-col items-center gap-px leading-none">
-                    <span>{rowTotal > 0 ? rowTotal : ""}</span>
+                    <span>{rowTotal > 0 ? fmtJ(rowTotal) : ""}</span>
                     {rowActualTotal > 0 && (
                       <span className="text-[10px] font-normal text-gray-500">
-                        {rowActualTotal}
+                        {fmtJ(rowActualTotal)}
                       </span>
                     )}
                   </div>
@@ -328,11 +334,11 @@ function EditableCell({
   onSave: (val: number) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(value || ""));
+  const [draft, setDraft] = useState(value ? fmtJ(value) : "");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setDraft(String(value || ""));
+    setDraft(value ? fmtJ(value) : "");
   }, [value]);
 
   useEffect(() => {
@@ -380,7 +386,7 @@ function EditableCell({
         />
         {actualValue > 0 && (
           <span className="text-[10px] tabular-nums leading-none text-gray-400">
-            R:{actualValue}
+            R:{fmtJ(actualValue)}
           </span>
         )}
       </div>
@@ -395,11 +401,11 @@ function EditableCell({
       title="Clic para editar"
     >
       <span className="min-w-[2rem] tabular-nums">
-        {value > 0 ? value : <span className="text-gray-300">–</span>}
+        {value > 0 ? fmtJ(value) : <span className="text-gray-300">–</span>}
       </span>
       {actualValue > 0 && (
         <span className="text-[10px] tabular-nums leading-none text-gray-500">
-          {actualValue}
+          {fmtJ(actualValue)}
         </span>
       )}
     </button>
