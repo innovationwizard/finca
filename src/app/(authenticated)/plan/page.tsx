@@ -17,6 +17,8 @@ import {
 } from "@/lib/utils/agricultural-year";
 import { PlanGrid } from "./plan-grid";
 import { YearSelector, LoteSelector } from "./year-lote-selector";
+import { PlanSummaryTable } from "./plan-summary-table";
+import { PlanKpiCards } from "./plan-kpi-cards";
 
 export const metadata = { title: "Plan Anual" };
 
@@ -99,10 +101,58 @@ export default async function PlanPage({ searchParams }: Props) {
     };
   });
 
+  // ---------------------------------------------------------------------------
+  // Per-activity aggregates for the summary table
+  // ---------------------------------------------------------------------------
+  const planByActivity: Record<string, number> = {};
+  const actualByActivity: Record<string, number> = {};
+
+  for (const e of planEntries) {
+    planByActivity[e.activityId] =
+      (planByActivity[e.activityId] ?? 0) + Number(e.plannedJornales);
+  }
+  for (const e of actualData) {
+    actualByActivity[e.activityId] =
+      (actualByActivity[e.activityId] ?? 0) + e.actualJornales;
+  }
+
+  const totalPlanned = Object.values(planByActivity).reduce((s, v) => s + v, 0);
+  const totalActual = Object.values(actualByActivity).reduce((s, v) => s + v, 0);
+
+  // ---------------------------------------------------------------------------
+  // YTD calculations for KPI cards
+  // Plan YTD: only planned jornales for weeks that have already started.
+  // - Past year: all weeks have elapsed → planYtd = full year total
+  // - Current year: filter by today's agricultural month/week position
+  // - Future year: no weeks have started → planYtd = 0
+  // Actual YTD: all recorded jornales (records can only be past dates)
+  // ---------------------------------------------------------------------------
+  let planYtd: number;
+
+  if (selectedYear < currentYear) {
+    planYtd = planEntries.reduce((sum, e) => sum + Number(e.plannedJornales), 0);
+  } else if (selectedYear > currentYear) {
+    planYtd = 0;
+  } else {
+    const today = new Date();
+    const todayAgMonth = getAgriculturalMonth(today);
+    const todayWeek = getWeekInMonth(today);
+    planYtd = planEntries.reduce((sum, e) => {
+      const elapsed =
+        e.month < todayAgMonth ||
+        (e.month === todayAgMonth && e.week <= todayWeek);
+      return elapsed ? sum + Number(e.plannedJornales) : sum;
+    }, 0);
+  }
+
+  const actualYtd = actualData.reduce((sum, e) => sum + e.actualJornales, 0);
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   const months = getAgriculturalMonths(selectedYear);
   const canEdit = WRITE_ROLES.includes(user.role);
   const loteIds = lotes.map((l) => l.id);
-
   const selectedLote = selectedLoteId
     ? lotes.find((l) => l.id === selectedLoteId)
     : null;
@@ -136,6 +186,22 @@ export default async function PlanPage({ searchParams }: Props) {
           selectedYear={selectedYear}
         />
       </div>
+
+      {/* KPI Cards */}
+      <PlanKpiCards planYtd={planYtd} actualYtd={actualYtd} />
+
+      {/* Summary table: Plan vs Ejecutado per activity */}
+      {activities.length > 0 && (
+        <div className="mb-6">
+          <PlanSummaryTable
+            activities={activities}
+            planByActivity={planByActivity}
+            actualByActivity={actualByActivity}
+            totalPlanned={totalPlanned}
+            totalActual={totalActual}
+          />
+        </div>
+      )}
 
       {/* Lote detail links */}
       {!selectedLoteId && lotes.length > 0 && (

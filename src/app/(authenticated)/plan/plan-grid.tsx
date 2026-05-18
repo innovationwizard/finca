@@ -2,11 +2,12 @@
 
 // =============================================================================
 // src/app/(authenticated)/plan/plan-grid.tsx — Editable plan grid
-// Inline editing with save-on-blur and semáforo (plan vs actual) indicators
+// Inline editing with save-on-blur and semáforo (plan vs actual) indicators.
+// Each cell shows planned value (top) and actual/executed value (bottom).
 // =============================================================================
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Save, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,12 +59,15 @@ function cellKey(activityId: string, month: number, week: number) {
   return `${activityId}_${month}_${week}`;
 }
 
+// Over-execution (actual >= planned) is good (green).
+// Under-execution uses deficit ratio for RAG coloring.
 function semaforoClass(planned: number, actual: number): string {
   if (planned === 0 && actual === 0) return "";
   if (planned === 0 && actual > 0) return "bg-yellow-100 text-yellow-800";
-  const deviation = Math.abs(actual - planned) / planned;
-  if (deviation <= 0.2) return "bg-green-100 text-green-800";
-  if (deviation <= 0.5) return "bg-yellow-100 text-yellow-800";
+  if (actual >= planned) return "bg-green-100 text-green-800";
+  const deficit = (planned - actual) / planned;
+  if (deficit <= 0.2) return "bg-green-100 text-green-800";
+  if (deficit <= 0.5) return "bg-yellow-100 text-yellow-800";
   return "bg-red-100 text-red-800";
 }
 
@@ -120,8 +124,6 @@ export function PlanGrid({
       setSaving(k);
       setError(null);
 
-      // Determine target loteId: if single lote view, use that lote
-      // For GENERAL view with a single lote in loteIds, use that one
       const targetLoteId = loteId ?? loteIds[0];
       if (!targetLoteId) {
         setError("No se puede guardar sin lote específico");
@@ -148,7 +150,6 @@ export function PlanGrid({
           throw new Error(data.error ?? "Error al guardar");
         }
 
-        // Update the aggregated map
         setPlanMap((prev) => ({ ...prev, [k]: value }));
         perLotePlanRef.current[`${targetLoteId}_${activityId}_${month}_${week}`] = value;
       } catch (err) {
@@ -160,7 +161,6 @@ export function PlanGrid({
     [agriculturalYear, loteId, loteIds],
   );
 
-  // Column count: 48 weeks + 1 activity label + 1 total
   const weeks = [1, 2, 3, 4] as const;
 
   return (
@@ -214,6 +214,7 @@ export function PlanGrid({
         <tbody>
           {activities.map((act, rowIdx) => {
             let rowTotal = 0;
+            let rowActualTotal = 0;
             return (
               <tr
                 key={act.id}
@@ -232,6 +233,7 @@ export function PlanGrid({
                     const planned = planMap[k] ?? 0;
                     const actual = actualMap[k] ?? 0;
                     rowTotal += planned;
+                    rowActualTotal += actual;
                     const semaforo = semaforoClass(planned, actual);
                     const isSaving = saving === k;
 
@@ -243,25 +245,42 @@ export function PlanGrid({
                         {canEdit && loteId ? (
                           <EditableCell
                             value={planned}
+                            actualValue={actual}
                             isSaving={isSaving}
                             onSave={(val) =>
                               saveCell(act.id, m.agMonth, w, val)
                             }
                           />
                         ) : (
-                          <span
-                            className="inline-block min-w-[2rem] tabular-nums"
-                            title={`Plan: ${planned} | Real: ${actual}`}
-                          >
-                            {planned > 0 ? planned : ""}
-                          </span>
+                          <div className="flex flex-col items-center gap-px py-0.5 leading-none">
+                            <span className="tabular-nums">
+                              {planned > 0
+                                ? planned
+                                : actual > 0
+                                  ? <span className="text-gray-300">—</span>
+                                  : ""}
+                            </span>
+                            {actual > 0 && (
+                              <span className="text-[10px] tabular-nums leading-none text-gray-500">
+                                {actual}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
                     );
                   }),
                 )}
+                {/* Total column: plan (top) + actual (bottom) */}
                 <td className="border-l border-gray-300 px-2 py-1.5 text-center font-semibold tabular-nums text-finca-900">
-                  {rowTotal > 0 ? rowTotal : ""}
+                  <div className="flex flex-col items-center gap-px leading-none">
+                    <span>{rowTotal > 0 ? rowTotal : ""}</span>
+                    {rowActualTotal > 0 && (
+                      <span className="text-[10px] font-normal text-gray-500">
+                        {rowActualTotal}
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             );
@@ -270,19 +289,23 @@ export function PlanGrid({
       </table>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-gray-600">
-        <span className="font-medium">Semáforo (plan vs real):</span>
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-600">
+        <span className="font-medium">Semáforo (plan vs ejecutado):</span>
         <span className="inline-flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded bg-green-200" />
-          ≤ 20% desviación
+          ≤ 20% déficit o sobre-plan
         </span>
         <span className="inline-flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded bg-yellow-200" />
-          20–50% desviación
+          20–50% déficit
         </span>
         <span className="inline-flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded bg-red-200" />
-          &gt; 50% desviación
+          &gt; 50% déficit
+        </span>
+        <span className="ml-2 border-l border-gray-300 pl-4">
+          Celda: <strong>número superior</strong> = plan ·{" "}
+          <strong>número inferior</strong> = ejecutado
         </span>
       </div>
     </div>
@@ -290,15 +313,17 @@ export function PlanGrid({
 }
 
 // ---------------------------------------------------------------------------
-// Editable cell — save on blur
+// Editable cell — save on blur, shows actual as reference below the input
 // ---------------------------------------------------------------------------
 
 function EditableCell({
   value,
+  actualValue,
   isSaving,
   onSave,
 }: {
   value: number;
+  actualValue: number;
   isSaving: boolean;
   onSave: (val: number) => void;
 }) {
@@ -327,7 +352,7 @@ function EditableCell({
 
   if (isSaving) {
     return (
-      <span className="flex items-center justify-center">
+      <span className="flex items-center justify-center py-0.5">
         <Loader2 className="h-3 w-3 animate-spin text-finca-600" />
       </span>
     );
@@ -335,48 +360,48 @@ function EditableCell({
 
   if (editing) {
     return (
-      <input
-        ref={inputRef}
-        type="number"
-        min={0}
-        step={0.5}
-        className="w-full min-w-[2.5rem] rounded border border-finca-300 px-1 py-0.5 text-center text-xs tabular-nums focus:border-earth-500 focus:outline-none focus:ring-1 focus:ring-earth-500"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") {
-            setDraft(String(value || ""));
-            setEditing(false);
-          }
-        }}
-      />
+      <div className="flex flex-col items-center gap-px py-0.5">
+        <input
+          ref={inputRef}
+          type="number"
+          min={0}
+          step={0.5}
+          className="w-full min-w-[2.5rem] rounded border border-finca-300 px-1 py-0.5 text-center text-xs tabular-nums focus:border-earth-500 focus:outline-none focus:ring-1 focus:ring-earth-500"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") {
+              setDraft(String(value || ""));
+              setEditing(false);
+            }
+          }}
+        />
+        {actualValue > 0 && (
+          <span className="text-[10px] tabular-nums leading-none text-gray-400">
+            R:{actualValue}
+          </span>
+        )}
+      </div>
     );
   }
 
   return (
     <button
       type="button"
-      className="w-full min-w-[2rem] cursor-pointer rounded px-1 py-0.5 tabular-nums hover:bg-earth-100"
+      className="flex w-full flex-col items-center gap-px rounded px-1 py-0.5 hover:bg-earth-100"
       onClick={() => setEditing(true)}
       title="Clic para editar"
     >
-      {value > 0 ? value : <span className="text-gray-300">–</span>}
+      <span className="min-w-[2rem] tabular-nums">
+        {value > 0 ? value : <span className="text-gray-300">–</span>}
+      </span>
+      {actualValue > 0 && (
+        <span className="text-[10px] tabular-nums leading-none text-gray-500">
+          {actualValue}
+        </span>
+      )}
     </button>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Saving indicator (unused export kept for potential reuse)
-// ---------------------------------------------------------------------------
-
-export function SaveIndicator({ saving }: { saving: boolean }) {
-  if (!saving) return null;
-  return (
-    <span className="inline-flex items-center gap-1 text-xs text-finca-600">
-      <Save className="h-3 w-3" />
-      Guardando...
-    </span>
   );
 }

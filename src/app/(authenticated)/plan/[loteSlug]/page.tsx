@@ -1,6 +1,6 @@
 // =============================================================================
 // src/app/(authenticated)/plan/[loteSlug]/page.tsx — Single-lote plan detail
-// Plan vs Actual side by side, total jornales per activity
+// Plan vs Ejecutado summary table + detailed week-by-week grid
 // =============================================================================
 
 import Link from "next/link";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/utils/agricultural-year";
 import { PlanGrid } from "../plan-grid";
 import { YearSelector } from "../year-lote-selector";
+import { PlanSummaryTable } from "../plan-summary-table";
 
 export async function generateMetadata({
   params,
@@ -164,102 +165,15 @@ export default async function LotePlanPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      {/* Summary table: Plan vs Actual per activity */}
-      <div className="mb-6 overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-200 bg-finca-50">
-              <th className="px-4 py-2 text-left font-medium text-finca-800">
-                Actividad
-              </th>
-              <th className="px-4 py-2 text-right font-medium text-finca-800">
-                Plan (jornales)
-              </th>
-              <th className="px-4 py-2 text-right font-medium text-finca-800">
-                Real (jornales)
-              </th>
-              <th className="px-4 py-2 text-right font-medium text-finca-800">
-                Diferencia
-              </th>
-              <th className="px-4 py-2 text-center font-medium text-finca-800">
-                Estado
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {activities.map((act) => {
-              const planned = planByActivity[act.id] ?? 0;
-              const actual = actualByActivity[act.id] ?? 0;
-              const diff = actual - planned;
-              const deviation =
-                planned > 0 ? Math.abs(diff) / planned : actual > 0 ? 1 : 0;
-
-              let statusColor = "bg-gray-100 text-gray-500";
-              let statusLabel = "Sin datos";
-              if (planned > 0 || actual > 0) {
-                if (deviation <= 0.2) {
-                  statusColor = "bg-green-100 text-green-800";
-                  statusLabel = "En rango";
-                } else if (deviation <= 0.5) {
-                  statusColor = "bg-yellow-100 text-yellow-800";
-                  statusLabel = "Desviación";
-                } else {
-                  statusColor = "bg-red-100 text-red-800";
-                  statusLabel = "Alerta";
-                }
-              }
-
-              if (planned === 0 && actual === 0) return null;
-
-              return (
-                <tr
-                  key={act.id}
-                  className="border-b border-gray-100 last:border-0"
-                >
-                  <td className="px-4 py-2 font-medium text-finca-900">
-                    {act.name}
-                  </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {planned.toFixed(1)}
-                  </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {actual.toFixed(1)}
-                  </td>
-                  <td
-                    className={`px-4 py-2 text-right tabular-nums ${
-                      diff > 0 ? "text-red-600" : diff < 0 ? "text-green-600" : ""
-                    }`}
-                  >
-                    {diff > 0 ? "+" : ""}
-                    {diff.toFixed(1)}
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusColor}`}
-                    >
-                      {statusLabel}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="border-t border-gray-300 bg-finca-50 font-semibold">
-              <td className="px-4 py-2 text-finca-900">Total</td>
-              <td className="px-4 py-2 text-right tabular-nums">
-                {totalPlanned.toFixed(1)}
-              </td>
-              <td className="px-4 py-2 text-right tabular-nums">
-                {totalActual.toFixed(1)}
-              </td>
-              <td className="px-4 py-2 text-right tabular-nums">
-                {(totalActual - totalPlanned).toFixed(1)}
-              </td>
-              <td />
-            </tr>
-          </tfoot>
-        </table>
+      {/* Summary table: Plan vs Ejecutado per activity */}
+      <div className="mb-6">
+        <PlanSummaryTable
+          activities={activities}
+          planByActivity={planByActivity}
+          actualByActivity={actualByActivity}
+          totalPlanned={totalPlanned}
+          totalActual={totalActual}
+        />
       </div>
 
       {/* Detailed week-by-week grid */}
