@@ -20,6 +20,7 @@ import {
   Wrench,
   KeyRound,
   Banknote,
+  Merge,
   type LucideIcon,
 } from "lucide-react";
 import { SyncIndicator } from "./sync-indicator";
@@ -54,6 +55,7 @@ const NAV_ITEMS: NavItem[] = [
 const ADMIN_ITEMS: NavItem[] = [
   { href: "/admin/lotes", label: "Config. Lotes", icon: Settings },
   { href: "/admin/actividades", label: "Config. Actividades", icon: Wrench },
+  { href: "/admin/trabajadores-duplicados", label: "Trabajadores Duplicados", icon: Merge },
   { href: "/admin/usuarios", label: "Usuarios", icon: KeyRound, roles: ["MASTER"] },
 ];
 

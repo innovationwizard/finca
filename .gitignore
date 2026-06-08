@@ -43,6 +43,9 @@ prisma/migrations/dev/
 *.csv
 WhatsApp Image*
 
+# PII artifacts (real worker data — never commit)
+revision-trabajadores.html
+
 # PWA
 public/sw.js
 public/sw.js.map
