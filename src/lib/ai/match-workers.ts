@@ -81,29 +81,44 @@ export function matchWorkerName(
     return { exactMatch: exact, candidates: [] };
   }
 
-  // 2. Per-token fuzzy scoring
+  // 2. Per-token fuzzy scoring — tolerant of EXTRA tokens on either side.
+  //
+  // Names rarely line up token-for-token: the source may carry an extra surname
+  // the DB record lacks ("Gidalberto Solano Arenas" vs "Gildaberto Solano"), or
+  // the DB record may be longer than a short handwritten name ("Henry Hernandez"
+  // vs "Henry Randolfo Hernandez Solano"). A worker is a candidate when ONE name
+  // is a fuzzy token-subset of the other (every token of the shorter side has a
+  // strong match in the longer side). Requiring ≥2 shared tokens (or all, for a
+  // one-token name) keeps a lone shared surname from matching everyone. The
+  // AUTO_MATCH_MIN + UNIQUE_MARGIN gating below still guards against ambiguity.
   const scored: { worker: WorkerRecord; score: number }[] = [];
+  if (tokensExtracted.length === 0) return { exactMatch: null, candidates: [] };
 
   for (const w of workers) {
     const tokensWorker = tokenize(w.fullName);
-    let totalScore = 0;
-    let allMatched = true;
+    if (tokensWorker.length === 0) continue;
 
-    for (const te of tokensExtracted) {
-      let bestForToken = 0;
-      for (const tw of tokensWorker) {
-        const sim = tokenSimilarity(te, tw);
-        if (sim > bestForToken) bestForToken = sim;
-      }
-      if (bestForToken < TOKEN_FUZZY_MIN) {
-        allMatched = false;
-        break;
-      }
-      totalScore += bestForToken;
-    }
+    const fwd = tokensExtracted.map((te) =>
+      Math.max(0, ...tokensWorker.map((tw) => tokenSimilarity(te, tw))),
+    );
+    const bwd = tokensWorker.map((tw) =>
+      Math.max(0, ...tokensExtracted.map((te) => tokenSimilarity(te, tw))),
+    );
 
-    if (!allMatched) continue;
-    scored.push({ worker: w, score: totalScore / tokensExtracted.length });
+    const matchedFwd = fwd.filter((s) => s >= TOKEN_FUZZY_MIN).length;
+    const matchedBwd = bwd.filter((s) => s >= TOKEN_FUZZY_MIN).length;
+    const extractedCovered = matchedFwd === tokensExtracted.length;
+    const dbCovered = matchedBwd === tokensWorker.length;
+    if (!extractedCovered && !dbCovered) continue;
+
+    const shared = Math.min(matchedFwd, matchedBwd);
+    if (shared < Math.min(2, tokensExtracted.length, tokensWorker.length)) continue;
+
+    // Score over the fully-covered (shorter) side's matched similarities, so an
+    // extra unmatched surname neither blocks nor dilutes the match.
+    const sims = dbCovered ? bwd : fwd;
+    const matched = sims.filter((s) => s >= TOKEN_FUZZY_MIN);
+    scored.push({ worker: w, score: matched.reduce((a, b) => a + b, 0) / matched.length });
   }
 
   scored.sort((a, b) => b.score - a.score);
