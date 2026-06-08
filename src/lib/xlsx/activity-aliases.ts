@@ -26,13 +26,22 @@ export function normalizeText(s: string): string {
     .trim();
 }
 
-/** Order-independent, stop-word-stripped token signature. */
-export function tokenSetKey(s: string): string {
+/** Stop-word-stripped token list (order preserved). */
+export function tokenArray(s: string): string[] {
   return normalizeText(s)
     .split(" ")
-    .filter((t) => t && !STOPWORDS.has(t))
-    .sort()
-    .join(" ");
+    .filter((t) => t && !STOPWORDS.has(t));
+}
+
+/** Order-independent, stop-word-stripped token signature. */
+export function tokenSetKey(s: string): string {
+  return [...tokenArray(s)].sort().join(" ");
+}
+
+function isSubset(a: Set<string>, b: Set<string>): boolean {
+  if (a.size === 0) return false;
+  for (const t of a) if (!b.has(t)) return false;
+  return true;
 }
 
 // Explicit fallbacks for variants that token-sets alone cannot resolve.
@@ -57,6 +66,7 @@ export type ActivityResolver = (raw: string) => ActivityRef | null;
 export function buildActivityResolver(activities: ActivityRef[]): ActivityResolver {
   const byNorm = new Map<string, ActivityRef>();
   const byTokenSet = new Map<string, ActivityRef | null>(); // null = ambiguous
+  const tokenized = activities.map((a) => ({ a, toks: new Set(tokenArray(a.name)) }));
 
   for (const a of activities) {
     byNorm.set(normalizeText(a.name), a);
@@ -79,6 +89,19 @@ export function buildActivityResolver(activities: ActivityRef[]): ActivityResolv
     if (aliasName) {
       const aliased = byNorm.get(normalizeText(aliasName));
       if (aliased) return aliased;
+    }
+
+    // Token-subset, but ONLY when it points to a single catalog entry.
+    // "CARBON" ⊆ "Trabajos varios Carbón" → unique → match.
+    // "FERTILIZACION" ⊆ {1.5 oz, 2 oz, Foliar} → 3 hits → ambiguous → no match
+    // (stays unresolved so the user's resolution tree decides, once).
+    const rawSet = new Set(tokenArray(trimmed));
+    if (rawSet.size > 0) {
+      const hits = new Set<ActivityRef>();
+      for (const { a, toks } of tokenized) {
+        if (isSubset(rawSet, toks) || isSubset(toks, rawSet)) hits.add(a);
+      }
+      if (hits.size === 1) return [...hits][0];
     }
 
     return null;

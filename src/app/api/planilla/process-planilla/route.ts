@@ -15,9 +15,10 @@ import { apiRequireRole, WRITE_ROLES } from "@/lib/auth/guards";
 import { createServiceClient } from "@/lib/supabase/service";
 import { extractPlanillaData, type PlanillaExtractionResult } from "@/lib/ai/extract-planilla";
 import { extractPlanillaFromXlsx } from "@/lib/xlsx/extract-planilla-xlsx";
-import { buildActivityResolver } from "@/lib/xlsx/activity-aliases";
+import { buildActivityResolver, tokenArray } from "@/lib/xlsx/activity-aliases";
 import { resolveActivityPrice } from "@/lib/pricing/resolve-price";
 import { toPriceSchedule } from "@/lib/pricing/activity-prices";
+import { NO_LOTE_SENTINEL } from "@/app/api/planilla/resolve-code/route";
 import { matchAllWorkers } from "@/lib/ai/match-workers";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
@@ -170,6 +171,34 @@ export async function POST(request: NextRequest) {
     const extractedNames = extraction.rows.map((r) => r.workerName);
     const workerMatches = matchAllWorkers(extractedNames, workers);
 
+    // 4b. Load LEARNED code mappings (from prior "¿existe o nuevo?" resolutions)
+    //     so a code resolved once auto-resolves on every future import.
+    const dictRows = await prisma.notebookDictionary.findMany({
+      where: { category: { in: ["activity", "lote"] } },
+      select: { category: true, handwritten: true, canonical: true, referenceId: true },
+    });
+    const actById = new Map(activities.map((a) => [a.id, a]));
+    const loteById = new Map(lotes.map((l) => [l.id, l]));
+    const learnedActivity = new Map<string, (typeof activities)[number]>();
+    const learnedLote = new Map<string, (typeof lotes)[number]>();
+    const learnedLoteNone = new Set<string>(); // codes intentionally meaning "no lote"
+    for (const d of dictRows) {
+      const key = normalize(d.handwritten);
+      if (d.category === "activity") {
+        const a =
+          (d.referenceId && actById.get(d.referenceId)) ||
+          activities.find((x) => normalize(x.name) === normalize(d.canonical));
+        if (a) learnedActivity.set(key, a);
+      } else if (d.canonical === NO_LOTE_SENTINEL) {
+        learnedLoteNone.add(key);
+      } else {
+        const l =
+          (d.referenceId && loteById.get(d.referenceId)) ||
+          lotes.find((x) => normalize(x.name) === normalize(d.canonical));
+        if (l) learnedLote.set(key, l);
+      }
+    }
+
     // 5. Activity resolver — exact name, then stop-word-stripped token set, then
     //    explicit aliases. Resolves the .xlsx full-name variants
     //    ("encargado de beneficio" → "Encargado Beneficio") and the photo path's
@@ -183,12 +212,27 @@ export async function POST(request: NextRequest) {
 
     // 6. Build lote resolution map: try name, slug, and slug-without-hyphens
     const loteByKey = new Map<string, typeof lotes[number]>();
+    const loteTokenized = lotes.map((l) => ({ l, toks: new Set(tokenArray(l.name)) }));
     for (const l of lotes) {
       loteByKey.set(normalize(l.name), l);
       loteByKey.set(normalize(l.slug), l);
       loteByKey.set(normalize(l.slug).replace(/-/g, ""), l);
       // Also map common shorthand variants (e.g. "cruz2" → Cruz 2)
       loteByKey.set(normalize(l.name).replace(/\s/g, ""), l);
+    }
+
+    // Token-subset fallback, only when it points to a single active lote:
+    // "CANOA" → CANOA 1 (only one active canoa), "SAN EMILIANO" → SAN EMILIANO CRUZ.
+    function resolveLoteBySubset(raw: string): typeof lotes[number] | null {
+      const rawSet = new Set(tokenArray(raw));
+      if (rawSet.size === 0) return null;
+      const hits = new Set<typeof lotes[number]>();
+      for (const { l, toks } of loteTokenized) {
+        const subset =
+          [...rawSet].every((t) => toks.has(t)) || [...toks].every((t) => rawSet.has(t));
+        if (subset && toks.size > 0) hits.add(l);
+      }
+      return hits.size === 1 ? [...hits][0] : null;
     }
 
     // 7. Enrich each entry with resolved IDs
@@ -198,16 +242,26 @@ export async function POST(request: NextRequest) {
     const enrichedRows = extraction.rows.map((row) => ({
       workerName: row.workerName,
       entries: row.entries.map((entry) => {
-        // Resolve activity: expand any abbreviation (photo path), then resolve
-        // the canonical/full name to an Activity record (tolerant matcher).
+        // Resolve activity: LEARNED mapping first, then abbreviation expansion +
+        // tolerant matcher. Unresolved → surfaced for the resolution tree.
         const canonicalName = resolveAbbrToName(entry.activity);
-        const resolvedActivity = resolveActivity(canonicalName) ?? resolveActivity(entry.activity);
+        const resolvedActivity =
+          learnedActivity.get(normalize(entry.activity)) ??
+          resolveActivity(canonicalName) ??
+          resolveActivity(entry.activity);
         if (!resolvedActivity) unresolvedActivities.add(entry.activity);
 
-        // Resolve lote name → Lote record
+        // Resolve lote: LEARNED mapping first, then exact/variant, then subset.
+        // A code learned as "no lote" resolves to null without being re-surfaced.
         const normLote = normalize(entry.lote ?? "");
-        const resolvedLote = loteByKey.get(normLote) || loteByKey.get(normLote.replace(/\s/g, ""));
-        if (entry.lote && !resolvedLote) unresolvedLotes.add(entry.lote);
+        const loteIsNone = entry.lote ? learnedLoteNone.has(normLote) : false;
+        const resolvedLote = loteIsNone
+          ? null
+          : (entry.lote ? learnedLote.get(normLote) : null) ||
+            loteByKey.get(normLote) ||
+            loteByKey.get(normLote.replace(/\s/g, "")) ||
+            (entry.lote ? resolveLoteBySubset(entry.lote) : null);
+        if (entry.lote && !loteIsNone && !resolvedLote) unresolvedLotes.add(entry.lote);
 
         return {
           date: entry.date,
@@ -229,16 +283,20 @@ export async function POST(request: NextRequest) {
       }),
     }));
 
-    // 8. Check which (date, workerId) pairs already exist in the DB
+    // 8. Determine which rows already exist — keyed on (date, worker, ACTIVITY,
+    //    lote), NOT just (date, worker). A worker legitimately does several
+    //    distinct activities on the same day; the coarse key was silently
+    //    dropping those as "already imported". Key format is shared with the
+    //    client (see buildReviewRows): `date|workerId|activityId|loteId`.
     const uniqueDates = [
       ...new Set(extraction.rows.flatMap((r) => r.entries.map((e) => e.date))),
     ];
     const existingRecords = await prisma.activityRecord.findMany({
       where: { date: { in: uniqueDates.map((d) => new Date(d)) } },
-      select: { date: true, workerId: true },
+      select: { date: true, workerId: true, activityId: true, loteId: true },
     });
     const existingKeys = existingRecords.map(
-      (r) => `${r.date.toISOString().split("T")[0]}|${r.workerId}`,
+      (r) => `${r.date.toISOString().split("T")[0]}|${r.workerId}|${r.activityId}|${r.loteId ?? ""}`,
     );
 
     // 9. Fetch open pay periods for the agricultural year

@@ -25,6 +25,8 @@ import {
 import { ReviewTable, type ReviewRow } from "./review-table";
 import { CreatePayPeriodWizard } from "./create-pay-period-wizard";
 import { WorkerResolution, type UnmatchedItem, type WorkerResolutionResult } from "./worker-resolution";
+import { CodeResolution, type CodeItem, type CodeResolved } from "./code-resolution";
+import { resolveActivityPrice } from "@/lib/pricing/resolve-price";
 
 type WorkerOption = { id: string; fullName: string };
 type ActivityOption = {
@@ -101,7 +103,23 @@ type PlanillaApiResponse = {
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-type Step = "upload" | "processing" | "worker-resolution" | "review" | "saving" | "done" | "no-period";
+type Step = "upload" | "processing" | "worker-resolution" | "code-resolution" | "review" | "saving" | "done" | "no-period";
+
+// Build the list of unrecognized codes (activities + lotes) with row counts.
+function getCodeItems(result: PlanillaApiResponse): CodeItem[] {
+  const actCount = new Map<string, number>();
+  const loteCount = new Map<string, number>();
+  for (const row of result.rows) {
+    for (const e of row.entries) {
+      if (!e.resolvedActivityId && e.activity) actCount.set(e.activity, (actCount.get(e.activity) ?? 0) + 1);
+      if (!e.resolvedLoteId && e.lote) loteCount.set(e.lote, (loteCount.get(e.lote) ?? 0) + 1);
+    }
+  }
+  const items: CodeItem[] = [];
+  for (const [code, count] of actCount) items.push({ kind: "activity", code, count });
+  for (const [code, count] of loteCount) items.push({ kind: "lote", code, count });
+  return items.sort((a, b) => b.count - a.count);
+}
 
 // =============================================================================
 // Module-level helpers
@@ -131,10 +149,11 @@ async function buildReviewRows(
 ): Promise<{
   reviewRows: ReviewRow[];
   skippedCount: number;
+  skipped: { workerName: string; date: string; activity: string }[];
   workers: WorkerOption[];
 }> {
   const existingKeySet = new Set(result.existingKeys ?? []);
-  let skippedCount = 0;
+  const skipped: { workerName: string; date: string; activity: string }[] = [];
   let rowId = 0;
   const reviewRows: ReviewRow[] = [];
 
@@ -143,8 +162,14 @@ async function buildReviewRows(
     const matchedWorker = match?.exactMatch;
 
     for (const entry of extractedRow.entries) {
-      if (matchedWorker && existingKeySet.has(`${entry.date}|${matchedWorker.id}`)) {
-        skippedCount++;
+      // A row is a duplicate only if the SAME (date, worker, activity, lote) is
+      // already in the DB. Same key format as the server. Only dedup when the
+      // activity actually resolved — otherwise it must be reviewed, not skipped.
+      const dupKey = matchedWorker && entry.resolvedActivityId
+        ? `${entry.date}|${matchedWorker.id}|${entry.resolvedActivityId}|${entry.resolvedLoteId ?? ""}`
+        : null;
+      if (dupKey && existingKeySet.has(dupKey)) {
+        skipped.push({ workerName: extractedRow.workerName, date: entry.date, activity: entry.activity });
         continue;
       }
       const period = allPeriods.find(
@@ -174,7 +199,7 @@ async function buildReviewRows(
     (w: { id: string; fullName: string }) => ({ id: w.id, fullName: w.fullName }),
   );
 
-  return { reviewRows, skippedCount, workers };
+  return { reviewRows, skippedCount: skipped.length, skipped, workers };
 }
 
 // =============================================================================
@@ -209,10 +234,12 @@ export function UploadPlanilla() {
   const [csvUrl, setCsvUrl] = useState("");
   const [savedCount, setSavedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
+  const [skippedRows, setSkippedRows] = useState<{ workerName: string; date: string; activity: string }[]>([]);
   const [unresolvedActivities, setUnresolvedActivities] = useState<string[]>([]);
   const [unresolvedLotes, setUnresolvedLotes] = useState<string[]>([]);
   const [detectedRange, setDetectedRange] = useState<{ start: string; end: string } | null>(null);
   const [unmatchedWorkers, setUnmatchedWorkers] = useState<UnmatchedItem[]>([]);
+  const [codeItems, setCodeItems] = useState<CodeItem[]>([]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -233,7 +260,7 @@ export function UploadPlanilla() {
     }
   }, []);
 
-  const handleUpload = useCallback(async () => {
+  const handleUpload = async () => {
     if (!file) return;
     setError(null);
     setStep("processing");
@@ -322,7 +349,7 @@ export function UploadPlanilla() {
       setError("Error de conexión");
       setStep("upload");
     }
-  }, [file, fileKind]);
+  };
 
   // Shared: proceed from a validated result to period-check → review
   async function continueAfterWorkers(result: PlanillaApiResponse, allPeriods: PeriodOption[]) {
@@ -333,11 +360,24 @@ export function UploadPlanilla() {
       setStep("no-period");
       return;
     }
-    const { reviewRows, skippedCount: sc, workers: workerList } = await buildReviewRows(
+    // Gate: unrecognized activity/lote codes → resolution tree before review.
+    const items = getCodeItems(result);
+    if (items.length > 0) {
+      setPendingResult(result);
+      setCodeItems(items);
+      setStep("code-resolution");
+      return;
+    }
+    await proceedToReview(result, allPeriods);
+  }
+
+  async function proceedToReview(result: PlanillaApiResponse, allPeriods: PeriodOption[]) {
+    const { reviewRows, skippedCount: sc, skipped, workers: workerList } = await buildReviewRows(
       result,
       allPeriods,
     );
     setSkippedCount(sc);
+    setSkippedRows(skipped);
     setRows(reviewRows);
     setWorkers(workerList);
     setActivities(result.activities);
@@ -350,6 +390,54 @@ export function UploadPlanilla() {
     setUnresolvedActivities(result.unresolvedActivities ?? []);
     setUnresolvedLotes(result.unresolvedLotes ?? []);
     setStep("review");
+  }
+
+  // Apply the resolution-tree results to the pending import, then go to review.
+  async function handleCodesResolved(resolved: Record<string, CodeResolved>) {
+    if (!pendingResult) return;
+    setStep("processing");
+
+    const actByCode = new Map<string, CodeResolved>();
+    const loteByCode = new Map<string, CodeResolved>();
+    for (const r of Object.values(resolved)) {
+      (r.kind === "activity" ? actByCode : loteByCode).set(r.code, r);
+    }
+
+    const patchedRows = pendingResult.rows.map((row) => ({
+      ...row,
+      entries: row.entries.map((e) => {
+        let next = { ...e };
+        if (!next.resolvedActivityId && next.activity && actByCode.has(next.activity)) {
+          const a = actByCode.get(next.activity)!;
+          const price = resolveActivityPrice(a.priceSchedule, a.defaultPrice ?? 0, next.date);
+          next = { ...next, resolvedActivityId: a.id, resolvedActivityName: a.name, resolvedActivityPrice: price };
+        }
+        if (!next.resolvedLoteId && next.lote && loteByCode.has(next.lote)) {
+          const id = loteByCode.get(next.lote)!.id;
+          if (id) next = { ...next, resolvedLoteId: id }; // "" = sin lote → leave null
+        }
+        return next;
+      }),
+    }));
+
+    // Extend the catalogs shown in the review table with any new entries.
+    const newActs = [...actByCode.values()].filter((a) => a.id && !pendingResult.activities.some((x) => x.id === a.id));
+    const newLotes = [...loteByCode.values()].filter((l) => l.id && !pendingResult.lotes.some((x) => x.id === l.id));
+    const patched: PlanillaApiResponse = {
+      ...pendingResult,
+      rows: patchedRows,
+      activities: [
+        ...pendingResult.activities,
+        ...newActs.map((a) => ({ id: a.id, name: a.name, defaultPrice: a.defaultPrice ?? null, priceSchedule: a.priceSchedule })),
+      ],
+      lotes: [...pendingResult.lotes, ...newLotes.map((l) => ({ id: l.id, name: l.name }))],
+      unresolvedActivities: [],
+      unresolvedLotes: [],
+    };
+    setPendingResult(patched);
+
+    const allPeriods = [...patched.payPeriods, ...createdPeriods];
+    await proceedToReview(patched, allPeriods);
   }
 
   // Called by WorkerResolution when all names are resolved
@@ -531,6 +619,23 @@ export function UploadPlanilla() {
     );
   }
 
+  // ── STEP: Code resolution (activities / lotes) ────────────────────────────
+  if (step === "code-resolution") {
+    return (
+      <CodeResolution
+        items={codeItems}
+        activities={(pendingResult?.activities ?? []).map((a) => ({ id: a.id, name: a.name }))}
+        lotes={pendingResult?.lotes ?? []}
+        onResolved={handleCodesResolved}
+        onCancel={() => {
+          setStep("upload");
+          setPendingResult(null);
+          setCodeItems([]);
+        }}
+      />
+    );
+  }
+
   // ── STEP: No open pay period ──────────────────────────────────────────────
   if (step === "no-period") {
     const rangeLabel = detectedRange
@@ -609,12 +714,19 @@ export function UploadPlanilla() {
         )}
 
         {skippedCount > 0 && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-            <span className="font-medium">
+          <details className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <summary className="cursor-pointer font-medium">
               {skippedCount === 1 ? "1 registro omitido" : `${skippedCount} registros omitidos`}
-            </span>
-            {" — ya importados previamente"}
-          </div>
+              {" — ya importados previamente (mismo trabajador · fecha · actividad · lote). Ver cuáles ▾"}
+            </summary>
+            <div className="mt-2 space-y-1 text-xs">
+              {skippedRows.map((s, i) => (
+                <div key={i} className="tabular-nums">
+                  <span className="text-blue-500">{s.date}</span> · {s.workerName} · {s.activity}
+                </div>
+              ))}
+            </div>
+          </details>
         )}
 
         {(unresolvedActivities.length > 0 || unresolvedLotes.length > 0) && (
