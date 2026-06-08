@@ -17,7 +17,9 @@ export type AuthenticatedUser = {
 
 /**
  * Authenticates the current request and returns the user.
- * Returns null if not authenticated.
+ * Returns null if not authenticated OR if the account is deactivated — so
+ * setting a user's isActive=false immediately blocks all access app-wide
+ * (the primitive for offboarding; see /admin/usuarios).
  */
 export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
   const supabase = await createClient();
@@ -29,10 +31,18 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { supabaseId: supabaseUser.id },
-    select: { id: true, supabaseId: true, email: true, name: true, role: true },
+    select: { id: true, supabaseId: true, email: true, name: true, role: true, isActive: true },
   });
 
-  return user;
+  if (!user || !user.isActive) return null;
+
+  return {
+    id: user.id,
+    supabaseId: user.supabaseId,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+  };
 }
 
 /**

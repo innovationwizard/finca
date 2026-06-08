@@ -210,22 +210,46 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
   }
 
-  // Delete from Supabase Auth
+  // A user who has performed actions has audit history (FK is ON DELETE RESTRICT).
+  // Hard-deleting them would destroy attribution / fail — steer to deactivation,
+  // which now blocks access app-wide (see getCurrentUser).
+  const auditCount = await prisma.auditLog.count({ where: { userId: id } });
+  if (auditCount > 0) {
+    return NextResponse.json(
+      {
+        error: `Este usuario tiene ${auditCount} registro(s) de auditoría y no puede eliminarse sin perder ese historial. Desactívelo en su lugar (queda sin acceso y se conserva el historial).`,
+        code: "HAS_AUDIT_HISTORY",
+      },
+      { status: 409 },
+    );
+  }
+
+  // Remove from our DB first (inside a transaction with the audit entry); only if
+  // that succeeds do we revoke the Supabase Auth account. This avoids the previous
+  // non-atomic flow that could delete the login but leave an orphaned DB row.
+  await prisma.$transaction([
+    prisma.user.delete({ where: { id } }),
+    prisma.auditLog.create({
+      data: {
+        userId: auth.id,
+        action: "DELETE",
+        tableName: "users",
+        recordId: id,
+        oldValues: { email: existing.email, name: existing.name, role: existing.role },
+      },
+    }),
+  ]);
+
   const supabase = getAdminSupabase();
-  await supabase.auth.admin.deleteUser(existing.supabaseId);
-
-  // Delete from our DB
-  await prisma.user.delete({ where: { id } });
-
-  await prisma.auditLog.create({
-    data: {
-      userId: auth.id,
-      action: "DELETE",
-      tableName: "users",
-      recordId: id,
-      oldValues: { email: existing.email, name: existing.name, role: existing.role },
-    },
-  });
+  const { error: authError } = await supabase.auth.admin.deleteUser(existing.supabaseId);
+  if (authError) {
+    // DB is already consistent (row gone → no app access). Surface for cleanup.
+    console.error("User DB-deleted but Supabase Auth deletion failed:", authError.message);
+    return NextResponse.json({
+      success: true,
+      warning: "Cuenta eliminada de la base de datos, pero falló la eliminación en Supabase Auth. Revise manualmente.",
+    });
+  }
 
   return NextResponse.json({ success: true });
 }
