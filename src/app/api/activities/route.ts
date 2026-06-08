@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
+import { toPriceSchedule } from "@/lib/pricing/activity-prices";
 
 export async function GET(request: NextRequest) {
   const auth = await apiRequireRole(...READ_ALL_ROLES);
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
   const activities = await prisma.activity.findMany({
     where: activeOnly ? { isActive: true } : undefined,
     orderBy: { sortOrder: "asc" },
+    include: { prices: { orderBy: { effectiveFrom: "asc" } } },
   });
 
   return NextResponse.json(
@@ -27,6 +29,8 @@ export async function GET(request: NextRequest) {
       isHarvest: a.isHarvest,
       isBeneficio: a.isBeneficio,
       isActive: a.isActive,
+      // Effective-dated prices; clients resolve the price for a work date offline.
+      priceSchedule: toPriceSchedule(a.prices),
     })),
   );
 }

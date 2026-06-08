@@ -65,6 +65,15 @@ export const READ_ALL_ROLES: UserRole[] = ["MASTER", "ADMIN", "MANAGER", "CEO", 
 export const WRITE_ROLES: UserRole[] = ["MASTER", "ADMIN", "FIELD"];
 
 /**
+ * Where a user lands after login. Plan Anual (/plan) for everyone who can view
+ * it; FIELD (caporal, data entry only — not in READ_ALL_ROLES) lands on the
+ * Planilla so they don't hit an authorization error.
+ */
+export function landingPathForRole(role: UserRole): "/plan" | "/planilla" {
+  return READ_ALL_ROLES.includes(role) ? "/plan" : "/planilla";
+}
+
+/**
  * API route helper: returns 401/403 NextResponse if unauthorized.
  * Use in route handlers.
  */

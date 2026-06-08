@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/guards";
+import { getCurrentUser, landingPathForRole } from "@/lib/auth/guards";
 
 export default async function RootPage() {
   const user = await getCurrentUser();
@@ -12,5 +12,5 @@ export default async function RootPage() {
     redirect("/login");
   }
 
-  redirect("/planilla");
+  redirect(landingPathForRole(user.role));
 }

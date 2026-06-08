@@ -60,6 +60,8 @@ export interface CachedActivity {
   isHarvest: boolean;
   isBeneficio: boolean;
   isActive: boolean;
+  // Effective-dated prices (from /api/activities) → resolve price by work date offline.
+  priceSchedule?: { effectiveFrom: string; price: number }[];
 }
 
 export interface CachedLote {

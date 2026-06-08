@@ -5,8 +5,15 @@
 // Full CRUD table for the activity catalog
 // =============================================================================
 
-import { useState, useTransition, useCallback } from "react";
+import { Fragment, useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { resolveActivityPrice, nextScheduled, type PriceVigencia } from "@/lib/pricing/resolve-price";
+
+function todayISO(): string {
+  // Local calendar date; server is authoritative for stored prices.
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const UNIT_OPTIONS = [
   { value: "QUINTAL", label: "Quintal (qq)" },
@@ -33,6 +40,7 @@ type ActivityRow = {
   minQtyAlert: number | null;
   maxQtyAlert: number | null;
   sortOrder: number;
+  priceSchedule: PriceVigencia[];
 };
 
 type EditState = {
@@ -57,6 +65,7 @@ export function ActivitiesManager({
   const [editing, setEditing] = useState<EditState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [pricesFor, setPricesFor] = useState<string | null>(null);
 
   const startEdit = useCallback((a: ActivityRow) => {
     setError(null);
@@ -219,8 +228,8 @@ export function ActivitiesManager({
               }
 
               return (
+                <Fragment key={activity.id}>
                 <tr
-                  key={activity.id}
                   className={`transition-colors hover:bg-stone-50 ${
                     !activity.isActive ? "opacity-50" : ""
                   }`}
@@ -234,7 +243,15 @@ export function ActivitiesManager({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">
-                    Q{activity.defaultPrice.toFixed(2)}
+                    Q{resolveActivityPrice(activity.priceSchedule, activity.defaultPrice, todayISO()).toFixed(2)}
+                    {(() => {
+                      const next = nextScheduled(activity.priceSchedule, todayISO());
+                      return next ? (
+                        <div className="text-[11px] font-normal text-amber-600">
+                          → Q{next.price.toFixed(2)} el {next.effectiveFrom}
+                        </div>
+                      ) : null;
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {activity.isHarvest ? "✓" : ""}
@@ -256,15 +273,41 @@ export function ActivitiesManager({
                     {activity.maxQtyAlert ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => startEdit(activity)}
-                      disabled={editing !== null}
-                      className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 disabled:opacity-40"
-                    >
-                      Editar
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setPricesFor(pricesFor === activity.id ? null : activity.id)}
+                        disabled={editing !== null}
+                        className={`rounded-md border px-3 py-1.5 text-xs font-medium disabled:opacity-40 ${
+                          pricesFor === activity.id
+                            ? "border-amber-300 bg-amber-50 text-amber-700"
+                            : "border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50"
+                        }`}
+                      >
+                        Precios
+                      </button>
+                      <button
+                        onClick={() => startEdit(activity)}
+                        disabled={editing !== null}
+                        className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 disabled:opacity-40"
+                      >
+                        Editar
+                      </button>
+                    </div>
                   </td>
                 </tr>
+                {pricesFor === activity.id && (
+                  <tr>
+                    <td colSpan={9} className="bg-stone-50 px-4 py-4">
+                      <PricePanel
+                        activityId={activity.id}
+                        schedule={activity.priceSchedule}
+                        onChanged={() => startTransition(() => router.refresh())}
+                        onError={setError}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>
@@ -407,5 +450,153 @@ function EditRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+// ── Price history panel (effective-dated pricing) ────────────────────────────
+
+function PricePanel({
+  activityId,
+  schedule,
+  onChanged,
+  onError,
+}: {
+  activityId: string;
+  schedule: PriceVigencia[];
+  onChanged: () => void;
+  onError: (msg: string) => void;
+}) {
+  const [price, setPrice] = useState("");
+  const [effectiveFrom, setEffectiveFrom] = useState(todayISO());
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const today = todayISO();
+  const current = resolveActivityPrice(schedule, null, today);
+  const upcoming = nextScheduled(schedule, today);
+  const sorted = [...schedule].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
+
+  const add = useCallback(async () => {
+    const p = parseFloat(price);
+    if (isNaN(p) || p < 0) { onError("El precio debe ser un número no negativo"); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(effectiveFrom)) { onError("Fecha de vigencia inválida"); return; }
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/activities/${activityId}/prices`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ price: p, effectiveFrom, note: note.trim() || null }),
+      });
+      if (!res.ok) { onError((await res.json()).error ?? "Error al guardar precio"); return; }
+      setPrice(""); setNote(""); setEffectiveFrom(todayISO());
+      onChanged();
+    } catch {
+      onError("Error de conexión");
+    } finally {
+      setBusy(false);
+    }
+  }, [price, effectiveFrom, note, activityId, onChanged, onError]);
+
+  const remove = useCallback(async (effFrom: string) => {
+    setBusy(true);
+    try {
+      const res = await fetch(
+        `/api/admin/activities/${activityId}/prices?effectiveFrom=${encodeURIComponent(effFrom)}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) { onError((await res.json()).error ?? "Error al eliminar"); return; }
+      onChanged();
+    } catch {
+      onError("Error de conexión");
+    } finally {
+      setBusy(false);
+    }
+  }, [activityId, onChanged, onError]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-4 text-sm">
+        <span className="text-stone-600">
+          Precio vigente hoy: <span className="font-semibold tabular-nums text-stone-900">Q{current.toFixed(2)}</span>
+        </span>
+        {upcoming && (
+          <span className="text-amber-700">
+            Próximo: <span className="font-semibold tabular-nums">Q{upcoming.price.toFixed(2)}</span> desde {upcoming.effectiveFrom}
+          </span>
+        )}
+      </div>
+
+      {/* History */}
+      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+        <table className="w-full text-left text-xs">
+          <thead>
+            <tr className="border-b border-stone-100 bg-stone-50 text-stone-500">
+              <th className="px-3 py-2 font-medium">Vigente desde</th>
+              <th className="px-3 py-2 font-medium text-right">Precio (Q)</th>
+              <th className="px-3 py-2 font-medium">Nota</th>
+              <th className="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-100">
+            {sorted.map((v) => (
+              <tr key={v.effectiveFrom} className={v.effectiveFrom > today ? "bg-amber-50/40" : ""}>
+                <td className="px-3 py-2 tabular-nums">{v.effectiveFrom}{v.effectiveFrom > today && <span className="ml-1 text-amber-600">(programado)</span>}</td>
+                <td className="px-3 py-2 text-right tabular-nums">Q{v.price.toFixed(2)}</td>
+                <td className="px-3 py-2 text-stone-500">{v.note ?? ""}</td>
+                <td className="px-3 py-2 text-right">
+                  <button
+                    onClick={() => remove(v.effectiveFrom)}
+                    disabled={busy || schedule.length <= 1}
+                    className="text-stone-400 hover:text-red-500 disabled:opacity-30"
+                    title={schedule.length <= 1 ? "No se puede eliminar el único precio" : "Eliminar"}
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Add new vigencia */}
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-stone-200 bg-white p-3">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-stone-600">Nuevo precio (Q)</label>
+          <input
+            type="number" step="0.01" min="0" value={price} inputMode="decimal"
+            onChange={(e) => setPrice(e.target.value)} placeholder="0.00"
+            className="w-28 rounded-md border border-stone-300 px-2 py-1 text-right text-sm tabular-nums focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-stone-600">Vigente desde</label>
+          <input
+            type="date" value={effectiveFrom}
+            onChange={(e) => setEffectiveFrom(e.target.value)}
+            className="rounded-md border border-stone-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          />
+        </div>
+        <div className="flex-1 min-w-[140px]">
+          <label className="mb-1 block text-xs font-medium text-stone-600">Nota (opcional)</label>
+          <input
+            type="text" value={note} maxLength={200}
+            onChange={(e) => setNote(e.target.value)} placeholder="Motivo del cambio…"
+            className="w-full rounded-md border border-stone-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          />
+        </div>
+        <button
+          onClick={add}
+          disabled={busy || !price}
+          className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {busy ? "..." : "Agregar precio"}
+        </button>
+      </div>
+      <p className="text-xs text-stone-400">
+        Un precio nuevo solo aplica a partir de su fecha de vigencia. Las semanas
+        anteriores conservan su precio; puede programar un precio futuro.
+      </p>
+    </div>
   );
 }

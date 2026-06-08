@@ -17,10 +17,12 @@ export async function GET(request: NextRequest) {
   const ext = searchParams.get("ext") || "jpg";
   const contentType = searchParams.get("contentType") || "image/jpeg";
 
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  // Same control accepts a photo (OCR) OR a digital .xlsx planilla.
+  const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", XLSX_TYPE];
   if (!allowedTypes.includes(contentType)) {
     return NextResponse.json(
-      { error: "Formato de imagen no soportado. Use JPEG, PNG o WebP." },
+      { error: "Formato no soportado. Use una imagen (JPEG, PNG, WebP) o un archivo Excel (.xlsx)." },
       { status: 400 },
     );
   }

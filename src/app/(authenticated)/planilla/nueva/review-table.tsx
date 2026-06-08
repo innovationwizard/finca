@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { Trash2, AlertTriangle, CheckCircle, HelpCircle } from "lucide-react";
+import { resolveActivityPrice, type PriceVigencia } from "@/lib/pricing/resolve-price";
 
 export type ReviewRow = {
   id: string;
@@ -22,7 +23,7 @@ export type ReviewRow = {
 };
 
 type WorkerOption = { id: string; fullName: string };
-type ActivityOption = { id: string; name: string; defaultPrice: number | null };
+type ActivityOption = { id: string; name: string; defaultPrice: number | null; priceSchedule?: PriceVigencia[] };
 type LoteOption = { id: string; name: string };
 type PeriodOption = { id: string; periodNumber: number; startDate: string; endDate: string };
 
@@ -152,7 +153,10 @@ export function ReviewTable({
                     value={row.activityId}
                     onChange={(e) => {
                       const act = activities.find((a) => a.id === e.target.value);
-                      const price = act?.defaultPrice ?? row.unitPrice;
+                      // Price in effect on this row's work date.
+                      const price = act
+                        ? resolveActivityPrice(act.priceSchedule, act.defaultPrice, row.date)
+                        : row.unitPrice;
                       onUpdateRow(row.id, {
                         activityId: e.target.value,
                         unitPrice: price,

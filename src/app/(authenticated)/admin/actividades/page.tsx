@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole, SETTINGS_ROLES } from "@/lib/auth/guards";
+import { toPriceSchedule } from "@/lib/pricing/activity-prices";
 import { ActivitiesManager } from "./activities-manager";
 import { PayCycleSettings } from "./pay-cycle-settings";
 
@@ -14,15 +15,19 @@ export default async function ActivitiesAdminPage() {
   await requireRole(...SETTINGS_ROLES);
 
   const [activities, settings] = await Promise.all([
-    prisma.activity.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.activity.findMany({
+      orderBy: { sortOrder: "asc" },
+      include: { prices: { orderBy: { effectiveFrom: "asc" } } },
+    }),
     prisma.systemSetting.findMany({ orderBy: [{ group: "asc" }, { key: "asc" }] }),
   ]);
 
-  const serializedActivities = activities.map((a) => ({
+  const serializedActivities = activities.map(({ prices, ...a }) => ({
     ...a,
     defaultPrice: Number(a.defaultPrice),
     minQtyAlert: a.minQtyAlert ? Number(a.minQtyAlert) : null,
     maxQtyAlert: a.maxQtyAlert ? Number(a.maxQtyAlert) : null,
+    priceSchedule: toPriceSchedule(prices),
     createdAt: a.createdAt.toISOString(),
     updatedAt: a.updatedAt.toISOString(),
   }));

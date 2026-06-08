@@ -10,6 +10,7 @@ import {
   activityUpdateSchema,
   activityCreateSchema,
 } from "@/lib/validators/settings";
+import { todayISOGuatemala } from "@/lib/pricing/activity-prices";
 
 export async function GET() {
   const auth = await apiRequireRole(...SETTINGS_ROLES);
@@ -53,6 +54,20 @@ export async function POST(request: NextRequest) {
   const created = await prisma.activity.create({
     data: { ...parsed.data, sortOrder: nextSort },
   });
+
+  // Seed the first price vigencia (effective today) so the catalog is the
+  // single source of truth for prices from creation onward.
+  if (parsed.data.defaultPrice != null) {
+    await prisma.activityPrice.create({
+      data: {
+        activityId: created.id,
+        price: parsed.data.defaultPrice,
+        effectiveFrom: new Date(todayISOGuatemala()),
+        note: "Precio inicial",
+        createdBy: auth.id,
+      },
+    });
+  }
 
   await prisma.auditLog.create({
     data: {
@@ -121,6 +136,25 @@ export async function PATCH(request: NextRequest) {
   });
 
   const updated = await prisma.activity.update({ where: { id }, data });
+
+  // An inline price edit is recorded as a vigencia effective TODAY (so it never
+  // rewrites past records). Explicit start dates / future prices use the price
+  // history panel (POST /api/admin/activities/[id]/prices).
+  const oldPrice = existing.defaultPrice != null ? Number(existing.defaultPrice) : null;
+  if (data.defaultPrice != null && data.defaultPrice !== oldPrice) {
+    const effectiveFrom = new Date(todayISOGuatemala());
+    await prisma.activityPrice.upsert({
+      where: { activityId_effectiveFrom: { activityId: id, effectiveFrom } },
+      create: {
+        activityId: id,
+        price: data.defaultPrice,
+        effectiveFrom,
+        note: "Cambio de precio (hoy)",
+        createdBy: auth.id,
+      },
+      update: { price: data.defaultPrice },
+    });
+  }
 
   return NextResponse.json(updated);
 }

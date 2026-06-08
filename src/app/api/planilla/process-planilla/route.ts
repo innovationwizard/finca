@@ -13,10 +13,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiRequireRole, WRITE_ROLES } from "@/lib/auth/guards";
 import { createServiceClient } from "@/lib/supabase/service";
-import { extractPlanillaData } from "@/lib/ai/extract-planilla";
+import { extractPlanillaData, type PlanillaExtractionResult } from "@/lib/ai/extract-planilla";
+import { extractPlanillaFromXlsx } from "@/lib/xlsx/extract-planilla-xlsx";
+import { buildActivityResolver } from "@/lib/xlsx/activity-aliases";
+import { resolveActivityPrice } from "@/lib/pricing/resolve-price";
+import { toPriceSchedule } from "@/lib/pricing/activity-prices";
 import { matchAllWorkers } from "@/lib/ai/match-workers";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
+
+const XLSX_CONTENT_TYPE =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 // Activity abbreviation table — mirrors docs/abbr.txt
 const ACTIVITY_ABBR: Record<string, string> = {
@@ -94,27 +101,11 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await fileData.arrayBuffer());
-    const base64 = buffer.toString("base64");
-    const mediaType = (contentType || "image/jpeg") as
-      | "image/jpeg"
-      | "image/png"
-      | "image/webp";
 
-    // 2. Extract via Claude Vision
-    let extraction;
-    try {
-      extraction = await extractPlanillaData(base64, mediaType);
-    } catch (aiError) {
-      return NextResponse.json(
-        {
-          error: `Error al procesar la imagen: ${aiError instanceof Error ? aiError.message : "Error desconocido"}`,
-          imageUrl: storagePath,
-        },
-        { status: 422 },
-      );
-    }
-
-    // 3. Fetch DB reference data in parallel
+    // 2. Fetch DB reference data in parallel.
+    //    Fetched BEFORE extraction because the .xlsx parser uses the live
+    //    vocabulary (activity / lote / worker names) to detect columns by
+    //    content — so a renamed/reordered header still parses.
     const [workers, activities, lotes] = await Promise.all([
       prisma.worker.findMany({
         where: { isActive: true },
@@ -122,7 +113,13 @@ export async function POST(request: NextRequest) {
       }),
       prisma.activity.findMany({
         where: { isActive: true },
-        select: { id: true, name: true, unit: true, defaultPrice: true },
+        select: {
+          id: true,
+          name: true,
+          unit: true,
+          defaultPrice: true,
+          prices: { select: { effectiveFrom: true, price: true }, orderBy: { effectiveFrom: "asc" } },
+        },
         orderBy: { sortOrder: "asc" },
       }),
       prisma.lote.findMany({
@@ -132,12 +129,57 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
+    // 3. Extract — branch by file type. Both branches return the SAME contract,
+    //    so all downstream code is shared.
+    const isSpreadsheet =
+      contentType === XLSX_CONTENT_TYPE || /\.xlsx$/i.test(storagePath);
+
+    let extraction: PlanillaExtractionResult;
+    let xlsxReport: Record<string, unknown> | null = null;
+    try {
+      if (isSpreadsheet) {
+        const result = extractPlanillaFromXlsx(buffer, {
+          activityNames: activities.map((a) => a.name),
+          loteNames: lotes.flatMap((l) => [l.name, l.slug]),
+          workerNames: workers.map((w) => w.fullName),
+        });
+        extraction = result;
+        xlsxReport = {
+          formatReport: result.formatReport,
+          anomalies: result.anomalies,
+          counts: result.counts,
+        };
+      } else {
+        const mediaType = (contentType || "image/jpeg") as
+          | "image/jpeg"
+          | "image/png"
+          | "image/webp";
+        extraction = await extractPlanillaData(buffer.toString("base64"), mediaType);
+      }
+    } catch (extractError) {
+      return NextResponse.json(
+        {
+          error: `Error al procesar el archivo: ${extractError instanceof Error ? extractError.message : "Error desconocido"}`,
+          imageUrl: storagePath,
+        },
+        { status: 422 },
+      );
+    }
+
     // 4. Match worker names using fuzzy matching
     const extractedNames = extraction.rows.map((r) => r.workerName);
     const workerMatches = matchAllWorkers(extractedNames, workers);
 
-    // 5. Build activity resolution map: normalized canonical name → Activity
-    const activityByName = new Map(activities.map((a) => [normalize(a.name), a]));
+    // 5. Activity resolver — exact name, then stop-word-stripped token set, then
+    //    explicit aliases. Resolves the .xlsx full-name variants
+    //    ("encargado de beneficio" → "Encargado Beneficio") and the photo path's
+    //    abbreviation-expanded names alike.
+    const resolveActivity = buildActivityResolver(activities);
+
+    // Effective-dated price schedule per activity, for work-date pricing.
+    const scheduleByActivityId = new Map(
+      activities.map((a) => [a.id, toPriceSchedule(a.prices)]),
+    );
 
     // 6. Build lote resolution map: try name, slug, and slug-without-hyphens
     const loteByKey = new Map<string, typeof lotes[number]>();
@@ -156,9 +198,10 @@ export async function POST(request: NextRequest) {
     const enrichedRows = extraction.rows.map((row) => ({
       workerName: row.workerName,
       entries: row.entries.map((entry) => {
-        // Resolve activity abbreviation → canonical name → Activity record
+        // Resolve activity: expand any abbreviation (photo path), then resolve
+        // the canonical/full name to an Activity record (tolerant matcher).
         const canonicalName = resolveAbbrToName(entry.activity);
-        const resolvedActivity = activityByName.get(normalize(canonicalName));
+        const resolvedActivity = resolveActivity(canonicalName) ?? resolveActivity(entry.activity);
         if (!resolvedActivity) unresolvedActivities.add(entry.activity);
 
         // Resolve lote name → Lote record
@@ -173,8 +216,13 @@ export async function POST(request: NextRequest) {
           units: entry.units,
           resolvedActivityId: resolvedActivity?.id ?? null,
           resolvedActivityName: canonicalName,
-          resolvedActivityPrice: resolvedActivity?.defaultPrice
-            ? Number(resolvedActivity.defaultPrice)
+          // Price in effect on the entry's work date (not a blanket default).
+          resolvedActivityPrice: resolvedActivity
+            ? resolveActivityPrice(
+                scheduleByActivityId.get(resolvedActivity.id),
+                Number(resolvedActivity.defaultPrice ?? 0),
+                entry.date,
+              )
             : 0,
           resolvedLoteId: resolvedLote?.id ?? null,
         };
@@ -218,7 +266,20 @@ export async function POST(request: NextRequest) {
       upsert: true,
     });
 
+    // 10b. For .xlsx, persist the full parser report (format detection +
+    //      anomalies + balanced counts) as a JSON sidecar for audit/provenance.
+    if (xlsxReport) {
+      const reportPath = storagePath.replace(/\.\w+$/, "-xlsx-report.json");
+      await supabase.storage
+        .from("notebook-photos")
+        .upload(reportPath, JSON.stringify(xlsxReport, null, 2), {
+          contentType: "application/json",
+          upsert: true,
+        });
+    }
+
     return NextResponse.json({
+      ...(xlsxReport ?? {}),
       rows: enrichedRows,
       workerMatches: Object.fromEntries(
         Object.entries(workerMatches).map(([name, result]) => [
@@ -240,6 +301,7 @@ export async function POST(request: NextRequest) {
         name: a.name,
         unit: a.unit,
         defaultPrice: a.defaultPrice ? Number(a.defaultPrice) : null,
+        priceSchedule: scheduleByActivityId.get(a.id) ?? [],
       })),
       lotes: lotes.map((l) => ({ id: l.id, name: l.name })),
       payPeriods: payPeriods.map((p) => ({

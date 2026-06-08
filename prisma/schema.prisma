@@ -161,8 +161,31 @@ model Activity {
 
   activityRecords ActivityRecord[]
   planEntries     PlanEntry[]
+  prices          ActivityPrice[]
 
   @@map("activities")
+}
+
+// Effective-dated price history for an activity. The price applied to a work
+// record is the one whose effectiveFrom is the latest <= the record's work date
+// (see src/lib/pricing/resolve-price.ts). Activity.defaultPrice is kept as the
+// denormalized "current" price for display and as a fallback for dates before
+// any vigencia. Past ActivityRecord.unitPrice values are snapshots and never
+// change — so price edits have no retroactive effect.
+model ActivityPrice {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  activityId    String   @map("activity_id") @db.Uuid
+  price         Decimal  @db.Decimal(10, 2)
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  note          String?
+  createdBy     String?  @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, effectiveFrom])
+  @@index([activityId, effectiveFrom])
+  @@map("activity_prices")
 }
 
 // =============================================================================

@@ -27,7 +27,12 @@ import { CreatePayPeriodWizard } from "./create-pay-period-wizard";
 import { WorkerResolution, type UnmatchedItem, type WorkerResolutionResult } from "./worker-resolution";
 
 type WorkerOption = { id: string; fullName: string };
-type ActivityOption = { id: string; name: string; defaultPrice: number | null };
+type ActivityOption = {
+  id: string;
+  name: string;
+  defaultPrice: number | null;
+  priceSchedule?: { effectiveFrom: string; price: number }[];
+};
 type LoteOption = { id: string; name: string };
 type PeriodOption = { id: string; periodNumber: number; startDate: string; endDate: string };
 
@@ -47,6 +52,33 @@ type EnrichedEntry = {
   resolvedLoteId: string | null;
 };
 
+type RawRow = { rowNumber: number; cells: string[] };
+type Anomaly = { row: RawRow; reason: string };
+
+type XlsxFormatReport = {
+  sheetChosen: string;
+  columnRoles: Record<string, { index: number; header: string; via: string; confidence: number }>;
+  unknownColumns: { index: number; header: string; sample: string[] }[];
+  missingRoles: string[];
+  driftDetected: boolean;
+  driftReasons: string[];
+};
+type XlsxAnomalies = {
+  flagged: Anomaly[];
+  ignored: Anomaly[];
+  incomplete: Anomaly[];
+  unparseable: Anomaly[];
+};
+type XlsxCounts = {
+  contentRows: number;
+  entries: number;
+  ignored: number;
+  incomplete: number;
+  unparseable: number;
+  flagged: number;
+  balanced: boolean;
+};
+
 type PlanillaApiResponse = {
   rows: { workerName: string; entries: EnrichedEntry[] }[];
   workerMatches: Record<string, WorkerMatch>;
@@ -61,7 +93,13 @@ type PlanillaApiResponse = {
   notes: string;
   imageUrl: string;
   csvUrl: string;
+  // Present only for .xlsx uploads:
+  formatReport?: XlsxFormatReport;
+  anomalies?: XlsxAnomalies;
+  counts?: XlsxCounts;
 };
+
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 type Step = "upload" | "processing" | "worker-resolution" | "review" | "saving" | "done" | "no-period";
 
@@ -150,6 +188,11 @@ export function UploadPlanilla() {
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [fileKind, setFileKind] = useState<"image" | "xlsx" | null>(null);
+
+  const [formatReport, setFormatReport] = useState<XlsxFormatReport | null>(null);
+  const [anomalies, setAnomalies] = useState<XlsxAnomalies | null>(null);
+  const [counts, setCounts] = useState<XlsxCounts | null>(null);
 
   const [pendingResult, setPendingResult] = useState<PlanillaApiResponse | null>(null);
   const [createdPeriods, setCreatedPeriods] = useState<PeriodOption[]>([]);
@@ -176,9 +219,18 @@ export function UploadPlanilla() {
     if (!f) return;
     setFile(f);
     setError(null);
-    const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
-    reader.readAsDataURL(f);
+
+    const isXlsx = f.type === XLSX_MIME || /\.xlsx$/i.test(f.name);
+    if (isXlsx) {
+      // Digital workbook — no image preview; show a file chip instead.
+      setFileKind("xlsx");
+      setPreview(null);
+    } else {
+      setFileKind("image");
+      const reader = new FileReader();
+      reader.onload = () => setPreview(reader.result as string);
+      reader.readAsDataURL(f);
+    }
   }, []);
 
   const handleUpload = useCallback(async () => {
@@ -186,12 +238,20 @@ export function UploadPlanilla() {
     setError(null);
     setStep("processing");
 
-    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+    const isXlsx = fileKind === "xlsx";
+    const ext = isXlsx
+      ? "xlsx"
+      : file.type === "image/png"
+        ? "png"
+        : file.type === "image/webp"
+          ? "webp"
+          : "jpg";
+    const contentType = isXlsx ? XLSX_MIME : file.type;
 
     try {
       // Get signed upload URL
       const urlRes = await fetch(
-        `/api/planilla/signed-upload-url?ext=${ext}&contentType=${encodeURIComponent(file.type)}`,
+        `/api/planilla/signed-upload-url?ext=${ext}&contentType=${encodeURIComponent(contentType)}`,
       );
       const urlData = await urlRes.json();
       if (!urlRes.ok) {
@@ -203,31 +263,47 @@ export function UploadPlanilla() {
       // Upload directly to Supabase Storage
       const uploadRes = await fetch(urlData.signedUrl, {
         method: "PUT",
-        headers: { "Content-Type": file.type },
+        headers: { "Content-Type": contentType },
         body: file,
       });
       if (!uploadRes.ok) {
-        setError("Error al subir la imagen al almacenamiento");
+        setError("Error al subir el archivo al almacenamiento");
         setStep("upload");
         return;
       }
 
-      // Process via AI
+      // Process (image → OCR · .xlsx → parser); both return the same shape
       const res = await fetch("/api/planilla/process-planilla", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storagePath: urlData.path, contentType: file.type }),
+        body: JSON.stringify({ storagePath: urlData.path, contentType }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Error al procesar la imagen");
+        setError(data.error || "Error al procesar el archivo");
         setStep("upload");
         return;
       }
 
       const result = data as PlanillaApiResponse;
+
+      // .xlsx that yielded no records — surface why instead of an empty table.
+      if (result.counts && result.counts.entries === 0) {
+        const missing = result.formatReport?.missingRoles ?? [];
+        setError(
+          missing.length
+            ? `No se reconoció como planilla de actividades — faltan columnas: ${missing.join(", ")}.`
+            : "El archivo no contiene registros de actividades reconocibles.",
+        );
+        setStep("upload");
+        return;
+      }
+
       setDetectedRange(result.dateRange ?? null);
+      setFormatReport(result.formatReport ?? null);
+      setAnomalies(result.anomalies ?? null);
+      setCounts(result.counts ?? null);
       setPendingResult(result);
 
       // Check for unmatched workers — show resolution screen before proceeding
@@ -246,7 +322,7 @@ export function UploadPlanilla() {
       setError("Error de conexión");
       setStep("upload");
     }
-  }, [file]);
+  }, [file, fileKind]);
 
   // Shared: proceed from a validated result to period-check → review
   async function continueAfterWorkers(result: PlanillaApiResponse, allPeriods: PeriodOption[]) {
@@ -394,24 +470,32 @@ export function UploadPlanilla() {
 
         <div>
           <label className="mb-2 block text-sm font-medium text-finca-700">
-            Foto de la planilla semanal
+            Planilla semanal — foto o archivo Excel
           </label>
           <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-finca-300 bg-finca-50/50 px-6 py-8 transition-colors hover:border-finca-500 hover:bg-finca-50">
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={`image/jpeg,image/png,image/webp,.xlsx,${XLSX_MIME}`}
               onChange={handleFileSelect}
               className="hidden"
             />
-            {preview ? (
+            {fileKind === "image" && preview ? (
               <Image src={preview} alt="Vista previa" width={400} height={256} className="max-h-64 rounded-lg object-contain" unoptimized />
+            ) : fileKind === "xlsx" && file ? (
+              <div className="flex flex-col items-center">
+                <FileSpreadsheet className="mb-3 h-10 w-10 text-emerald-600" />
+                <p className="text-sm font-medium text-finca-800">{file.name}</p>
+                <p className="mt-1 text-xs text-finca-400">
+                  {(file.size / 1024).toFixed(0)} KB · archivo Excel
+                </p>
+              </div>
             ) : (
               <>
                 <FileSpreadsheet className="mb-3 h-10 w-10 text-finca-400" />
                 <p className="text-sm font-medium text-finca-700">
-                  Tomar foto o seleccionar imagen
+                  Tomar foto o seleccionar archivo
                 </p>
-                <p className="mt-1 text-xs text-finca-400">JPEG, PNG o WebP</p>
+                <p className="mt-1 text-xs text-finca-400">Imagen (JPEG, PNG, WebP) o Excel (.xlsx)</p>
                 <p className="mt-2 text-xs text-finca-400">
                   Las fechas y actividades se extraen automáticamente
                 </p>
@@ -581,6 +665,67 @@ export function UploadPlanilla() {
           )}
         </div>
 
+        {/* .xlsx parser report — balance proof, format drift, and every row
+            that did NOT become a normal record (nothing left behind). */}
+        {counts && (
+          <div className="space-y-3">
+            <div
+              className={`rounded-lg border px-4 py-3 text-sm ${
+                counts.balanced
+                  ? "border-finca-200 bg-finca-50/50 text-finca-700"
+                  : "border-red-300 bg-red-50 text-red-800"
+              }`}
+            >
+              <p className="font-medium">
+                {counts.balanced ? "✓ Lectura balanceada" : "✗ La lectura NO cuadra — revisar"}
+              </p>
+              <p className="mt-1 text-xs">
+                {counts.contentRows} fila(s) leídas = {counts.entries} registro(s)
+                {counts.flagged > 0 && ` (${counts.flagged} marcadas, cantidad vacía/cero)`} +{" "}
+                {counts.ignored} ignorada(s) + {counts.incomplete} incompleta(s) +{" "}
+                {counts.unparseable} sin clasificar.
+              </p>
+              {formatReport && (
+                <p className="mt-1 text-xs text-finca-500">
+                  Hoja: <span className="font-mono">{formatReport.sheetChosen}</span>
+                  {formatReport.driftDetected
+                    ? ` · ⚠ Formato modificado: ${formatReport.driftReasons.join(" ")}`
+                    : " · formato reconocido"}
+                  {formatReport.missingRoles.length > 0 &&
+                    ` · Columnas faltantes: ${formatReport.missingRoles.join(", ")}`}
+                </p>
+              )}
+            </div>
+
+            {anomalies &&
+              (
+                [
+                  ["Filas ignoradas (totales/resumen)", anomalies.ignored],
+                  ["Líneas incompletas", anomalies.incomplete],
+                  ["Filas sin clasificar", anomalies.unparseable],
+                ] as const
+              )
+                .filter(([, items]) => items.length > 0)
+                .map(([label, items]) => (
+                  <details key={label} className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-2 text-sm">
+                    <summary className="cursor-pointer font-medium text-amber-800">
+                      {label} ({items.length})
+                    </summary>
+                    <div className="mt-2 space-y-1.5">
+                      {items.map((it, i) => (
+                        <div key={i} className="text-xs text-amber-900">
+                          <span className="text-amber-600">Fila {it.row.rowNumber}:</span> {it.reason}
+                          <div className="mt-0.5 truncate font-mono text-[11px] text-finca-500">
+                            {it.row.cells.filter(Boolean).join(" · ")}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+          </div>
+        )}
+
         <ReviewTable
           rows={rows}
           workers={workers}
@@ -606,6 +751,10 @@ export function UploadPlanilla() {
               setRows([]);
               setFile(null);
               setPreview(null);
+              setFileKind(null);
+              setFormatReport(null);
+              setAnomalies(null);
+              setCounts(null);
             }}
             className="rounded-lg border border-finca-200 px-4 py-2.5 text-sm font-medium text-finca-600 transition-colors hover:bg-finca-50"
           >
@@ -645,6 +794,10 @@ export function UploadPlanilla() {
             setRows([]);
             setFile(null);
             setPreview(null);
+            setFileKind(null);
+            setFormatReport(null);
+            setAnomalies(null);
+            setCounts(null);
             setSavedCount(0);
             setPendingResult(null);
             setCreatedPeriods([]);

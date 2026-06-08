@@ -15,6 +15,7 @@ import { addToOutbox } from "@/lib/offline/sync-engine";
 import { generateClientId } from "@/lib/utils/code-generators";
 import { calcTotalEarned } from "@/lib/utils/calculations";
 import { formatDateISO } from "@/lib/utils/format";
+import { resolveActivityPrice } from "@/lib/pricing/resolve-price";
 import { UploadFoto } from "./upload-foto";
 import { UploadPlanilla } from "./upload-planilla";
 import { CreatePayPeriodWizard } from "./create-pay-period-wizard";
@@ -103,7 +104,10 @@ export default function NuevaActividadPage() {
       setForm((f) => ({
         ...f,
         activityId,
-        unitPrice: activity ? String(activity.defaultPrice) : "",
+        // Default price = the price in effect on the selected work date.
+        unitPrice: activity
+          ? String(resolveActivityPrice(activity.priceSchedule, activity.defaultPrice, f.date))
+          : "",
       }));
     },
     [activities],
@@ -219,7 +223,7 @@ export default function NuevaActividadPage() {
             ? isOnline ? "En línea" : "Sin conexión — se guardará localmente"
             : mode === "foto"
               ? "Subir foto del cuaderno para extraer datos automáticamente"
-              : "Subir foto de la planilla semanal para extraer datos automáticamente"}
+              : "Subir foto o archivo Excel (.xlsx) de la planilla semanal para extraer datos automáticamente"}
         </p>
 
         {/* Mode toggle */}
@@ -309,7 +313,20 @@ export default function NuevaActividadPage() {
           <input
             type="date"
             value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
+            onChange={(e) => {
+              const date = e.target.value;
+              setForm((f) => {
+                const activity = activities.find((a) => a.id === f.activityId);
+                return {
+                  ...f,
+                  date,
+                  // Re-resolve the price for the new work date if an activity is selected.
+                  unitPrice: activity
+                    ? String(resolveActivityPrice(activity.priceSchedule, activity.defaultPrice, date))
+                    : f.unitPrice,
+                };
+              });
+            }}
             required
             className="w-full rounded-lg border border-finca-200 bg-white px-4 py-2.5 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400 touch-target"
           />

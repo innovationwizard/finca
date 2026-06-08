@@ -37,7 +37,9 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/planilla");
+    // Land via the role-aware root redirect (Plan Anual for most roles,
+    // Planilla for FIELD).
+    router.push("/");
     router.refresh();
   };
 

@@ -56,6 +56,21 @@ export const activityCreateSchema = activityUpdateSchema.omit({ id: true });
 export type ActivityUpdateInput = z.infer<typeof activityUpdateSchema>;
 export type ActivityCreateInput = z.infer<typeof activityCreateSchema>;
 
+// ── Activity price vigencia (effective-dated pricing) ─────────────────────────
+
+export const activityPriceCreateSchema = z.object({
+  price: z
+    .number()
+    .min(0, "El precio no puede ser negativo")
+    .max(100000, "El precio parece excesivo"),
+  effectiveFrom: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (use AAAA-MM-DD)"),
+  note: z.string().max(200).nullable().optional(),
+});
+
+export type ActivityPriceCreateInput = z.infer<typeof activityPriceCreateSchema>;
+
 // ── System Settings ───────────────────────────────────────────────────────────
 
 export const systemSettingUpdateSchema = z.object({
