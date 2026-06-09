@@ -21,6 +21,7 @@ import {
   KeyRound,
   Banknote,
   Merge,
+  Table2,
   type LucideIcon,
 } from "lucide-react";
 import { SyncIndicator } from "./sync-indicator";
@@ -42,6 +43,7 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/planilla", label: "Planilla", icon: ClipboardList },
+  { href: "/planilla/captura", label: "Captura Semanal", icon: Table2 },
   { href: "/ingreso-cafe", label: "Ingreso Café", icon: Coffee },
   { href: "/plan", label: "Plan Anual", icon: CalendarRange },
   { href: "/resumenes", label: "Resúmenes", icon: FileBarChart },

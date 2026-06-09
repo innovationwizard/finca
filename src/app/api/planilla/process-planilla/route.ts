@@ -26,7 +26,11 @@ import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 const XLSX_CONTENT_TYPE =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-// Activity abbreviation table — mirrors docs/abbr.txt
+// Activity abbreviation table — FALLBACK ONLY. The authoritative code→activity
+// mapping is now the reconciled `Activity.code` field (from the farm's ACTIVIDADES
+// sheet); this table only covers notebook codes the `code` field doesn't carry
+// (CC, PP, EB, MU, CD, LM, DH, HB, MIP, AN, FF, EM, MT, SI…). Where they overlap,
+// `Activity.code` wins (e.g. RP = Repaso Sombra, not the "Repaso Poda" below).
 const ACTIVITY_ABBR: Record<string, string> = {
   CC: "Corte de Café",
   PP: "Pepena",
@@ -117,6 +121,7 @@ export async function POST(request: NextRequest) {
         select: {
           id: true,
           name: true,
+          code: true,
           unit: true,
           defaultPrice: true,
           prices: { select: { effectiveFrom: true, price: true }, orderBy: { effectiveFrom: "asc" } },
@@ -205,6 +210,16 @@ export async function POST(request: NextRequest) {
     //    abbreviation-expanded names alike.
     const resolveActivity = buildActivityResolver(activities);
 
+    // Authoritative code → activity map (reconciled Activity.code). Strips a
+    // trailing pass number ("RP 1" → "RP"). Wins over the hardcoded ABBR table.
+    const codeToActivity = new Map(
+      activities.filter((a) => a.code).map((a) => [a.code!.toUpperCase(), a]),
+    );
+    const resolveByCode = (raw: string) => {
+      const c = (raw ?? "").trim().replace(/\s+\d+$/, "").toUpperCase();
+      return c ? codeToActivity.get(c) ?? null : null;
+    };
+
     // Effective-dated price schedule per activity, for work-date pricing.
     const scheduleByActivityId = new Map(
       activities.map((a) => [a.id, toPriceSchedule(a.prices)]),
@@ -242,11 +257,16 @@ export async function POST(request: NextRequest) {
     const enrichedRows = extraction.rows.map((row) => ({
       workerName: row.workerName,
       entries: row.entries.map((entry) => {
-        // Resolve activity: LEARNED mapping first, then abbreviation expansion +
-        // tolerant matcher. Unresolved → surfaced for the resolution tree.
+        // Resolve activity, in order of authority:
+        //   1. learned mapping (user-taught)
+        //   2. reconciled Activity.code (e.g. RP → Repaso Sombra)
+        //   3. fallback ABBR expansion + tolerant name matcher (notebook codes)
+        //   4. direct name match
+        // Unresolved → surfaced for the resolution tree.
         const canonicalName = resolveAbbrToName(entry.activity);
         const resolvedActivity =
           learnedActivity.get(normalize(entry.activity)) ??
+          resolveByCode(entry.activity) ??
           resolveActivity(canonicalName) ??
           resolveActivity(entry.activity);
         if (!resolvedActivity) unresolvedActivities.add(entry.activity);

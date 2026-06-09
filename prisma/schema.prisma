@@ -147,6 +147,7 @@ enum ActivityUnit {
 model Activity {
   id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String       @unique
+  code         String?      @unique // farm shorthand (CP, BE, MG, RP…) from ACTIVIDADES
   unit         ActivityUnit
   defaultPrice Decimal?     @map("default_price") @db.Decimal(10, 2)
   isHarvest    Boolean      @default(false) @map("is_harvest")
