@@ -252,8 +252,9 @@ model PayrollEntry {
   payPeriodId  String          @map("pay_period_id") @db.Uuid
   workerId     String          @map("worker_id") @db.Uuid
   category     WorkerCategory  @default(VOLUNTARIO)
-  totalEarned  Decimal         @map("total_earned") @db.Decimal(10, 2)
-  bonification Decimal         @default(0) @db.Decimal(10, 2)
+  totalEarned   Decimal         @map("total_earned") @db.Decimal(10, 2)
+  bonification  Decimal         @default(0) @db.Decimal(10, 2)
+  seventhDayPay Decimal         @default(0) @map("seventh_day_pay") @db.Decimal(10, 2)
   advances     Decimal         @default(0) @db.Decimal(10, 2)
   deductions   Decimal         @default(0) @db.Decimal(10, 2)
   totalToPay   Decimal         @map("total_to_pay") @db.Decimal(10, 2)
@@ -272,6 +273,21 @@ model PayrollEntry {
 enum WorkerCategory {
   VOLUNTARIO
   FIJO
+}
+
+// Official / non-working days. Read by the séptimo computation to reduce the
+// number of required workdays in a week (required = 6 − holidays that week).
+// New table → UUIDv7 per project conventions (existing tables remain v4 until
+// the separate rebuild migration).
+model Holiday {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  date            DateTime @unique @db.Date
+  name            String
+  recurringAnnual Boolean  @default(false) @map("recurring_annual")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("holidays")
 }
 
 // =============================================================================

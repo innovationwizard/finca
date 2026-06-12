@@ -96,14 +96,6 @@ export default async function PlanillaPage() {
           {canCreatePeriod && currentPeriod && (
             <NewPeriodModal suggestedStartDate={suggestedStartDate} />
           )}
-          {canWrite && (
-            <Link
-              href="/planilla/nueva"
-              className="inline-flex items-center justify-center rounded-lg bg-finca-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800 touch-target"
-            >
-              + Nuevo Registro
-            </Link>
-          )}
         </div>
       </div>
 

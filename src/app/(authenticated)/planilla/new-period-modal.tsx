@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarPlus, X } from "lucide-react";
-import { CreatePayPeriodWizard } from "./nueva/create-pay-period-wizard";
+import { CreatePayPeriodWizard } from "./create-pay-period-wizard";
 
 type Props = {
   // When true: renders the wizard inline with no trigger button (empty-state use)

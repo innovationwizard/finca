@@ -46,6 +46,7 @@ WhatsApp Image*
 # PII artifacts (real worker data — never commit)
 revision-trabajadores.html
 format/
+SSOT*/
 
 # PWA
 public/sw.js
