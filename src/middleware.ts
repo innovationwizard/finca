@@ -28,6 +28,23 @@ function isBot(ua: string | null): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── MAINTENANCE MODE ──────────────────────────────────────────────────────
+  // Scheduled downtime. Every route 307-redirects (temporary, never cached) to
+  // the maintenance notice at "/", so directly-typed or browser-saved URLs
+  // (e.g. /dashboard, /planilla, /login) all land on the notice. Static assets
+  // are excluded by the matcher below, so the notice still renders.
+  // To LIFT maintenance: set MAINTENANCE_MODE = false (or revert this block) and redeploy.
+  const MAINTENANCE_MODE = true;
+  if (MAINTENANCE_MODE) {
+    if (pathname === "/") {
+      return NextResponse.next(); // serve the maintenance notice (no auth)
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   // Allow public routes
   if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
