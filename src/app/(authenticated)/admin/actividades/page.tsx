@@ -6,21 +6,32 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, SETTINGS_ROLES } from "@/lib/auth/guards";
 import { toPriceSchedule } from "@/lib/pricing/activity-prices";
+import { getSeptimoAmount } from "@/lib/payroll/septimo";
 import { ActivitiesManager } from "./activities-manager";
 import { PayCycleSettings } from "./pay-cycle-settings";
+import { SeptimoHolidaysSettings } from "./septimo-holidays-settings";
 
 export const metadata = { title: "Actividades y Configuración — Finca Danilandia" };
 
 export default async function ActivitiesAdminPage() {
   await requireRole(...SETTINGS_ROLES);
 
-  const [activities, settings] = await Promise.all([
+  const [activities, settings, septimoAmount, holidays] = await Promise.all([
     prisma.activity.findMany({
       orderBy: { sortOrder: "asc" },
       include: { prices: { orderBy: { effectiveFrom: "asc" } } },
     }),
     prisma.systemSetting.findMany({ orderBy: [{ group: "asc" }, { key: "asc" }] }),
+    getSeptimoAmount(),
+    prisma.holiday.findMany({ orderBy: { date: "asc" } }),
   ]);
+
+  const serializedHolidays = holidays.map((h) => ({
+    id: h.id,
+    date: h.date.toISOString().split("T")[0],
+    name: h.name,
+    recurringAnnual: h.recurringAnnual,
+  }));
 
   const serializedActivities = activities.map(({ prices, ...a }) => ({
     ...a,
@@ -50,6 +61,19 @@ export default async function ActivitiesAdminPage() {
         </p>
         <div className="mt-6">
           <PayCycleSettings settings={serializedSettings} />
+        </div>
+      </div>
+
+      {/* Séptimo + holidays */}
+      <div className="mb-12">
+        <h2 className="text-xl font-semibold tracking-tight text-stone-900">
+          Séptimo y feriados
+        </h2>
+        <p className="mt-1 text-sm text-stone-500">
+          Monto del séptimo (premio por asistencia) y días no laborables.
+        </p>
+        <div className="mt-6">
+          <SeptimoHolidaysSettings amount={septimoAmount} holidays={serializedHolidays} />
         </div>
       </div>
 

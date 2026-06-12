@@ -12,8 +12,9 @@ export default function NuevoTrabajadorPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    fullName: "",
-    dpi: "",
+    nombres: "",
+    apellidos: "",
+    cui: "",
     nit: "",
     bankAccount: "",
     phone: "",
@@ -33,8 +34,13 @@ export default function NuevoTrabajadorPage() {
     setError(null);
     setSaving(true);
 
-    if (!form.fullName.trim()) {
-      setError("El nombre es requerido");
+    if (!form.nombres.trim() || !form.apellidos.trim()) {
+      setError("Nombres y apellidos son requeridos");
+      setSaving(false);
+      return;
+    }
+    if (!form.cui.trim()) {
+      setError("El CUI es requerido");
       setSaving(false);
       return;
     }
@@ -44,8 +50,9 @@ export default function NuevoTrabajadorPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName: form.fullName.trim(),
-          dpi: form.dpi.trim() || null,
+          nombres: form.nombres.trim(),
+          apellidos: form.apellidos.trim(),
+          cui: form.cui.trim(),
           nit: form.nit.trim() || null,
           bankAccount: form.bankAccount.trim() || null,
           phone: form.phone.trim() || null,
@@ -93,37 +100,49 @@ export default function NuevoTrabajadorPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Full Name */}
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-finca-700">
-            Nombre completo <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={form.fullName}
-            onChange={(e) => handleChange("fullName", e.target.value)}
-            required
-            className="w-full rounded-lg border border-finca-200 bg-white px-4 py-2.5 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400 touch-target"
-            placeholder="Nombre y apellidos"
-          />
+        {/* Nombres + Apellidos */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-finca-700">
+              Nombres <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.nombres}
+              onChange={(e) => handleChange("nombres", e.target.value)}
+              required
+              className="w-full rounded-lg border border-finca-200 bg-white px-4 py-2.5 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400 touch-target"
+              placeholder="Nombres"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-finca-700">
+              Apellidos <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.apellidos}
+              onChange={(e) => handleChange("apellidos", e.target.value)}
+              required
+              className="w-full rounded-lg border border-finca-200 bg-white px-4 py-2.5 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400 touch-target"
+              placeholder="Ambos apellidos"
+            />
+          </div>
         </div>
 
-        {/* DPI */}
+        {/* CUI */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-finca-700">
-            DPI <span className="font-normal text-finca-400">(13 dígitos)</span>
+            CUI / DPI <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
-            value={form.dpi}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "").slice(0, 13);
-              handleChange("dpi", val);
-            }}
-            inputMode="numeric"
-            maxLength={13}
+            value={form.cui}
+            onChange={(e) => handleChange("cui", e.target.value.slice(0, 20))}
+            required
+            maxLength={20}
             className="w-full rounded-lg border border-finca-200 bg-white px-4 py-2.5 text-sm tabular-nums text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400 touch-target"
-            placeholder="0000000000000"
+            placeholder="Número de identificación"
           />
         </div>
 

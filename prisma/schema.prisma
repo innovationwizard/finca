@@ -30,7 +30,7 @@ enum UserRole {
 }
 
 model User {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String   @id @default(uuid(7)) @db.Uuid
   supabaseId String   @unique @map("supabase_id")
   email      String   @unique
   name       String
@@ -49,7 +49,7 @@ model User {
 // =============================================================================
 
 model SystemSetting {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String   @id @default(uuid(7)) @db.Uuid
   key       String   @unique // "pay_period_type", "agricultural_year_start_month", etc.
   value     String // JSON-encoded value
   label     String // Human-readable label: "Tipo de período de pago"
@@ -67,7 +67,7 @@ model SystemSetting {
 // =============================================================================
 
 model NotebookDictionary {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String   @id @default(uuid(7)) @db.Uuid
   category     String   // "worker", "activity", "lote", "abbreviation"
   handwritten  String   // What appears in the notebook (e.g. "Gildaverto", "B", "mg/Poda")
   canonical    String   // Correct mapping (e.g. "GILDABERTO SOLANO", "Beneficio", "Mantenimiento General Poda")
@@ -85,7 +85,7 @@ model NotebookDictionary {
 // =============================================================================
 
 model Lote {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String   @id @default(uuid(7)) @db.Uuid
   name         String   @unique
   slug         String   @unique
   areaManzanas Decimal? @map("area_manzanas") @db.Decimal(8, 2)
@@ -111,26 +111,127 @@ model Lote {
 // WORKERS
 // =============================================================================
 
+// Canonical worker identity. Person fields use DPI canon names verbatim
+// (DPI_Finca.csv): `apellidos` = both surnames combined, `nombres` = given
+// names combined — NEVER split. `cui` is the national ID captured verbatim
+// (modern 13-digit OR legacy formats); it is the unique identity key.
+// `fullName` is a maintained display value (= "nombres apellidos"), kept so
+// display/back-compat code need not all change at once.
 model Worker {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  fullName    String    @map("full_name")
-  dpi         String?   @unique
+  id        String @id @default(uuid(7)) @db.Uuid
+  cui       String @unique
+  apellidos String
+  nombres   String
+  fullName  String @map("full_name")
+
+  // Canonical person attributes (DPI canon; golden record)
+  fechaNacimiento      DateTime? @map("fecha_nacimiento") @db.Date
+  sexo                 String?
+  nacionalidad         String?
+  lugarNacimiento      String?   @map("lugar_nacimiento")
+  vecindad             String?
+  pueblo               String?
+  comunidadLinguistica String?   @map("comunidad_linguistica")
+  estadoCivil          String?   @map("estado_civil")
+  personPhotoUrl       String?   @map("person_photo_url")
+
+  // App-managed (not from SSOT): payroll banking, lifecycle
   nit         String?
-  bankAccount String?   @map("bank_account")
-  bankName    String?   @map("bank_name")
+  bankAccount String?        @map("bank_account")
+  bankName    String?        @map("bank_name")
   phone       String?
-  photoUrl    String?   @map("photo_url")
-  isMinor     Boolean   @default(false) @map("is_minor")
-  isActive    Boolean   @default(true) @map("is_active")
+  // Payroll classification — current, toggleable on the worker config page
+  // (not permanent). Recompute snapshots this into the period's payroll_entry.
+  category    WorkerCategory @default(VOLUNTARIO)
+  isMinor     Boolean        @default(false) @map("is_minor")
+  isActive    Boolean        @default(true) @map("is_active")
   startDate   DateTime? @map("start_date")
   endDate     DateTime? @map("end_date")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
+  documents       WorkerDocument[]
   activityRecords ActivityRecord[]
   payrollEntries  PayrollEntry[]
 
   @@map("workers")
+}
+
+enum DocumentType {
+  DPI
+  BIRTH_CERTIFICATE
+}
+
+// Shared parent (supertype) for identity documents. One-to-many from Worker;
+// a person may hold a DPI and a birth certificate (one of each).
+model WorkerDocument {
+  id                   String       @id @default(uuid(7)) @db.Uuid
+  workerId             String       @map("worker_id") @db.Uuid
+  type                 DocumentType
+  cuiAsPrinted         String?      @map("cui_as_printed")
+  extractionConfidence Decimal?     @map("extraction_confidence") @db.Decimal(5, 2)
+  notes                String?
+  sourceFile           String?      @map("source_file")
+  sourcePage           Int?         @map("source_page")
+  importedAt           DateTime     @default(now()) @map("imported_at")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+
+  worker           Worker                    @relation(fields: [workerId], references: [id])
+  dpi              DpiDocument?
+  birthCertificate BirthCertificateDocument?
+
+  @@unique([workerId, type])
+  @@index([workerId])
+  @@map("worker_documents")
+}
+
+// DPI child (1:1, shared PK). Holds the DPI-card specifics + as-stated values
+// (provenance — what THIS card said, vs the worker's golden values).
+model DpiDocument {
+  documentId       String    @id @map("document_id") @db.Uuid
+  fechaVencimiento DateTime? @map("fecha_vencimiento") @db.Date
+  frontImageUrl    String?   @map("front_image_url")
+  backImageUrl     String?   @map("back_image_url")
+  apellidos            String?
+  nombres              String?
+  fechaNacimiento      DateTime? @map("fecha_nacimiento") @db.Date
+  sexo                 String?
+  nacionalidad         String?
+  lugarNacimiento      String?   @map("lugar_nacimiento")
+  vecindad             String?
+  pueblo               String?
+  comunidadLinguistica String?   @map("comunidad_linguistica")
+  estadoCivil          String?   @map("estado_civil")
+
+  document WorkerDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("dpi_documents")
+}
+
+// Birth-certificate child (1:1, shared PK). Inscrito as-stated + parents
+// (provenance only; parents are not workers). Parent DOB/CUI kept as text —
+// old records carry partial/legacy values; capture verbatim, never coerce.
+model BirthCertificateDocument {
+  documentId              String    @id @map("document_id") @db.Uuid
+  correlativo             String?
+  fechaEmisionCertificado DateTime? @map("fecha_emision_certificado") @db.Date
+  imageUrl                String?   @map("image_url")
+  inscritoFechaNacimiento DateTime? @map("inscrito_fecha_nacimiento") @db.Date
+  inscritoLugarNacimiento String?   @map("inscrito_lugar_nacimiento")
+  inscritoSexo            String?   @map("inscrito_sexo")
+  madreNombresApellidos   String?   @map("madre_nombres_apellidos")
+  madreCui                String?   @map("madre_cui")
+  madreFechaNacimiento    String?   @map("madre_fecha_nacimiento")
+  madreLugarOrigen        String?   @map("madre_lugar_origen")
+  padreNombresApellidos   String?   @map("padre_nombres_apellidos")
+  padreCui                String?   @map("padre_cui")
+  padreFechaNacimiento    String?   @map("padre_fecha_nacimiento")
+  padreLugarOrigen        String?   @map("padre_lugar_origen")
+
+  document WorkerDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("birth_certificate_documents")
 }
 
 // =============================================================================
@@ -145,7 +246,7 @@ enum ActivityUnit {
 }
 
 model Activity {
-  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String       @id @default(uuid(7)) @db.Uuid
   name         String       @unique
   code         String?      @unique // farm shorthand (CP, BE, MG, RP…) from ACTIVIDADES
   unit         ActivityUnit
@@ -174,7 +275,7 @@ model Activity {
 // any vigencia. Past ActivityRecord.unitPrice values are snapshots and never
 // change — so price edits have no retroactive effect.
 model ActivityPrice {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id            String   @id @default(uuid(7)) @db.Uuid
   activityId    String   @map("activity_id") @db.Uuid
   price         Decimal  @db.Decimal(10, 2)
   effectiveFrom DateTime @map("effective_from") @db.Date
@@ -199,7 +300,7 @@ enum PayPeriodType {
 }
 
 model PayPeriod {
-  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String        @id @default(uuid(7)) @db.Uuid
   type             PayPeriodType @default(SEMANAL)
   periodNumber     Int           @map("period_number")
   agriculturalYear String        @map("agricultural_year") // "2526"
@@ -219,7 +320,7 @@ model PayPeriod {
 }
 
 model ActivityRecord {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String    @id @default(uuid(7)) @db.Uuid
   date        DateTime  @db.Date
   payPeriodId String    @map("pay_period_id") @db.Uuid
   workerId    String    @map("worker_id") @db.Uuid
@@ -248,7 +349,7 @@ model ActivityRecord {
 }
 
 model PayrollEntry {
-  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String          @id @default(uuid(7)) @db.Uuid
   payPeriodId  String          @map("pay_period_id") @db.Uuid
   workerId     String          @map("worker_id") @db.Uuid
   category     WorkerCategory  @default(VOLUNTARIO)
@@ -315,7 +416,7 @@ enum CoffeeStatus {
 }
 
 model CoffeeIntake {
-  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String       @id @default(uuid(7)) @db.Uuid
   code            String       @unique
   date            DateTime     @db.Date
   coffeeType      CoffeeType   @default(CEREZA) @map("coffee_type")
@@ -355,7 +456,7 @@ model CoffeeIntake {
 // =============================================================================
 
 model PlanEntry {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String   @id @default(uuid(7)) @db.Uuid
   agriculturalYear String   @map("agricultural_year")
   loteId           String   @map("lote_id") @db.Uuid
   activityId       String   @map("activity_id") @db.Uuid
@@ -386,7 +487,7 @@ enum EstimateType {
 }
 
 model ProductionEstimate {
-  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String       @id @default(uuid(7)) @db.Uuid
   agriculturalYear String       @map("agricultural_year")
   loteId           String       @map("lote_id") @db.Uuid
   estimateType     EstimateType @map("estimate_type")
@@ -411,7 +512,7 @@ model ProductionEstimate {
 // =============================================================================
 
 model AuditLog {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String   @id @default(uuid(7)) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   action    String
   tableName String   @map("table_name")

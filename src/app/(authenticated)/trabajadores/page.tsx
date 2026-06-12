@@ -16,7 +16,7 @@ export default async function TrabajadoresPage() {
     select: {
       id: true,
       fullName: true,
-      dpi: true,
+      cui: true,
       phone: true,
       isActive: true,
       isMinor: true,

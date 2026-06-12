@@ -21,16 +21,20 @@
 
 ## 2. Verified facts (from read-only inspection; aggregates only, no PII)
 
-**`SSOT-DO-NOT-UPDATE/DPI_Finca_Danilandia_extracted.csv` — 32 rows**
+> **Update 2026-06-12:** the DPI file is present as **`DPI_Finca.csv`** (32 rows); Jorge designated its fields the **authoritative field canon**. The `worker` identity schema field names match it verbatim.
+
+**`SSOT-DO-NOT-UPDATE/DPI_Finca.csv` — 32 rows — ⭐ AUTHORITATIVE FIELD CANON**
 Columns: `page, cui, apellidos, nombres, fecha_nacimiento, sexo, nacionalidad, lugar_nacimiento, vecindad, pueblo, comunidad_linguistica, estado_civil, fecha_vencimiento, extraction_confidence, notes`.
 - 32/32 have `nombres`, `apellidos`, `fecha_nacimiento`.
-- CUI: **21/32 are clean 13-digit; 11/32 are present but not plain 13 digits** (need normalization/verification).
+- CUI: **21/32 are clean 13-digit; 11/32 are present but not plain 13 digits** (capture verbatim — likely a mix of formatting and legacy formats; not errors). **DPI file is NOT yet four-eyes verified** (the RENAP birth-cert file is).
 - 0 duplicate CUIs within the file.
 - `extraction_confidence`: range 85–92 (percent); **none is 100**. `notes` non-empty on all 32.
 
-**`SSOT-DO-NOT-UPDATE/RENAP_Birth_Certificates_Finca_Danilandia.csv` — 6 rows**
-Columns include `inscrito_nombres_apellidos, inscrito_cui, inscrito_fecha_nacimiento, inscrito_lugar_nacimiento, inscrito_sexo, madre_*, padre_*, correlativo, fecha_emision_certificado, extraction_confidence, notes`.
-- 5/6 `inscrito_cui` are clean 13-digit; 1 is not.
+**`SSOT-DO-NOT-UPDATE/RENAP_Birth_Certificates_Finca.csv` — 6 rows** (renamed 2026-06-12; fields aligned to DPI canon)
+Columns: `page, cui, apellidos, nombres, inscrito_fecha_nacimiento, inscrito_lugar_nacimiento, inscrito_sexo, madre_nombres_apellidos, madre_cui, madre_fecha_nacimiento, madre_lugar_origen, padre_nombres_apellidos, padre_cui, padre_fecha_nacimiento, padre_lugar_origen, correlativo, fecha_emision_certificado, extraction_confidence, notes`.
+- **Identity fields now match DPI canon:** `page, cui, apellidos, nombres` (was `inscrito_cui` / `inscrito_nombres_apellidos`). The inscrito DOB/birthplace/sex and `madre_*`/`padre_*`/`correlativo`/`fecha_emision_certificado` remain birth-cert-specific.
+- **✅ Reconciled (Jorge, 2026-06-12): the DPI csv fields are authoritative canon.** Store `apellidos` (both surnames combined) and `nombres` (given names combined) **verbatim as canon — never split** into paterno/materno (splitting is the fragile, Dirty-George failure mode behind the old matcher bug). The `worker` schema field names were updated to match the DPI canon.
+- **✅ FOUR-EYES HUMAN VERIFIED CLEAN (2026-06-11).** This file is trusted. 5/6 `inscrito_cui` are clean 13-digit; the 1 that isn't — and legacy values such as the `madre_cui` `F-6 22274` (an old *cédula de vecindad*/registry reference from before the CUI system) — are **confirmed-correct real values, not errors**. Capture **verbatim**; do not formula-validate or reject (see CUI reflection).
 - `extraction_confidence`: 88–95 (percent).
 
 **Cross-file:** CUI is the shared identity key (same number on a person's DPI and their birth certificate). In the **current** extraction the two files are CUI-disjoint, so today there are **38 distinct people, each appearing with exactly one document type**. This is a property of today's data, **not** a model constraint: the schema (§5 Phase 2) lets any person hold both a DPI and a birth-certificate document, keyed to one identity by CUI. (To confirm with you, DEC-4: what the 6 birth-certificate-only people represent — e.g. minors, or adults whose DPI isn't captured yet.)
@@ -44,7 +48,7 @@ Columns include `inscrito_nombres_apellidos, inscrito_cui, inscrito_fecha_nacimi
 | # | Discrepancy | Why it blocks a blind load | Resolution in this plan |
 |---|---|---|---|
 | D1 | 11/32 DPI CUIs not plain 13-digit | CUI is the deterministic join key; bad keys mis-map or fail uniqueness | Phase 0 normalizes + validates; anomalies surfaced to you, never auto-corrected |
-| D2 | 1/6 birth-cert CUI not 13-digit | same | same |
+| D2 ✅ | 1/6 birth-cert CUI not 13-digit | **RESOLVED** — RENAP file four-eyes verified clean; non-13-digit & legacy formats (e.g. `madre_cui` `F-6 22274`) are confirmed-correct real values | Capture verbatim; **no formula validation** |
 | D3 | All SSOT rows < 100% extraction confidence; all have `notes` | This is an extraction, not a register dump | Phase 0 emits a confidence + notes review list for your eyes before load |
 | D4 | CUI check-digit algorithm unverified | Cannot validate correctness of a CUI without the real modulus rule | **Open item O1** — must be sourced & verified before claiming a CUI is valid/invalid |
 | D5 | 38 SSOT people vs 216 prod rows | Mapping is identity resolution over real money | Phase 1 reconciliation report; you confirm mappings |
@@ -91,7 +95,7 @@ Prisma migration, **idempotent** and additive (new nullable columns / new tables
 
 **Full field coverage — every SSOT column is represented (nothing discarded):**
 
-- **`worker` (canonical identity):** keep existing `id`; **`cui` (normalized, validated, UNIQUE — one CUI per person; this is the identity key)**; structured name `given_names` / `apellido_paterno` / `apellido_materno` (+ derived display full name), `date_of_birth`, `sex`, `nationality`, birthplace (`lugar_nacimiento`, `vecindad`, `pueblo`), `comunidad_linguistica`, `estado_civil`, lifecycle `status`, and `person_photo_url`.
+- **`worker` (canonical identity) — field names match DPI canon (`DPI_Finca.csv`) verbatim:** `id`; **`cui` (normalized, UNIQUE — one CUI per person; the identity key)**; `apellidos` (both surnames **combined — NOT split**); `nombres` (given names combined); `fecha_nacimiento`; `sexo`; `nacionalidad`; `lugar_nacimiento`; `vecindad`; `pueblo`; `comunidad_linguistica`; `estado_civil`. App-added (not in canon): lifecycle `status`, `person_photo_url`, `is_minor`, `start_date`/`end_date`, provenance. DPI-card `fecha_vencimiento` → `dpi_document`.
 - **`worker_document` (typed records, per DEC-1a) — ONE-TO-MANY: a single person may hold a DPI document AND a birth-certificate document (and the DB holds both), because the same CUI appears on both.** Fields: `worker_id` (FK to the identity), `type` (`DPI` | `BIRTH_CERTIFICATE`), plus per-type fields:
   - **DPI:** `fecha_vencimiento` (expiry), `front_image_url`, `back_image_url`.
   - **BIRTH_CERTIFICATE:** `correlativo`, `fecha_emision_certificado`, `lugar_nacimiento`, `madre_nombres_apellidos` / `madre_cui` / `madre_fecha_nacimiento` / `madre_lugar_origen`, `padre_*` (same), `image_url`.

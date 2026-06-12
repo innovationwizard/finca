@@ -12,15 +12,16 @@ export function calcTotalEarned(quantity: number, unitPrice: number): number {
 
 /**
  * Calculate payroll net pay.
- * totalToPay = totalEarned + bonification - advances - deductions
+ * totalToPay = totalEarned + bonification + seventhDayPay - advances - deductions
  */
 export function calcNetPay(
   totalEarned: number,
   bonification: number,
+  seventhDayPay: number,
   advances: number,
   deductions: number,
 ): number {
-  return Math.round((totalEarned + bonification - advances - deductions) * 100) / 100;
+  return Math.round((totalEarned + bonification + seventhDayPay - advances - deductions) * 100) / 100;
 }
 
 /**

@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   const workers = await prisma.worker.findMany({
     where: { id: { in: workerIds.length > 0 ? workerIds : ["_"] } },
-    select: { id: true, fullName: true, dpi: true, bankAccount: true, bankName: true },
+    select: { id: true, fullName: true, cui: true, bankAccount: true, bankName: true },
   });
 
   const activities = await prisma.activity.findMany({
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
           bonification: payroll?.bonification ?? 0,
           advances: payroll?.advances ?? 0,
           totalToPay: payroll?.totalToPay ?? 0,
-          dpi: worker?.dpi ?? "",
+          dpi: worker?.cui ?? "", // national ID number (CUI) — payload key kept as `dpi` for the resúmenes UI
           bankAccount: worker?.bankAccount ?? "",
           bank: worker?.bankName ?? "",
         };

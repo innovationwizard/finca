@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, READ_ALL_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
-import { workerUpdateSchema } from "@/lib/validators/worker";
+import { workerUpdateSchema, deriveFullName } from "@/lib/validators/worker";
 
 export async function GET(
   request: NextRequest,
@@ -66,11 +66,15 @@ export async function GET(
   return NextResponse.json({
     id: worker.id,
     fullName: worker.fullName,
-    dpi: worker.dpi,
+    apellidos: worker.apellidos,
+    nombres: worker.nombres,
+    cui: worker.cui,
     nit: worker.nit,
     bankAccount: worker.bankAccount,
+    bankName: worker.bankName,
     phone: worker.phone,
-    photoUrl: worker.photoUrl,
+    personPhotoUrl: worker.personPhotoUrl,
+    category: worker.category,
     isMinor: worker.isMinor,
     isActive: worker.isActive,
     startDate: worker.startDate?.toISOString().split("T")[0] ?? null,
@@ -139,10 +143,16 @@ export async function PATCH(
     );
   }
 
+  const fullName =
+    rest.apellidos !== undefined || rest.nombres !== undefined
+      ? deriveFullName(rest.nombres ?? existing.nombres, rest.apellidos ?? existing.apellidos)
+      : undefined;
+
   const worker = await prisma.worker.update({
     where: { id },
     data: {
       ...rest,
+      ...(fullName !== undefined ? { fullName } : {}),
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
     },
@@ -151,11 +161,15 @@ export async function PATCH(
   return NextResponse.json({
     id: worker.id,
     fullName: worker.fullName,
-    dpi: worker.dpi,
+    apellidos: worker.apellidos,
+    nombres: worker.nombres,
+    cui: worker.cui,
     nit: worker.nit,
     bankAccount: worker.bankAccount,
+    bankName: worker.bankName,
     phone: worker.phone,
-    photoUrl: worker.photoUrl,
+    personPhotoUrl: worker.personPhotoUrl,
+    category: worker.category,
     isMinor: worker.isMinor,
     isActive: worker.isActive,
     startDate: worker.startDate?.toISOString().split("T")[0] ?? null,

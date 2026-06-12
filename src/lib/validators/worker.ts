@@ -5,15 +5,22 @@
 import { z } from "zod";
 
 export const workerCreateSchema = z.object({
-  fullName: z
+  // Identity (DPI canon): apellidos = both surnames combined, nombres = given
+  // names combined. fullName is derived server-side ("nombres apellidos").
+  apellidos: z
     .string()
-    .min(2, "El nombre debe tener al menos 2 caracteres")
-    .max(200, "El nombre es demasiado largo"),
-  dpi: z
+    .min(1, "Apellidos requeridos")
+    .max(100, "Apellidos demasiado largos"),
+  nombres: z
     .string()
-    .regex(/^\d{13}$/, "DPI debe tener 13 dígitos")
-    .nullable()
-    .optional(),
+    .min(1, "Nombres requeridos")
+    .max(100, "Nombres demasiado largos"),
+  // CUI captured verbatim — modern 13-digit OR legacy formats. No format
+  // regex (legacy IDs like "F-6 22274" are valid real values).
+  cui: z
+    .string()
+    .min(1, "CUI requerido")
+    .max(20, "CUI demasiado largo"),
   nit: z
     .string()
     .max(20, "NIT demasiado largo")
@@ -24,16 +31,22 @@ export const workerCreateSchema = z.object({
     .max(50, "Número de cuenta demasiado largo")
     .nullable()
     .optional(),
+  bankName: z
+    .string()
+    .max(100, "Nombre de banco demasiado largo")
+    .nullable()
+    .optional(),
   phone: z
     .string()
     .max(20, "Teléfono demasiado largo")
     .nullable()
     .optional(),
-  photoUrl: z
+  personPhotoUrl: z
     .string()
     .url("URL de foto inválida")
     .nullable()
     .optional(),
+  category: z.enum(["VOLUNTARIO", "FIJO"]).default("VOLUNTARIO"),
   isMinor: z.boolean().default(false),
   isActive: z.boolean().default(true),
   startDate: z
@@ -55,3 +68,8 @@ export const workerUpdateSchema = workerCreateSchema.partial().extend({
 });
 
 export type WorkerUpdateInput = z.infer<typeof workerUpdateSchema>;
+
+// Derive the maintained display name from canon parts.
+export function deriveFullName(nombres: string, apellidos: string): string {
+  return `${nombres.trim()} ${apellidos.trim()}`.trim();
+}

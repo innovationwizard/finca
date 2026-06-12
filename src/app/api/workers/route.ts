@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, READ_ALL_ROLES, WRITE_ROLES } from "@/lib/auth/guards";
-import { workerCreateSchema } from "@/lib/validators/worker";
+import { workerCreateSchema, deriveFullName } from "@/lib/validators/worker";
 
 export async function GET(request: NextRequest) {
   const auth = await apiRequireRole(...READ_ALL_ROLES);
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     select: {
       id: true,
       fullName: true,
-      dpi: true,
+      cui: true,
       phone: true,
       isActive: true,
       isMinor: true,
@@ -70,22 +70,21 @@ export async function POST(request: NextRequest) {
 
   const { startDate, endDate, ...rest } = parsed.data;
 
-  // Check DPI uniqueness if provided
-  if (rest.dpi) {
-    const existing = await prisma.worker.findUnique({
-      where: { dpi: rest.dpi },
-    });
-    if (existing) {
-      return NextResponse.json(
-        { error: "Ya existe un trabajador con ese DPI" },
-        { status: 409 },
-      );
-    }
+  // CUI is the unique identity key — reject duplicates.
+  const existing = await prisma.worker.findUnique({
+    where: { cui: rest.cui },
+  });
+  if (existing) {
+    return NextResponse.json(
+      { error: "Ya existe un trabajador con ese CUI" },
+      { status: 409 },
+    );
   }
 
   const worker = await prisma.worker.create({
     data: {
       ...rest,
+      fullName: deriveFullName(rest.nombres, rest.apellidos),
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
     },
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest) {
     {
       id: worker.id,
       fullName: worker.fullName,
-      dpi: worker.dpi,
+      cui: worker.cui,
       isActive: worker.isActive,
     },
     { status: 201 },

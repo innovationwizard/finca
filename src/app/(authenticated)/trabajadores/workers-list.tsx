@@ -12,7 +12,7 @@ import { formatDateShort } from "@/lib/utils/format";
 type WorkerRow = {
   id: string;
   fullName: string;
-  dpi: string | null;
+  cui: string;
   phone: string | null;
   isActive: boolean;
   isMinor: boolean;
@@ -36,7 +36,7 @@ export function WorkersList({ workers }: { workers: WorkerRow[] }) {
         const q = search.toLowerCase();
         if (
           !w.fullName.toLowerCase().includes(q) &&
-          !(w.dpi?.includes(q)) &&
+          !w.cui.includes(q) &&
           !(w.phone?.includes(q))
         ) {
           return false;
@@ -134,7 +134,7 @@ export function WorkersList({ workers }: { workers: WorkerRow[] }) {
                     )}
                   </td>
                   <td className="px-4 py-2.5 tabular-nums text-finca-600">
-                    {w.dpi ?? "—"}
+                    {w.cui || "—"}
                   </td>
                   <td className="px-4 py-2.5 text-finca-600">
                     {w.phone ?? "—"}

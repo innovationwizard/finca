@@ -39,11 +39,14 @@ type PayrollEntry = {
 export type WorkerProfileData = {
   id: string;
   fullName: string;
-  dpi: string | null;
+  apellidos: string;
+  nombres: string;
+  cui: string;
   nit: string | null;
   bankAccount: string | null;
   phone: string | null;
-  photoUrl: string | null;
+  personPhotoUrl: string | null;
+  category: "VOLUNTARIO" | "FIJO";
   isMinor: boolean;
   isActive: boolean;
   startDate: string | null;
@@ -67,11 +70,13 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    fullName: worker.fullName,
-    dpi: worker.dpi ?? "",
+    nombres: worker.nombres,
+    apellidos: worker.apellidos,
+    cui: worker.cui,
     nit: worker.nit ?? "",
     bankAccount: worker.bankAccount ?? "",
     phone: worker.phone ?? "",
+    category: worker.category,
     isMinor: worker.isMinor,
     isActive: worker.isActive,
     startDate: worker.startDate ?? "",
@@ -91,11 +96,13 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName: form.fullName.trim(),
-          dpi: form.dpi.trim() || null,
+          nombres: form.nombres.trim(),
+          apellidos: form.apellidos.trim(),
+          cui: form.cui.trim(),
           nit: form.nit.trim() || null,
           bankAccount: form.bankAccount.trim() || null,
           phone: form.phone.trim() || null,
+          category: form.category,
           isMinor: form.isMinor,
           isActive: form.isActive,
           startDate: form.startDate || null,
@@ -121,11 +128,13 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
     setIsEditing(false);
     setError(null);
     setForm({
-      fullName: worker.fullName,
-      dpi: worker.dpi ?? "",
+      nombres: worker.nombres,
+      apellidos: worker.apellidos,
+      cui: worker.cui,
       nit: worker.nit ?? "",
       bankAccount: worker.bankAccount ?? "",
       phone: worker.phone ?? "",
+      category: worker.category,
       isMinor: worker.isMinor,
       isActive: worker.isActive,
       startDate: worker.startDate ?? "",
@@ -210,19 +219,32 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
         )}
 
         <div className="grid gap-4 px-6 py-5 sm:grid-cols-2">
-          {/* Full Name */}
+          {/* Nombres + Apellidos */}
           {isEditing ? (
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-finca-400">
-                Nombre completo
-              </label>
-              <input
-                type="text"
-                value={form.fullName}
-                onChange={(e) => handleChange("fullName", e.target.value)}
-                className="w-full rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400"
-              />
-            </div>
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-finca-400">
+                  Nombres
+                </label>
+                <input
+                  type="text"
+                  value={form.nombres}
+                  onChange={(e) => handleChange("nombres", e.target.value)}
+                  className="w-full rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-finca-400">
+                  Apellidos
+                </label>
+                <input
+                  type="text"
+                  value={form.apellidos}
+                  onChange={(e) => handleChange("apellidos", e.target.value)}
+                  className="w-full rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400"
+                />
+              </div>
+            </>
           ) : null}
 
           {/* DPI */}
@@ -234,16 +256,14 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
             {isEditing ? (
               <input
                 type="text"
-                value={form.dpi}
-                onChange={(e) =>
-                  handleChange("dpi", e.target.value.replace(/\D/g, "").slice(0, 13))
-                }
-                maxLength={13}
+                value={form.cui}
+                onChange={(e) => handleChange("cui", e.target.value.slice(0, 20))}
+                maxLength={20}
                 className="w-full rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm tabular-nums text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400"
               />
             ) : (
               <p className="text-sm tabular-nums text-finca-900">
-                {worker.dpi ?? "—"}
+                {worker.cui}
               </p>
             )}
           </div>
@@ -300,6 +320,25 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
               />
             ) : (
               <p className="text-sm text-finca-900">{worker.phone ?? "—"}</p>
+            )}
+          </div>
+
+          {/* Category (toggleable payroll classification) */}
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-finca-400">
+              Categoría
+            </label>
+            {isEditing ? (
+              <select
+                value={form.category}
+                onChange={(e) => handleChange("category", e.target.value)}
+                className="w-full rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400"
+              >
+                <option value="VOLUNTARIO">Voluntario</option>
+                <option value="FIJO">Fijo</option>
+              </select>
+            ) : (
+              <p className="text-sm text-finca-900">{worker.category === "FIJO" ? "Fijo" : "Voluntario"}</p>
             )}
           </div>
 

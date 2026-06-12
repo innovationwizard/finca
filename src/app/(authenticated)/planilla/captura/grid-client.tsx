@@ -35,7 +35,6 @@ function dm(iso: string) { const [, m, d] = iso.split("-"); return `${d}/${m}`; 
 export function CapturaGrid({ workers, activities, lotes, periods }: { workers: Worker[]; activities: Activity[]; lotes: Lote[]; periods: Period[] }) {
   const router = useRouter();
   const [weekStart, setWeekStart] = useState(mondayOfToday());
-  const [includeSunday, setIncludeSunday] = useState(false);
   const [cells, setCells] = useState<Record<string, Cell>>({});
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -60,9 +59,10 @@ export function CapturaGrid({ workers, activities, lotes, periods }: { workers: 
   const roster = useMemo(() => rosterIds.map((id) => workerById.get(id)).filter(Boolean) as Worker[], [rosterIds, workerById]);
 
   const days = useMemo(() => {
-    const n = includeSunday ? 7 : 6;
-    return Array.from({ length: n }, (_, i) => addDays(weekStart, i));
-  }, [weekStart, includeSunday]);
+    // Mon–Sat (6 workdays). The séptimo is a computed attendance bonus, not an
+    // enterable 7th day, so the grid never includes Sunday.
+    return Array.from({ length: 6 }, (_, i) => addDays(weekStart, i));
+  }, [weekStart]);
 
   const periodFor = useCallback((iso: string) => periods.find((p) => iso >= p.startDate && iso <= p.endDate) ?? null, [periods]);
   const uncovered = useMemo(() => days.filter((d) => !periodFor(d)), [days, periodFor]);
@@ -149,10 +149,6 @@ export function CapturaGrid({ workers, activities, lotes, periods }: { workers: 
         <button onClick={() => setWeekStart(addDays(weekStart, -7))} className="rounded p-1 hover:bg-finca-50"><ChevronLeft className="h-4 w-4" /></button>
         <span className="font-medium text-finca-900">Semana {dm(days[0])} – {dm(days[days.length - 1])}</span>
         <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="rounded p-1 hover:bg-finca-50"><ChevronRight className="h-4 w-4" /></button>
-        <label className="ml-2 flex items-center gap-1.5 text-finca-600">
-          <input type="checkbox" checked={includeSunday} onChange={(e) => setIncludeSunday(e.target.checked)} className="h-4 w-4 rounded border-finca-300" />
-          Incluir domingo (séptimo)
-        </label>
         <span className="ml-auto text-finca-500">{roster.length} trabajadores · {filledCount} celdas · <span className="font-semibold text-finca-900">Q{grandTotal.toLocaleString("es-GT", { minimumFractionDigits: 2 })}</span></span>
         <button onClick={() => setAddOpen((v) => !v)} className="inline-flex items-center gap-1 rounded-md border border-finca-200 px-2 py-1 text-finca-600 hover:bg-finca-50"><Plus className="h-3.5 w-3.5" /> Trabajador</button>
       </div>
