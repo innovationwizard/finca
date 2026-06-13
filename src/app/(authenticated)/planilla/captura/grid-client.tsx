@@ -15,7 +15,7 @@ import { resolveActivityPrice, type PriceVigencia } from "@/lib/pricing/resolve-
 type Worker = { id: string; name: string };
 type Activity = { id: string; name: string; code: string | null; unit: string; defaultPrice: number; priceSchedule: PriceVigencia[] };
 type Lote = { id: string; name: string };
-type Period = { id: string; periodNumber: number; startDate: string; endDate: string };
+type Period = { id: string; periodNumber: number; startDate: string; endDate: string; isClosed: boolean };
 type Cell = { loteId: string; activityId: string; units: string };
 
 const ROSTER_KEY = "finca-captura-roster";
@@ -65,8 +65,14 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
     return Array.from({ length: 6 }, (_, i) => addDays(weekStart, i));
   }, [weekStart]);
 
-  const periodFor = useCallback((iso: string) => periods.find((p) => iso >= p.startDate && iso <= p.endDate) ?? null, [periods]);
-  const uncovered = useMemo(() => days.filter((d) => !periodFor(d)), [days, periodFor]);
+  // A day may be in an OPEN period (enterable), a CLOSED period (historical,
+  // locked), or NO period (truly uncovered → offer to open/extend). Distinguish
+  // them so closed-period days are never mistaken for "uncovered".
+  const coveringPeriod = useCallback((iso: string) => periods.find((p) => iso >= p.startDate && iso <= p.endDate) ?? null, [periods]);
+  const openPeriodFor = useCallback((iso: string) => periods.find((p) => !p.isClosed && iso >= p.startDate && iso <= p.endDate) ?? null, [periods]);
+  const dayClosed = useCallback((iso: string) => { const p = coveringPeriod(iso); return !!p && p.isClosed; }, [coveringPeriod]);
+  const uncovered = useMemo(() => days.filter((d) => !coveringPeriod(d)), [days, coveringPeriod]);
+  const closedDays = useMemo(() => days.filter((d) => dayClosed(d)), [days, dayClosed]);
 
   const key = (workerId: string, iso: string) => `${workerId}|${iso}`;
   const getCell = (workerId: string, iso: string): Cell => cells[key(workerId, iso)] ?? { loteId: "", activityId: "", units: "" };
@@ -105,15 +111,16 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
   const filledCount = useMemo(() => Object.values(cells).filter((c) => c.activityId).length, [cells]);
 
   const handleSave = useCallback(async () => {
-    if (uncovered.length > 0) { setMsg({ kind: "err", text: `Faltan períodos de pago para: ${uncovered.map(dm).join(", ")}. Créelos en Planilla antes de guardar.` }); return; }
+    if (uncovered.length > 0) { setMsg({ kind: "err", text: `Hay días sin período de pago (${uncovered.map(dm).join(", ")}). Resuélvalo en el aviso de arriba antes de guardar.` }); return; }
     const rows: Record<string, unknown>[] = [];
     for (const w of roster) {
       for (const d of days) {
         const c = getCell(w.id, d);
         if (!c.activityId) continue;
+        const period = openPeriodFor(d);
+        if (!period) continue; // closed/uncovered day — not enterable (inputs are disabled for these)
         const units = parseFloat(c.units) || 1;
         const price = priceFor(c.activityId, d);
-        const period = periodFor(d)!;
         rows.push({
           workerId: w.id, activityId: c.activityId, loteId: c.loteId || null,
           date: d, quantity: units, unitPrice: price,
@@ -135,7 +142,7 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
     } catch {
       setMsg({ kind: "err", text: "Error de conexión" });
     } finally { setSaving(false); }
-  }, [roster, days, cells, uncovered, priceFor, periodFor, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [roster, days, cells, uncovered, priceFor, openPeriodFor, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const notInRoster = useMemo(() => {
     const set = new Set(rosterIds);
@@ -154,8 +161,9 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
     setMsg(null);
     try {
       let res: Response;
-      if (periods.length > 0) {
-        const latest = periods.reduce((a, b) => (a.endDate >= b.endDate ? a : b));
+      const openPeriods = periods.filter((p) => !p.isClosed);
+      if (openPeriods.length > 0) {
+        const latest = openPeriods.reduce((a, b) => (a.endDate >= b.endDate ? a : b));
         const startDate = minU < latest.startDate ? minU : latest.startDate;
         const endDate = maxU > latest.endDate ? maxU : latest.endDate;
         res = await fetch(`/api/pay-periods/${latest.id}`, {
@@ -202,13 +210,18 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
               className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
             >
               {resolving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CalendarPlus className="h-3.5 w-3.5" />}
-              {periods.length > 0
+              {periods.some((p) => !p.isClosed)
                 ? `Extender período hasta ${dm(uncovered.reduce((a, b) => (a > b ? a : b)))}`
                 : `Crear período ${dm(uncovered.reduce((a, b) => (a < b ? a : b)))} – ${dm(uncovered.reduce((a, b) => (a > b ? a : b)))}`}
             </button>
           ) : (
             <p className="mt-1 text-xs">Pídale a un administrador que extienda o abra el período para incluir estos días.</p>
           )}
+        </div>
+      )}
+      {closedDays.length > 0 && (
+        <div className="mb-3 rounded-lg border border-finca-200 bg-finca-50 px-4 py-2 text-sm text-finca-600">
+          🔒 Días en período cerrado (histórico, no editable): <b>{closedDays.map(dm).join(", ")}</b>.
         </div>
       )}
       {msg && (
@@ -235,7 +248,9 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
               <th className="sticky left-0 z-10 border border-finca-100 bg-finca-50 px-2 py-1.5 text-left font-medium text-finca-600">#</th>
               <th className="sticky left-8 z-10 border border-finca-100 bg-finca-50 px-2 py-1.5 text-left font-medium text-finca-600">Trabajador</th>
               {days.map((d, i) => (
-                <th key={d} colSpan={3} className="border border-finca-100 px-2 py-1.5 text-center font-medium text-finca-700">{DAY_LABELS[i]} {dm(d)}</th>
+                <th key={d} colSpan={3} className={`border border-finca-100 px-2 py-1.5 text-center font-medium ${dayClosed(d) ? "text-finca-300" : "text-finca-700"}`} title={dayClosed(d) ? "Período cerrado — histórico" : undefined}>
+                  {DAY_LABELS[i]} {dm(d)}{dayClosed(d) ? " 🔒" : ""}
+                </th>
               ))}
               <th className="border border-finca-100 px-2 py-1.5 text-right font-medium text-finca-600">Total</th>
             </tr>
@@ -261,18 +276,19 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
                 </td>
                 {days.map((d) => {
                   const c = getCell(w.id, d);
+                  const closed = dayClosed(d);
                   return (
-                    <td key={d} colSpan={3} className="border border-finca-100 p-0">
+                    <td key={d} colSpan={3} className={`border border-finca-100 p-0 ${closed ? "bg-finca-50/70" : ""}`}>
                       <div className="flex">
-                        <select value={c.loteId} onChange={(e) => setCell(w.id, d, { loteId: e.target.value })} className="w-20 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none">
+                        <select value={c.loteId} disabled={closed} onChange={(e) => setCell(w.id, d, { loteId: e.target.value })} className="w-20 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
                           <option value="">—</option>
                           {lotes.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                         </select>
-                        <select value={c.activityId} onChange={(e) => setCell(w.id, d, { activityId: e.target.value, units: c.units || (e.target.value ? "1" : "") })} className="w-24 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none">
+                        <select value={c.activityId} disabled={closed} onChange={(e) => setCell(w.id, d, { activityId: e.target.value, units: c.units || (e.target.value ? "1" : "") })} className="w-24 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
                           <option value=""></option>
                           {activities.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ${a.name}` : a.name}</option>)}
                         </select>
-                        <input value={c.units} onChange={(e) => setCell(w.id, d, { units: e.target.value })} inputMode="decimal" className="w-10 bg-transparent px-1 py-1 text-right text-xs tabular-nums focus:bg-amber-50 focus:outline-none" placeholder="1" />
+                        <input value={c.units} disabled={closed} onChange={(e) => setCell(w.id, d, { units: e.target.value })} inputMode="decimal" className="w-10 bg-transparent px-1 py-1 text-right text-xs tabular-nums focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300" placeholder="1" />
                       </div>
                     </td>
                   );

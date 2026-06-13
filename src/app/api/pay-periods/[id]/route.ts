@@ -58,6 +58,20 @@ export async function PATCH(
 
   const iso = (d: Date) => d.toISOString().split("T")[0];
 
+  // Integrity: a period may not overlap another (overlap → ambiguous which
+  // period a date's records belong to). Two ranges overlap iff each starts on
+  // or before the other ends.
+  const conflict = await prisma.payPeriod.findFirst({
+    where: { id: { not: id }, startDate: { lte: newEnd }, endDate: { gte: newStart } },
+    select: { periodNumber: true, agriculturalYear: true, startDate: true, endDate: true },
+  });
+  if (conflict) {
+    return NextResponse.json(
+      { error: `El rango ${iso(newStart)}…${iso(newEnd)} se traslapa con el período ${conflict.periodNumber} (${iso(conflict.startDate)}…${iso(conflict.endDate)}). Ajuste las fechas para que no se encimen.` },
+      { status: 409 },
+    );
+  }
+
   await prisma.auditLog.create({
     data: {
       userId: auth.id,

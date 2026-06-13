@@ -48,6 +48,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (end.getTime() < start.getTime()) {
+    return NextResponse.json({ error: "La fecha de fin no puede ser anterior a la de inicio" }, { status: 400 });
+  }
+
+  // Integrity: no overlap with an existing period (two ranges overlap iff each
+  // starts on or before the other ends).
+  const conflict = await prisma.payPeriod.findFirst({
+    where: { startDate: { lte: end }, endDate: { gte: start } },
+    select: { periodNumber: true, startDate: true, endDate: true },
+  });
+  if (conflict) {
+    const iso = (d: Date) => d.toISOString().split("T")[0];
+    return NextResponse.json(
+      { error: `El rango se traslapa con el período ${conflict.periodNumber} (${iso(conflict.startDate)}…${iso(conflict.endDate)}). Ajuste las fechas para que no se encimen.` },
+      { status: 409 },
+    );
+  }
+
   // Derive agricultural year from the period's start date, not from "today"
   const year = getAgriculturalYear(new Date(startDate));
 

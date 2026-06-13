@@ -26,9 +26,12 @@ export default async function CapturaPage() {
       orderBy: [{ code: "asc" }, { name: "asc" }],
     }),
     prisma.lote.findMany({ where: { isActive: true }, select: { id: true, name: true }, orderBy: { sortOrder: "asc" } }),
+    // ALL periods (open + closed) for the current ag year: the grid needs to
+    // know closed-period days too, so they show as historical/locked instead of
+    // looking "uncovered" (which previously let an extend swallow them).
     prisma.payPeriod.findMany({
-      where: { agriculturalYear: getCurrentAgriculturalYear(), isClosed: false },
-      select: { id: true, periodNumber: true, startDate: true, endDate: true },
+      where: { agriculturalYear: getCurrentAgriculturalYear() },
+      select: { id: true, periodNumber: true, startDate: true, endDate: true, isClosed: true },
       orderBy: { startDate: "asc" },
     }),
   ]);
@@ -51,7 +54,7 @@ export default async function CapturaPage() {
           priceSchedule: toPriceSchedule(a.prices),
         }))}
         lotes={lotes}
-        periods={periods.map((p) => ({ id: p.id, periodNumber: p.periodNumber, startDate: p.startDate.toISOString().split("T")[0], endDate: p.endDate.toISOString().split("T")[0] }))}
+        periods={periods.map((p) => ({ id: p.id, periodNumber: p.periodNumber, startDate: p.startDate.toISOString().split("T")[0], endDate: p.endDate.toISOString().split("T")[0], isClosed: p.isClosed }))}
         canManagePeriods={canManagePeriods}
       />
     </div>
