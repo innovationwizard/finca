@@ -20,11 +20,13 @@ So **séptimo is a conditional attendance/commitment bonus**, not pay for work p
 
 ## 3. Target model (your decisions)
 
-Séptimo becomes a **derived payroll bonus**, computed per worker **per week**, **never** an `ActivityRecord`:
-- **Condition = attendance (any work).** A day counts if the worker has **≥1 `ActivityRecord` that day** (any work, any amount or type — "any work done checks the condition"). The séptimo is earned when the worker attended **all required workdays** that week. **Required days = Mon–Sat (6) minus any official holiday falling in that range** (holidays reduce the requirement), so a holiday-shortened week is still earnable. It is *attendance*, not task-completion.
+Séptimo becomes a **derived payroll bonus**, computed per worker per **calendar week**, **never** an `ActivityRecord`:
+- **Condition = attendance (any work).** A day counts if the worker has **≥1 `ActivityRecord` that day** (any work, any amount or type — "any work done checks the condition"). The séptimo is earned when the worker attended **all required workdays** of the week. **Required days = the calendar week's Mon–Sat minus any official holiday** (holidays reduce the requirement; recurring-annual holidays match by month-day), so a holiday-shortened week is still earnable. It is *attendance*, not task-completion.
+- **The week is a CALENDAR week (Mon–Sat), NOT the pay period, and required days ACCUMULATE ACROSS pay-period boundaries** (Jorge, 2026-06-13: *"The days for the séptimo condition can be accumulated throughout more than one pay period."* and *"Periods are not required to be one week spans."*). Periods may be any length; attendance is read **by date across all periods**.
+- **Attribution: the period that contains the week's end (Saturday) owns and pays that week's séptimo** (Jorge, 2026-06-13). One owner per week → paid exactly once, only after the week completes. A week whose Saturday hasn't yet fallen into any period is simply unpaid until it does.
 - **Amount = configurable.** A `SystemSetting` (group `payroll`), editable on the config page. **Initial value Q150** (the xlsx `75 × 2`). Single current value (not effective-dated) unless you ask otherwise later.
-- **One séptimo per week.** For a catorcena (14-day) period it is evaluated per week → up to two séptimos.
-- **Going-forward only.** Cutover = **the current open period + all future periods**; **closed periods are never touched** and existing `SP` records there stay as historical.
+- **One séptimo per calendar week.** A multi-week period yields one per owned week (e.g. the 32-day #7 owned 4 week-end Saturdays → up to 4).
+- **Going-forward only.** Cutover = **the current open period + all future periods**; **closed periods are never touched** (recompute reads their attendance by date but never rewrites them) and existing `SP` records there stay as historical.
 - **Computed, not entered** — Sunday is not a worked day.
 - **Storage field ✅** — a dedicated **`seventh_day_pay`** column on `PayrollEntry` (clean separation from manual `bonification`, individually auditable). The pay total must include it: `totalToPay = totalEarned + bonification + seventh_day_pay − advances − deductions` (currently `src/lib/utils/calculations.ts` omits séptimo).
 
@@ -34,7 +36,7 @@ Séptimo becomes a **derived payroll bonus**, computed per worker **per week**, 
 2. **Activity catalog:** **deactivate** the `Septimo`/`SP` activity (`isActive=false`) so no new séptimo-as-work records are created. Past `SP` records remain untouched (going-forward only) — not orphaned, not deleted.
 3. **Captura grid:** remove the "Incluir domingo (séptimo)" 7-day toggle; the capture week is six workdays (Mon–Sat). Séptimo is computed, never an enterable cell.
 4. **Import / matching:** stop matching "séptimo"/`SP` as an activity (any remaining matcher / `notebook_dictionary` entries reclassified).
-5. **Payroll computation (core new logic):** per worker, **per week**, if the worker has ≥1 activity record on all six required workdays (Mon–Sat), write the configured séptimo amount to **`PayrollEntry.seventh_day_pay`**. Applies to the **current open period + future periods**; closed periods are never touched.
+5. **Payroll computation (core new logic):** per worker, per **calendar week** owned by the period (week-end Saturday in range), if the worker attended all required workdays of that week (Mon–Sat minus holidays, attendance read **by date across all periods**), write the configured séptimo amount to **`PayrollEntry.seventh_day_pay`**. Applies to the **current open period + future periods**; closed periods are never touched. (Implemented in `src/lib/payroll/septimo.ts` `computeSeptimoForPeriod`, called by `recomputePayroll`.)
 6. **Pay-total formula:** update `src/lib/utils/calculations.ts` (and every caller) to `totalToPay = totalEarned + bonification + seventh_day_pay − advances − deductions`.
 7. **Aggregation/display** (`resumenes`, `pagos`, worker profile): surface séptimo as its own line, distinct from work earnings and from manual bonification.
 8. **Holiday table (new):** a `holiday` table — `id` (UUIDv7), `date`, `name`, optional `recurring_annual` — admin-maintained on the config page; the computation reads it to reduce required days. Covers Guatemalan national + farm-specific non-working days.

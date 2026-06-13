@@ -18,13 +18,13 @@ const k = (d: Date) => d.toISOString().slice(0, 10);
   const holidays = await prisma.holiday.findMany({ select: { date: true, name: true, recurringAnnual: true } });
   console.log(`holidays on file: ${holidays.length}${holidays.length ? " — " + holidays.map((h) => `${k(h.date)}${h.recurringAnnual ? "(anual)" : ""}`).join(", ") : ""}`);
 
-  // Going-forward scope: open + future periods (closed never touched).
+  // Verify ALL periods read-only (computeSeptimoForPeriod never writes); recalc
+  // itself still refuses closed periods at the API layer (going-forward only).
   const periods = await prisma.payPeriod.findMany({
-    where: { isClosed: false },
     orderBy: { startDate: "asc" },
-    select: { id: true, periodNumber: true, agriculturalYear: true, type: true, startDate: true, endDate: true },
+    select: { id: true, periodNumber: true, agriculturalYear: true, type: true, startDate: true, endDate: true, isClosed: true },
   });
-  console.log(`open/future periods: ${periods.length}\n`);
+  console.log(`periods (all): ${periods.length}\n`);
 
   for (const p of periods) {
     const earned = await computeSeptimoForPeriod(prisma, p.id, amount);

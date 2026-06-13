@@ -30,28 +30,31 @@ export async function recomputePayroll(db: Db, payPeriodId: string): Promise<Rec
     where: { payPeriodId },
     _sum: { totalEarned: true },
   });
+  const earnedByWorker = new Map(agg.map((a) => [a.workerId, Number(a._sum.totalEarned ?? 0)]));
 
-  const workerIds = agg.map((a) => a.workerId);
+  const existing = await db.payrollEntry.findMany({ where: { payPeriodId } });
+  const existingByWorker = new Map(existing.map((e) => [e.workerId, e]));
+
+  // Computed séptimo (attendance bonus) for the weeks OWNED by this period —
+  // attendance accumulates across periods, so an earner may have NO in-period
+  // activity (e.g. their week's Saturday is a holiday). Process the UNION.
+  const septimoByWorker = await computeSeptimoForPeriod(db, payPeriodId, await getSeptimoAmount());
+  const workerIds = [...new Set([...earnedByWorker.keys(), ...septimoByWorker.keys()])];
+
   const workers = workerIds.length
     ? await db.worker.findMany({ where: { id: { in: workerIds } }, select: { id: true, category: true } })
     : [];
   const categoryOf = new Map(workers.map((w) => [w.id, w.category]));
 
-  const existing = await db.payrollEntry.findMany({ where: { payPeriodId } });
-  const existingByWorker = new Map(existing.map((e) => [e.workerId, e]));
-
-  // Computed séptimo (attendance bonus) per worker for this period.
-  const septimoByWorker = await computeSeptimoForPeriod(db, payPeriodId, await getSeptimoAmount());
-
   let created = 0, updated = 0, zeroed = 0;
   const seen = new Set<string>();
 
-  for (const a of agg) {
-    seen.add(a.workerId);
-    const totalEarned = Number(a._sum.totalEarned ?? 0);
-    const category = categoryOf.get(a.workerId) ?? "VOLUNTARIO";
-    const seventhDayPay = septimoByWorker.get(a.workerId) ?? 0;
-    const e = existingByWorker.get(a.workerId);
+  for (const workerId of workerIds) {
+    seen.add(workerId);
+    const totalEarned = earnedByWorker.get(workerId) ?? 0;
+    const category = categoryOf.get(workerId) ?? "VOLUNTARIO";
+    const seventhDayPay = septimoByWorker.get(workerId) ?? 0;
+    const e = existingByWorker.get(workerId);
     if (e) {
       await db.payrollEntry.update({
         where: { id: e.id },
@@ -66,7 +69,7 @@ export async function recomputePayroll(db: Db, payPeriodId: string): Promise<Rec
     } else {
       await db.payrollEntry.create({
         data: {
-          payPeriodId, workerId: a.workerId, category, totalEarned, seventhDayPay,
+          payPeriodId, workerId, category, totalEarned, seventhDayPay,
           totalToPay: calcNetPay(totalEarned, 0, seventhDayPay, 0, 0),
         },
       });

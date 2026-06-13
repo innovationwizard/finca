@@ -33,29 +33,28 @@ export async function getSeptimoAmount(): Promise<number> {
 const DAY_MS = 86_400_000;
 /** YYYY-MM-DD for a @db.Date value. */
 const dateKey = (d: Date): string => d.toISOString().slice(0, 10);
-/** The Monday (week anchor) of a date's Mon–Sun week, as a YYYY-MM-DD key. */
-function weekKey(d: Date): string {
-  const dow = d.getUTCDay(); // 0=Sun … 6=Sat
-  const backToMonday = dow === 0 ? 6 : dow - 1;
-  return dateKey(new Date(d.getTime() - backToMonday * DAY_MS));
-}
 
 /**
- * Compute the séptimo bonus per worker for a pay period.
+ * Compute the séptimo bonus per worker, for the calendar weeks OWNED by a pay
+ * period. (Used by recomputePayroll.)
  *
  * Rule (verbatim intent): "If employee comes to work all six days required, and
  * does paid job all six days required, then a seventh day is paid as some sort
- * of commitment prize." So, per WEEK in the period:
- *   • Required workdays = the Mon–Sat dates within the period range, minus any
- *     official holiday (holidays REDUCE the requirement).
- *   • A day is "attended" if the worker has ≥1 activity record that day (any
- *     work, any amount/type — pure attendance).
- *   • If the worker attended every required day of the week → they earn the
- *     configured amount for that week. One séptimo per week (a catorcena can
- *     yield up to two). Sunday is never a workday and is never required.
+ * of commitment prize." The qualifying unit is a CALENDAR week (Mon–Sat) — NOT
+ * the pay period — and the required days ACCUMULATE ACROSS pay-period boundaries
+ * (Jorge, 2026-06-13). Specifically:
+ *   • A week is "owned" by the period that contains its **Saturday** (the week's
+ *     end). Each week therefore has exactly one owning period → paid once, no
+ *     double-pay, and only once the week has completed.
+ *   • Required workdays of a week = its Mon–Sat dates minus official holidays
+ *     (holidays REDUCE the requirement; recurringAnnual matches by month-day).
+ *   • A day is "attended" if the worker has ≥1 activity record that day — read
+ *     BY DATE across ALL periods, so a week split over a boundary still counts.
+ *   • Attended every required day of an owned week → earn the configured amount.
  *
- * Returns workerId → total séptimo (GTQ). Workers who earn nothing are omitted.
- * Going-forward only is enforced by the caller (recalc refuses closed periods).
+ * Returns workerId → total séptimo (GTQ) attributable to this period. Workers
+ * who earn nothing are omitted. Going-forward only is enforced by the caller
+ * (recalc refuses closed periods).
  */
 export async function computeSeptimoForPeriod(db: Db, payPeriodId: string, amount: number): Promise<Map<string, number>> {
   const earned = new Map<string, number>();
@@ -80,20 +79,30 @@ export async function computeSeptimoForPeriod(db: Db, payPeriodId: string, amoun
   }
   const isHoliday = (k: string): boolean => exactHolidays.has(k) || recurringHolidays.has(k.slice(5));
 
-  // Required workdays per week (Mon–Sat in range, excluding holidays).
-  const requiredByWeek = new Map<string, Set<string>>();
+  // Weeks OWNED by this period = calendar Mon–Sat weeks whose Saturday is in the
+  // period range. Each owned week's required days span the full Mon–Sat (Sat-5…
+  // Sat), which may reach back into the PREVIOUS period — that's the cross-period
+  // accumulation. Track the overall date span to query attendance once.
+  const ownedWeeks: string[][] = []; // each: required day-keys (Mon–Sat minus holidays)
+  let minMs = Number.POSITIVE_INFINITY;
+  let maxMs = Number.NEGATIVE_INFINITY;
   for (let t = startMs; t <= endMs; t += DAY_MS) {
-    const d = new Date(t);
-    if (d.getUTCDay() === 0) continue; // Sunday — never a workday
-    const k = dateKey(d);
-    if (isHoliday(k)) continue;        // holiday reduces the requirement
-    const wk = weekKey(d);
-    (requiredByWeek.get(wk) ?? requiredByWeek.set(wk, new Set()).get(wk)!).add(k);
+    if (new Date(t).getUTCDay() !== 6) continue; // Saturdays (week-ends) in this period
+    const required: string[] = [];
+    for (let i = 5; i >= 0; i--) {               // Mon (Sat-5) … Sat (Sat-0)
+      const dayMs = t - i * DAY_MS;
+      if (dayMs < minMs) minMs = dayMs;
+      if (dayMs > maxMs) maxMs = dayMs;
+      const k = dateKey(new Date(dayMs));
+      if (!isHoliday(k)) required.push(k);       // holiday reduces the requirement
+    }
+    if (required.length > 0) ownedWeeks.push(required);
   }
+  if (ownedWeeks.length === 0) return earned; // no week-end falls in this period
 
-  // Attendance: distinct (worker, date) from this period's activity records.
+  // Attendance: distinct (worker, date) BY DATE across all periods over the span.
   const records = await db.activityRecord.findMany({
-    where: { payPeriodId },
+    where: { date: { gte: new Date(minMs), lte: new Date(maxMs) } },
     select: { workerId: true, date: true },
   });
   const attendedByWorker = new Map<string, Set<string>>();
@@ -101,16 +110,11 @@ export async function computeSeptimoForPeriod(db: Db, payPeriodId: string, amoun
     (attendedByWorker.get(r.workerId) ?? attendedByWorker.set(r.workerId, new Set()).get(r.workerId)!).add(dateKey(r.date));
   }
 
-  // Earn: per worker, each week whose required days are ALL attended → +amount.
+  // Earn: per worker, each owned week whose required days are ALL attended → +amount.
   for (const [workerId, attended] of attendedByWorker) {
     let total = 0;
-    for (const required of requiredByWeek.values()) {
-      if (required.size === 0) continue; // a fully-holiday week earns nothing
-      let allAttended = true;
-      for (const day of required) {
-        if (!attended.has(day)) { allAttended = false; break; }
-      }
-      if (allAttended) total += amount;
+    for (const required of ownedWeeks) {
+      if (required.every((day) => attended.has(day))) total += amount;
     }
     if (total > 0) earned.set(workerId, Math.round(total * 100) / 100);
   }
