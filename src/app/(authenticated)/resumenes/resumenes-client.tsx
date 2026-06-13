@@ -17,7 +17,7 @@ type Period = {
   isClosed: boolean;
 };
 
-type PersonalRow = { workerName: string; totalEarned: number; bonification: number; advances: number; totalToPay: number; dpi: string; bankAccount: string; bank: string };
+type PersonalRow = { workerName: string; totalEarned: number; bonification: number; seventhDayPay: number; advances: number; totalToPay: number; dpi: string; bankAccount: string; bank: string };
 
 type ResumenData = {
   weeklyRows: { periodNumber: number; startDate: string; endDate: string; workerName: string; totalEarned: number; totalToPay: number }[];

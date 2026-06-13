@@ -27,6 +27,7 @@ type PayrollEntry = {
   totalEarned: number;
   totalToPay: number;
   bonification: number;
+  seventhDayPay: number;
   advances: number;
   deductions: number;
   isPaid: boolean;
@@ -449,6 +450,9 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
                     Devengado
                   </th>
                   <th className="px-4 py-3 text-right font-medium text-finca-600">
+                    Séptimo
+                  </th>
+                  <th className="px-4 py-3 text-right font-medium text-finca-600">
                     A Pagar
                   </th>
                   <th className="px-4 py-3 font-medium text-finca-600">Estado</th>
@@ -468,6 +472,9 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-finca-700">
                       {formatGTQ(p.totalEarned)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-finca-700">
+                      {p.seventhDayPay > 0 ? formatGTQ(p.seventhDayPay) : <span className="text-finca-300">—</span>}
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums font-medium text-finca-900">
                       {formatGTQ(p.totalToPay)}

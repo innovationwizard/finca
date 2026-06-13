@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
     totalToPay: Number(e.totalToPay),
     totalEarned: Number(e.totalEarned),
     bonification: Number(e.bonification),
+    seventhDayPay: Number(e.seventhDayPay),
     advances: Number(e.advances),
     deductions: Number(e.deductions),
     periodNumber: e.payPeriod.periodNumber,

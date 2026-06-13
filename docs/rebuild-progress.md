@@ -100,10 +100,16 @@ Mechanism: build new tables in transient `rebuild` schema → populate → atomi
 ## Batch 6 — Deactivate `SP` activity  ⛔ data write · after 5  ⏳
 - [ ] 6.1 set séptimo `SP` activity `isActive=false`
 
-## Batch 7 — Séptimo computation + activation  ⛔ after 4,5,6  ⏳
-- [ ] 7.1 per-week attendance (required = 6 − holidays) → write `seventh_day_pay`
-- [ ] 7.2 scope current-open + future periods; verify
-- [ ] 7.3 (moved from 3.5b) show séptimo as its own line in pagos / resúmenes / worker-profile (+ their API selects)
+## Batch 6.1 + 7 — Séptimo computation + activation  ✅ COMPLETE (2026-06-13)
+- [x] 6.1 deactivate `SP`/"Septimo" activity (isActive=false) — `scripts/finalize-septimo-cutover.ts`. 0 records referenced it; purely prevents future mis-entry.
+- [x] 7.1 `computeSeptimoForPeriod` (`src/lib/payroll/septimo.ts`) — per-week attendance, required = Mon–Sat in range − holidays (exact + recurringAnnual), ≥1 record/day = attended, all required attended → 1 amount/week, UTC throughout. tsc+eslint clean.
+- [x] 7.2 integrated into `recomputePayroll` — séptimo computed & written each run (manual bonif/adv/ded preserved; totalToPay incl. séptimo); recalc API refuses closed periods = going-forward only. Verified read-only via `scripts/verify-septimo.ts`.
+- [x] 7.3 séptimo shown as its own line + API selects: pagos (`api/pagos` + `pagos-view`), resúmenes (`api/resumenes` + `resumen-tabs` + `resumenes-client`), worker profile (`api/workers/[id]` + `trabajadores/[id]/page` + `worker-profile`), and worker-merge sum (`api/admin/workers/merge`). tsc+eslint clean.
+- **Cutover executed (Jorge 2026-06-13):** recalc'd #7 (2026-04-13…05-14, 32d) → 38 entries, 35 earn séptimo, **Σséptimo Q13,050**, Σtopay Q71,730; then closed all 11 periods. Séptimo now applies only to periods opened from here on. (#6 keeps its pre-séptimo payroll — no restatement of history, per plan.)
+
+### Git staging (Batch 7 — Jorge commits)
+- New: `src/lib/payroll/septimo.ts` (computeSeptimoForPeriod), `scripts/verify-septimo.ts`, `scripts/run-recalc.ts`, `scripts/finalize-septimo-cutover.ts`
+- Modified: `src/lib/payroll/recalc.ts`, `src/app/api/pagos/route.ts`, `src/app/(authenticated)/pagos/pagos-view.tsx`, `src/app/api/resumenes/route.ts`, `src/app/(authenticated)/resumenes/resumen-tabs.tsx`, `src/app/(authenticated)/resumenes/resumenes-client.tsx`, `src/app/api/workers/[id]/route.ts`, `src/app/(authenticated)/trabajadores/[id]/page.tsx`, `src/app/(authenticated)/trabajadores/[id]/worker-profile.tsx`, `src/app/api/admin/workers/merge/route.ts`
 
 ## Batch 8 — Supabase key migration (code + env)  ✅ COMPLETE
 - [x] 8.1 all 5 usages migrated: `NEXT_PUBLIC_SUPABASE_ANON_KEY`→`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (middleware, client, server); `SUPABASE_SERVICE_ROLE_KEY`→`SUPABASE_SECRET_KEY` (service, admin/users). tsc clean.

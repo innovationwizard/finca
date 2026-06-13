@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
   const payrollEntries = await prisma.payrollEntry.findMany({
     where: { payPeriodId: { in: validIds } },
-    select: { workerId: true, category: true, totalEarned: true, bonification: true, advances: true, deductions: true, totalToPay: true },
+    select: { workerId: true, category: true, totalEarned: true, bonification: true, seventhDayPay: true, advances: true, deductions: true, totalToPay: true },
   });
 
   const workerMap = new Map(workers.map((w) => [w.id, w]));
@@ -76,13 +76,14 @@ export async function GET(request: NextRequest) {
   const periodMap = new Map(periods.map((p) => [p.id, p]));
 
   // Payroll aggregation by category
-  type PayrollAgg = { totalEarned: number; bonification: number; advances: number; totalToPay: number };
+  type PayrollAgg = { totalEarned: number; bonification: number; seventhDayPay: number; advances: number; totalToPay: number };
   const payrollByCategory = new Map<string, PayrollAgg>();
   for (const pe of payrollEntries) {
     const key = `${pe.workerId}:${pe.category}`;
-    const existing = payrollByCategory.get(key) ?? { totalEarned: 0, bonification: 0, advances: 0, totalToPay: 0 };
+    const existing = payrollByCategory.get(key) ?? { totalEarned: 0, bonification: 0, seventhDayPay: 0, advances: 0, totalToPay: 0 };
     existing.totalEarned += Number(pe.totalEarned);
     existing.bonification += Number(pe.bonification);
+    existing.seventhDayPay += Number(pe.seventhDayPay);
     existing.advances += Number(pe.advances);
     existing.totalToPay += Number(pe.totalToPay);
     payrollByCategory.set(key, existing);
@@ -117,6 +118,7 @@ export async function GET(request: NextRequest) {
           workerName: worker?.fullName ?? "Desconocido",
           totalEarned: payroll?.totalEarned ?? 0,
           bonification: payroll?.bonification ?? 0,
+          seventhDayPay: payroll?.seventhDayPay ?? 0,
           advances: payroll?.advances ?? 0,
           totalToPay: payroll?.totalToPay ?? 0,
           dpi: worker?.cui ?? "", // national ID number (CUI) — payload key kept as `dpi` for the resúmenes UI

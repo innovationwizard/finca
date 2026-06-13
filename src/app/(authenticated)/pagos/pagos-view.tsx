@@ -32,6 +32,7 @@ type PaymentRow = {
   totalToPay: number;
   totalEarned: number;
   bonification: number;
+  seventhDayPay: number;
   advances: number;
   deductions: number;
   periodNumber: number;
@@ -222,6 +223,7 @@ export function PagosView({
         existing.totalToPay += row.totalToPay;
         existing.totalEarned += row.totalEarned;
         existing.bonification += row.bonification;
+        existing.seventhDayPay += row.seventhDayPay;
         existing.advances += row.advances;
         existing.deductions += row.deductions;
       } else {
@@ -618,6 +620,9 @@ export function PagosView({
                   Bonificación
                 </th>
                 <th className="px-4 py-3 font-medium text-finca-600 text-right">
+                  Séptimo
+                </th>
+                <th className="px-4 py-3 font-medium text-finca-600 text-right">
                   Anticipos
                 </th>
                 <th className="px-4 py-3 font-medium text-finca-600 text-right">
@@ -649,6 +654,9 @@ export function PagosView({
                     {formatGTQ(r.bonification)}
                   </td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-finca-500">
+                    {formatGTQ(r.seventhDayPay)}
+                  </td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-finca-500">
                     {formatGTQ(r.advances)}
                   </td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-finca-500">
@@ -675,6 +683,11 @@ export function PagosView({
                 <td className="px-4 py-3 text-right tabular-nums text-finca-500">
                   {formatGTQ(
                     filteredRows.reduce((s, r) => s + r.bonification, 0),
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums text-finca-500">
+                  {formatGTQ(
+                    filteredRows.reduce((s, r) => s + r.seventhDayPay, 0),
                   )}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-finca-500">

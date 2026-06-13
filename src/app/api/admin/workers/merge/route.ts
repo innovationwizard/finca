@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
             data: {
               totalEarned: add(clash.totalEarned, e.totalEarned),
               bonification: add(clash.bonification, e.bonification),
+              seventhDayPay: add(clash.seventhDayPay, e.seventhDayPay),
               advances: add(clash.advances, e.advances),
               deductions: add(clash.deductions, e.deductions),
               totalToPay: add(clash.totalToPay, e.totalToPay),

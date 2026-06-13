@@ -20,6 +20,7 @@ type PersonalRow = {
   workerName: string;
   totalEarned: number;
   bonification: number;
+  seventhDayPay: number;
   advances: number;
   totalToPay: number;
   dpi: string;
@@ -206,6 +207,7 @@ function TabPersona({ voluntarios, fijos }: { voluntarios: PersonalRow[]; fijos:
 function PersonalTable({ title, rows }: { title: string; rows: PersonalRow[] }) {
   const totalEarned = rows.reduce((s, r) => s + r.totalEarned, 0);
   const totalBonification = rows.reduce((s, r) => s + r.bonification, 0);
+  const totalSeventh = rows.reduce((s, r) => s + r.seventhDayPay, 0);
   const totalAdvances = rows.reduce((s, r) => s + r.advances, 0);
   const totalToPay = rows.reduce((s, r) => s + r.totalToPay, 0);
 
@@ -230,6 +232,7 @@ function PersonalTable({ title, rows }: { title: string; rows: PersonalRow[] }) 
               <th className="px-4 py-3 font-medium text-finca-600">Nombre Trabajador</th>
               <th className="px-4 py-3 text-right font-medium text-finca-600">Total Devengado</th>
               <th className="px-4 py-3 text-right font-medium text-finca-600">Bonificación</th>
+              <th className="px-4 py-3 text-right font-medium text-finca-600">Séptimo</th>
               <th className="px-4 py-3 text-right font-medium text-finca-600">Anticipos</th>
               <th className="px-4 py-3 text-right font-medium text-finca-600">Total a Pagar</th>
               <th className="px-4 py-3 font-medium text-finca-600">DPI</th>
@@ -246,6 +249,9 @@ function PersonalTable({ title, rows }: { title: string; rows: PersonalRow[] }) 
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-finca-700">
                   {r.bonification > 0 ? formatGTQ(r.bonification) : <span className="text-finca-300">—</span>}
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-finca-700">
+                  {r.seventhDayPay > 0 ? formatGTQ(r.seventhDayPay) : <span className="text-finca-300">—</span>}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-finca-700">
                   {r.advances > 0 ? formatGTQ(r.advances) : <span className="text-finca-300">—</span>}
@@ -273,6 +279,9 @@ function PersonalTable({ title, rows }: { title: string; rows: PersonalRow[] }) 
               </td>
               <td className="px-4 py-3 text-right tabular-nums font-semibold text-finca-900">
                 {totalBonification > 0 ? formatGTQ(totalBonification) : "—"}
+              </td>
+              <td className="px-4 py-3 text-right tabular-nums font-semibold text-finca-900">
+                {totalSeventh > 0 ? formatGTQ(totalSeventh) : "—"}
               </td>
               <td className="px-4 py-3 text-right tabular-nums font-semibold text-finca-900">
                 {totalAdvances > 0 ? formatGTQ(totalAdvances) : "—"}
