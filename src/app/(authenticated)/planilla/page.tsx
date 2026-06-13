@@ -7,12 +7,16 @@ import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { PlanillaList } from "./planilla-list";
 import { NewPeriodModal } from "./new-period-modal";
+import { EditPeriodModal } from "./edit-period-modal";
 import Link from "next/link";
 
 export const metadata = { title: "Planilla" };
 
 export default async function PlanillaPage() {
-  const user = await requireRole(...READ_ALL_ROLES);
+  // FIELD (caporal) is data-entry: it must reach the planilla to check present
+  // records, add, and correct — so allow it alongside the read-all roles.
+  // (PlanillaList gates edit/delete on `canWrite` below.)
+  const user = await requireRole(...READ_ALL_ROLES, "FIELD");
 
   const year = getCurrentAgriculturalYear();
 
@@ -94,7 +98,17 @@ export default async function PlanillaPage() {
         </div>
         <div className="flex items-center gap-2">
           {canCreatePeriod && currentPeriod && (
-            <NewPeriodModal suggestedStartDate={suggestedStartDate} />
+            <>
+              <EditPeriodModal
+                period={{
+                  id: currentPeriod.id,
+                  periodNumber: currentPeriod.periodNumber,
+                  startDate: currentPeriod.startDate.toISOString().split("T")[0],
+                  endDate: currentPeriod.endDate.toISOString().split("T")[0],
+                }}
+              />
+              <NewPeriodModal suggestedStartDate={suggestedStartDate} />
+            </>
           )}
         </div>
       </div>
