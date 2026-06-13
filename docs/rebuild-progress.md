@@ -11,9 +11,9 @@
 - Hard rules: no worker inline CRUD ([[feedback_no_inline_crud]] — workers selected; CRUD only on `/trabajadores`; annual/activities plan exempt); repo-boundary; CUI captured **verbatim** (no format regex); UUIDv7 for all ids.
 - **✅ SSOT human-verification attestation (Jorge, 2026-06-12):** every record in BOTH SSOT files (`DPI_Finca.csv` + `RENAP_Birth_Certificates_Finca.csv`) is **four-eyes human-verified, TWICE**, covering `cui`/`apellidos`/`nombres` for every row, no exceptions. Files are trusted canon; values captured verbatim, no formula validation. Full text: [ssot-roster-import-plan.md §0](ssot-roster-import-plan.md#0-human-verification-attestation-canonical--supersedes-any-earlier-per-file-note).
 
-## ⛔ RESUME HERE → Batch 10: **Jorge lifts downtime** (set `MAINTENANCE_MODE=false`, redeploy) — DB rebuild is COMPLETE, VERIFIED & BASELINED. Then optional follow-ups: séptimo computation (Batch 7), no-inline-CRUD workers audit (Batch 10), real Supabase keys + PITR confirm, DEC-4 is_minor toggle.
+## ✅ PROJECT COMPLETE — live & verified. Done: rebuild (UUIDv7 + SSOT roster) · reassignment + unidentified purge · Prisma baseline · downtime lifted · séptimo (calendar-week) · no-inline-CRUD audit (pass) · Supabase keys migrated+rotated. **PITR NOT enabled (paid).** Only optional item left: **DEC-4 `is_minor` toggle** for the 7 birth-cert workers (loaded false). Optional safety: recurring `pg_dump` job (since no PITR).
 
-**DECISION (Jorge, 2026-06-13): mapping STOPPED at 96/216.** The remaining 120 unmapped old workers carried hallucinated names no human in the operation recognizes. *"Do not bring unidentified records into the new tables."* → their records purged from NEW tables only; raw history retained in `*_backup` + PITR.
+**DECISION (Jorge, 2026-06-13): mapping STOPPED at 96/216.** The remaining 120 unmapped old workers carried hallucinated names no human in the operation recognizes. *"Do not bring unidentified records into the new tables."* → their records purged from NEW tables only; raw history retained in the `*_backup` tables + the one-time pre-rebuild dump (PITR is NOT enabled — paid add-on).
 
 - Done: 5.1–5.6 ✅ (public=new schema; **roster=39** loaded). 9.1 mapping closed at **96/216** (39/39 canonical used).
 - [x] 9.2 `06a_purge_unidentified.ts --commit` ✅ — removed 756 activity + 6 payroll (Q5,843) + 7 notebook soft-refs from new tables; 120 rows stamped `purged_at`; hard reconciliation (deleted == snapshot) passed.
@@ -88,14 +88,14 @@ Mechanism: build new tables in transient `rebuild` schema → populate → atomi
 
 ## Batch 5 — Rebuild EXECUTION  ⛔ destructive · I run · pause each checkpoint  ⏳
 - [x] 5.1 Phase-0 verify ✅ — PG **17.6** (no native uuidv7 → JS gen confirmed); **0** RLS/views/triggers/sequences on public → swap has no deps; 15 base tables (14 + _prisma_migrations). `scripts/rebuild/00_phase0_verify.ts`.
-- [x] 5.2 Backup ✅ — `backups/pre-rebuild-20260612-171435.dump` (493K, custom fmt, pg_restore-validated). (Confirm PITR.)
+- [x] 5.2 Backup ✅ — `backups/pre-rebuild-20260612-171435.dump` (493K, custom fmt, pg_restore-validated). **PITR is NOT enabled (Supabase paid add-on; Jorge 2026-06-13).** So point-in-time recovery is unavailable; recovery relies on this one-time dump + any plan-level daily backups.
 - [x] 5.3 Ran `01` in `rebuild` schema ✅ — single txn, 18 tables created; enum fix (reuse public enums + DocumentType in public + search_path); public untouched.
 - [x] 5.4 Populate non-employee ✅ **--commit done** — rebuild holds remapped data (activity_records 2430, payroll 40, users 8, …); rebuild.workers=0 (employees post-swap); conservation OK; public intact (workers=216). idmaps dropped.
 - [ ] 5.5 Run 2.3 populate (SSOT employees)  → **CHECKPOINT (38 loaded)**
 - [x] 5.6 Swap ✅ — `07_swap.sql` ran (atomic, exit 0): public=19 base tables (18 new + _prisma_migrations), backup=14 (old, workers=216), rebuild dropped. public.workers=0, activity_records=2430. **public is now the new schema; old data safe in backup.**
 - [x] 5.5′ Employee load ✅ — roster **39** (32 DPI + 7 birth-cert; a 7th RENAP row was added later & loaded via now-idempotent `03`, which skips existing CUIs). 39 documents. is_minor=false (DEC-4).
 - [ ] 5.7 Prisma baseline reconcile + Batch-9 reassignment + 09 worker FKs + 08 verify
-- [ ] NOTE: Supabase PITR confirmation still pending.
+- [x] NOTE: Supabase PITR **resolved — NOT enabled** (paid add-on, Jorge 2026-06-13). Safety net = one-time pre-rebuild dump + plan daily backups; no continuous point-in-time recovery. ⚠ If finer recovery is wanted without paying, set up a recurring `pg_dump` job.
 
 ## Batch 6 — Deactivate `SP` activity  ⛔ data write · after 5  ⏳
 - [ ] 6.1 set séptimo `SP` activity `isActive=false`
@@ -113,7 +113,7 @@ Mechanism: build new tables in transient `rebuild` schema → populate → atomi
 
 ## Batch 8 — Supabase key migration (code + env)  ✅ COMPLETE
 - [x] 8.1 all 5 usages migrated: `NEXT_PUBLIC_SUPABASE_ANON_KEY`→`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (middleware, client, server); `SUPABASE_SERVICE_ROLE_KEY`→`SUPABASE_SECRET_KEY` (service, admin/users). tsc clean.
-- [x] 8.2 `.env.example` updated to current key names (sb_publishable_/sb_secret_). **Jorge: set the real keys in `.env.local` + deploy env (rotate secret).**
+- [x] 8.2 `.env.example` updated to current key names (sb_publishable_/sb_secret_). ✅ **DONE (Jorge, 2026-06-13):** real keys set in `.env.local` + deploy env; legacy anon/service_role keys rotated/disabled; login + admin smoke-tested.
 
 ## Batch 9 — Worker reassignment + lift downtime  ⏳
 - [~] 9.1 Jorge fills `worker_reassignment` (216→38) — IN PROGRESS: **90/216 committed**, 120 record-bearing unmapped, 37/38 canonical used. Worksheet (`05`) pre-fills + "solo pendientes" toggle; Generar exports full cumulative map. Loop: send JSON → ingest --commit → regenerate. Apply (06) blocked until unmapped_with_records=0.
@@ -121,8 +121,9 @@ Mechanism: build new tables in transient `rebuild` schema → populate → atomi
 - [ ] 9.3 final `next build` + smoke test
 - [ ] 9.4 set `MAINTENANCE_MODE=false`, redeploy
 
-## Batch 10 — Enforce no-inline-CRUD (workers only) audit  ⏳
-- [ ] 10.1 audit workflows for inline worker create/edit → convert to selection (annual/activities plan EXEMPT)
+## Batch 10 — Enforce no-inline-CRUD (workers only) audit  ✅ PASS (2026-06-13, no remediation needed)
+- [x] 10.1 audited all worker create/edit/delete + selection paths. **Worker mutations are structurally confined to 3 API routes** — create `POST /api/workers` (← `/trabajadores/nuevo`), edit `PATCH /api/workers/[id]` (← `/trabajadores/[id]`), soft-offboard `POST /api/admin/workers/merge` (← `/admin/trabajadores-duplicados`). No `worker.create`/`delete` in any OCR/batch/captura/import path (historical auto-create vector gone). No hard delete (offboard = isActive=false). Only other API ref is read-only `GET /api/workers?active=true` (offline sync).
+- [x] 10.1 worker SELECTION is dropdown/search-from-roster everywhere; captura grid "+ Trabajador" filters the existing roster and adds by `id` (`grid-client.tsx:167-170`); all entry APIs require `workerId: z.uuid()` validated active server-side; no free-text name entry, no name→ID resolution at entry, no inline create. Annual/activities-plan inline CRUD untouched (exempt). **Verdict: compliant; nothing to fix.**
 
 ---
 
