@@ -9,9 +9,27 @@
 - **GATE-PAYROLL ✅ resolved:** build payroll-generation (Batch 4) — idempotent on-demand "Recalcular nómina", preserves manual bonification/advances/deductions.
 - Jorge drives git (no commits by me). Code stages use `prisma generate` only (no DB). Destructive stages = Batch 5+.
 - Hard rules: no worker inline CRUD ([[feedback_no_inline_crud]] — workers selected; CRUD only on `/trabajadores`; annual/activities plan exempt); repo-boundary; CUI captured **verbatim** (no format regex); UUIDv7 for all ids.
+- **✅ SSOT human-verification attestation (Jorge, 2026-06-12):** every record in BOTH SSOT files (`DPI_Finca.csv` + `RENAP_Birth_Certificates_Finca.csv`) is **four-eyes human-verified, TWICE**, covering `cui`/`apellidos`/`nombres` for every row, no exceptions. Files are trusted canon; values captured verbatim, no formula validation. Full text: [ssot-roster-import-plan.md §0](ssot-roster-import-plan.md#0-human-verification-attestation-canonical--supersedes-any-earlier-per-file-note).
 
-## ⛔ RESUME HERE → Batch 5 (REBUILD EXECUTION) — ALL CODE COMPLETE. Gated: needs your backup + go.
-## All code-only batches (0,1,2,3,4,8) are DONE and tsc-clean. Remaining = gated DB execution (5,6,7,9) + CRUD audit (10).
+## ⛔ RESUME HERE → Batch 10: **Jorge lifts downtime** (set `MAINTENANCE_MODE=false`, redeploy) — DB rebuild is COMPLETE, VERIFIED & BASELINED. Then optional follow-ups: séptimo computation (Batch 7), no-inline-CRUD workers audit (Batch 10), real Supabase keys + PITR confirm, DEC-4 is_minor toggle.
+
+**DECISION (Jorge, 2026-06-13): mapping STOPPED at 96/216.** The remaining 120 unmapped old workers carried hallucinated names no human in the operation recognizes. *"Do not bring unidentified records into the new tables."* → their records purged from NEW tables only; raw history retained in `*_backup` + PITR.
+
+- Done: 5.1–5.6 ✅ (public=new schema; **roster=39** loaded). 9.1 mapping closed at **96/216** (39/39 canonical used).
+- [x] 9.2 `06a_purge_unidentified.ts --commit` ✅ — removed 756 activity + 6 payroll (Q5,843) + 7 notebook soft-refs from new tables; 120 rows stamped `purged_at`; hard reconciliation (deleted == snapshot) passed.
+- [x] 9.2 `06_apply_reassignment.ts --commit` ✅ — 1,674 activity + 33 payroll (34→33, one merge-by-sum) + 54 soft-refs remapped to 39 canonical; zero orphans.
+- [x] 9.3 `09_add_worker_fks.sql` ✅ — both worker FKs added (DB-level hard-validation of zero orphans).
+- [x] 9.3 `08_verify.ts` ✅ **ALL CHECKS PASSED** — made purge-aware (`public == backup − authorized purge`, exact). Money: Σ total_to_pay Q31,744.50 == Q37,587.50 − Q5,843.00. All PKs UUIDv7; roster 39/39 docs; zero orphans.
+- [x] 9.4 `11_snapshot_drop_reassignment.ts --commit` ✅ — worker_reassignment snapshotted to `backups/worker_reassignment-audit.json` (216 rows: 96 mapped, 120 purged), then DROPPED. `migrate diff` now exit 0 (live DB == schema.prisma, app tables).
+- [x] 9.4 **Prisma baseline** ✅ — 11 stale migrations archived → `prisma/_migrations_archive_prerebuild_20260613/`; single `20260613000000_baseline_post_rebuild` generated (18 tables, 9 enums, 15 FKs) from schema.prisma; `_prisma_migrations` reset + baseline marked applied; **`migrate status` = "Database schema is up to date!"**. `prisma migrate deploy` is now a safe no-op.
+- **REBUILD COMPLETE & VERIFIED.** Ready for Jorge to lift downtime.
+
+### Git staging (Jorge commits — repo files changed this batch)
+- New: `scripts/rebuild/06a_purge_unidentified.ts`, `scripts/rebuild/10_unmapped_review.ts`, `scripts/rebuild/11_snapshot_drop_reassignment.ts`
+- Modified: `scripts/rebuild/06_apply_reassignment.ts` (gate honors purged_at), `scripts/rebuild/08_verify.ts` (purge-aware conservation)
+- Migrations: deleted 11 folders under `prisma/migrations/` (moved to `prisma/_migrations_archive_prerebuild_20260613/`); added `prisma/migrations/20260613000000_baseline_post_rebuild/migration.sql`
+- Docs: `docs/ssot-roster-import-plan.md` (§0 attestation + supersessions), `docs/uuidv7-rebuild-migration-plan.md`, `docs/rebuild-progress.md`
+- Gitignored (NOT committed): `backups/*` (reassignment-map.json, worker_reassignment-audit.json, unmapped-review.html, reassignment-worksheet.html)
 
 ---
 
@@ -69,13 +87,15 @@ Mechanism: build new tables in transient `rebuild` schema → populate → atomi
 - [→] 4.2b "Recalcular nómina" UI button — minor follow-up; pairs with the planilla period view / Batch 7 display.
 
 ## Batch 5 — Rebuild EXECUTION  ⛔ destructive · I run · pause each checkpoint  ⏳
-- [ ] 5.1 Phase-0 verify (PG version; RLS/views/triggers/sequences inventory)
-- [ ] 5.2 Backup: `pg_dump` + Supabase PITR checkpoint  → **CHECKPOINT/report**
-- [ ] 5.3 Run `01_create_new_schema.sql` in `rebuild` schema  → **CHECKPOINT**
-- [ ] 5.4 Run 2.2 populate (non-employee)  → **CHECKPOINT (conservation counts)**
+- [x] 5.1 Phase-0 verify ✅ — PG **17.6** (no native uuidv7 → JS gen confirmed); **0** RLS/views/triggers/sequences on public → swap has no deps; 15 base tables (14 + _prisma_migrations). `scripts/rebuild/00_phase0_verify.ts`.
+- [x] 5.2 Backup ✅ — `backups/pre-rebuild-20260612-171435.dump` (493K, custom fmt, pg_restore-validated). (Confirm PITR.)
+- [x] 5.3 Ran `01` in `rebuild` schema ✅ — single txn, 18 tables created; enum fix (reuse public enums + DocumentType in public + search_path); public untouched.
+- [x] 5.4 Populate non-employee ✅ **--commit done** — rebuild holds remapped data (activity_records 2430, payroll 40, users 8, …); rebuild.workers=0 (employees post-swap); conservation OK; public intact (workers=216). idmaps dropped.
 - [ ] 5.5 Run 2.3 populate (SSOT employees)  → **CHECKPOINT (38 loaded)**
-- [ ] 5.6 Swap schemas (2.5) + Prisma baseline  → **CHECKPOINT**
-- [ ] 5.7 Run 2.6 verification  → **CHECKPOINT (must pass)**
+- [x] 5.6 Swap ✅ — `07_swap.sql` ran (atomic, exit 0): public=19 base tables (18 new + _prisma_migrations), backup=14 (old, workers=216), rebuild dropped. public.workers=0, activity_records=2430. **public is now the new schema; old data safe in backup.**
+- [x] 5.5′ Employee load ✅ — roster **39** (32 DPI + 7 birth-cert; a 7th RENAP row was added later & loaded via now-idempotent `03`, which skips existing CUIs). 39 documents. is_minor=false (DEC-4).
+- [ ] 5.7 Prisma baseline reconcile + Batch-9 reassignment + 09 worker FKs + 08 verify
+- [ ] NOTE: Supabase PITR confirmation still pending.
 
 ## Batch 6 — Deactivate `SP` activity  ⛔ data write · after 5  ⏳
 - [ ] 6.1 set séptimo `SP` activity `isActive=false`
@@ -90,7 +110,7 @@ Mechanism: build new tables in transient `rebuild` schema → populate → atomi
 - [x] 8.2 `.env.example` updated to current key names (sb_publishable_/sb_secret_). **Jorge: set the real keys in `.env.local` + deploy env (rotate secret).**
 
 ## Batch 9 — Worker reassignment + lift downtime  ⏳
-- [ ] 9.1 Jorge fills `worker_reassignment` (216→38), row by row  → **CHECKPOINT**
+- [~] 9.1 Jorge fills `worker_reassignment` (216→38) — IN PROGRESS: **90/216 committed**, 120 record-bearing unmapped, 37/38 canonical used. Worksheet (`05`) pre-fills + "solo pendientes" toggle; Generar exports full cumulative map. Loop: send JSON → ingest --commit → regenerate. Apply (06) blocked until unmapped_with_records=0.
 - [ ] 9.2 apply reassignment; add `activity_records`/`payroll_entries` worker FK; validate (dropped-veteran gate)
 - [ ] 9.3 final `next build` + smoke test
 - [ ] 9.4 set `MAINTENANCE_MODE=false`, redeploy

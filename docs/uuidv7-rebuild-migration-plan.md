@@ -4,7 +4,7 @@
 **Date:** 2026-06-11
 **Authorization:** NONE yet. Execution requires your explicit go, and the worker reassignment step is row-by-row by you.
 **Companion docs:** [docs/ssot-roster-import-plan.md](ssot-roster-import-plan.md) (reconciliation + enriched schema detail), [docs/roster-architecture-research.md](roster-architecture-research.md) (rationale).
-**Source of truth for employees:** `SSOT-DO-NOT-UPDATE/` (read-only; never written).
+**Source of truth for employees:** `SSOT-DO-NOT-UPDATE/` (read-only; never written). **✅ Both files four-eyes human-verified, TWICE** (cui/apellidos/nombres, every row — Jorge, 2026-06-12; attestation: [ssot-roster-import-plan.md §0](ssot-roster-import-plan.md#0-human-verification-attestation-canonical--supersedes-any-earlier-per-file-note)).
 
 ---
 

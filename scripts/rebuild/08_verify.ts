@@ -20,12 +20,19 @@ const money = async (sql: string) => Number((await one<{ v: string | null }>(sql
 const r2 = (x: number) => Math.round(x * 100) / 100;
 
 // tables whose row count must be conserved exactly (everything except workers,
-// payroll_entries, and the 4 new tables that have no backup counterpart)
+// payroll_entries, the 4 new tables with no backup counterpart, and the tables
+// touched by the authorized unidentified-records purge — activity_records and
+// notebook_dictionary — which are checked purge-aware below).
 const COUNT_EQUAL = [
-  "users", "system_settings", "notebook_dictionary", "lotes", "activities",
+  "users", "system_settings", "lotes", "activities",
   "activity_prices", "pay_periods", "coffee_intakes", "plan_entries",
-  "production_estimates", "audit_logs", "activity_records",
+  "production_estimates", "audit_logs",
 ];
+
+// Predicate: rows in BACKUP belonging to a purged (unidentified) old worker.
+// The authorized purge (06a) removed exactly these from the new tables; honest
+// conservation is therefore `public == backup − purged`, asserted exactly.
+const PURGED = `(SELECT old_worker_id FROM public.worker_reassignment WHERE purged_at IS NOT NULL)`;
 
 const V7_TABLES: [string, string][] = [
   ["users", "id"], ["system_settings", "id"], ["notebook_dictionary", "id"], ["lotes", "id"],
@@ -47,21 +54,43 @@ const V7_TABLES: [string, string][] = [
   const wPub = await n(`SELECT COUNT(*)::bigint v FROM public.workers`);
   const wBak = await n(`SELECT COUNT(*)::bigint v FROM backup.workers`);
   console.log(`     workers: public=${wPub} (canonical SSOT)  backup=${wBak} (old)`);
+
+  // Authorized purge accounting (06a) — backup contributions of unidentified workers.
+  const purgedAct = await n(`SELECT COUNT(*)::bigint v FROM backup.activity_records WHERE worker_id IN ${PURGED}`);
+  const purgedNd  = await n(`SELECT COUNT(*)::bigint v FROM backup.notebook_dictionary WHERE category='worker' AND reference_id IN ${PURGED}`);
+  const purgedPay = await n(`SELECT COUNT(*)::bigint v FROM backup.payroll_entries WHERE worker_id IN ${PURGED}`);
+  console.log(`     authorized purge (unidentified): activity=${purgedAct}, payroll=${purgedPay}, notebook_dictionary=${purgedNd}`);
+
+  // activity_records / notebook_dictionary: public must equal backup MINUS the purge, exactly.
+  {
+    const pub = await n(`SELECT COUNT(*)::bigint v FROM public.activity_records`);
+    const bak = await n(`SELECT COUNT(*)::bigint v FROM backup.activity_records`);
+    ok("activity_records == backup − purged", pub === bak - purgedAct, `public=${pub} backup=${bak} purged=${purgedAct}`);
+  }
+  {
+    const pub = await n(`SELECT COUNT(*)::bigint v FROM public.notebook_dictionary`);
+    const bak = await n(`SELECT COUNT(*)::bigint v FROM backup.notebook_dictionary`);
+    ok("notebook_dictionary == backup − purged", pub === bak - purgedNd, `public=${pub} backup=${bak} purged=${purgedNd}`);
+  }
+
   const peP = await n(`SELECT COUNT(*)::bigint v FROM public.payroll_entries`);
   const peB = await n(`SELECT COUNT(*)::bigint v FROM backup.payroll_entries`);
-  ok("payroll_entries count public ≤ backup (merge may reduce)", peP <= peB, `public=${peP} backup=${peB}`);
+  ok("payroll_entries count public ≤ backup − purged (merge may reduce further)", peP <= peB - purgedPay, `public=${peP} backup=${peB} purged=${purgedPay}`);
 
-  console.log("\n2) money conservation (sums unchanged across rebuild + reassignment):");
+  console.log("\n2) money conservation (public == backup − authorized purge, exactly):");
   const arP = r2(await money(`SELECT SUM(total_earned) v FROM public.activity_records`));
   const arB = r2(await money(`SELECT SUM(total_earned) v FROM backup.activity_records`));
-  ok("Σ activity_records.total_earned", arP === arB, `public=Q${arP} backup=Q${arB}`);
+  const arPurged = r2(await money(`SELECT SUM(total_earned) v FROM backup.activity_records WHERE worker_id IN ${PURGED}`));
+  ok("Σ activity_records.total_earned", arP === r2(arB - arPurged), `public=Q${arP} backup=Q${arB} − purged=Q${arPurged}`);
   const pteP = r2(await money(`SELECT SUM(total_earned) v FROM public.payroll_entries`));
   const pteB = r2(await money(`SELECT SUM(total_earned) v FROM backup.payroll_entries`));
-  ok("Σ payroll_entries.total_earned", pteP === pteB, `public=Q${pteP} backup=Q${pteB}`);
+  const ptePurged = r2(await money(`SELECT SUM(total_earned) v FROM backup.payroll_entries WHERE worker_id IN ${PURGED}`));
+  ok("Σ payroll_entries.total_earned", pteP === r2(pteB - ptePurged), `public=Q${pteP} backup=Q${pteB} − purged=Q${ptePurged}`);
   const ptpP = r2(await money(`SELECT SUM(total_to_pay) v FROM public.payroll_entries`));
   const ptpB = r2(await money(`SELECT SUM(total_to_pay) v FROM backup.payroll_entries`));
-  // total_to_pay is recomputed (now includes seventh_day_pay, 0 for migrated rows) — should still equal old.
-  ok("Σ payroll_entries.total_to_pay", ptpP === ptpB, `public=Q${ptpP} backup=Q${ptpB}`);
+  const ptpPurged = r2(await money(`SELECT SUM(total_to_pay) v FROM backup.payroll_entries WHERE worker_id IN ${PURGED}`));
+  // total_to_pay is recomputed (now includes seventh_day_pay, 0 for migrated rows); merge sums preserve it.
+  ok("Σ payroll_entries.total_to_pay", ptpP === r2(ptpB - ptpPurged), `public=Q${ptpP} backup=Q${ptpB} − purged=Q${ptpPurged}`);
 
   console.log("\n3) referential integrity (no orphans):");
   ok("activity_records → workers", 0 === await n(

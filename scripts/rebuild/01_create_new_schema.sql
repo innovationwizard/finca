@@ -1,32 +1,20 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
+-- =============================================================================
+-- REBUILD CREATE — run via psql against prod (Batch 5.3). Creates the `rebuild`
+-- schema and all new tables inside it. Enum COLUMNS resolve to the EXISTING
+-- public enums (types do NOT move with ALTER TABLE SET SCHEMA, so we reuse the
+-- 8 enums already in public); only the NEW enum, DocumentType, is created — in
+-- public. search_path = rebuild, public makes unqualified tables land in
+-- `rebuild` while enum types resolve from `public`.
+-- =============================================================================
+CREATE SCHEMA rebuild;
 
--- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('MASTER', 'ADMIN', 'MANAGER', 'FIELD', 'CEO', 'CFO', 'CONSULTANT');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'DocumentType') THEN
+    CREATE TYPE public."DocumentType" AS ENUM ('DPI', 'BIRTH_CERTIFICATE');
+  END IF;
+END $$;
 
--- CreateEnum
-CREATE TYPE "DocumentType" AS ENUM ('DPI', 'BIRTH_CERTIFICATE');
-
--- CreateEnum
-CREATE TYPE "ActivityUnit" AS ENUM ('QUINTAL', 'MANZANA', 'HECTAREA', 'DIA');
-
--- CreateEnum
-CREATE TYPE "PayPeriodType" AS ENUM ('SEMANAL', 'CATORCENA');
-
--- CreateEnum
-CREATE TYPE "WorkerCategory" AS ENUM ('VOLUNTARIO', 'FIJO');
-
--- CreateEnum
-CREATE TYPE "CoffeeType" AS ENUM ('CEREZA', 'PERGAMINO', 'ORO');
-
--- CreateEnum
-CREATE TYPE "IntakeSource" AS ENUM ('COSECHA', 'COMPRA');
-
--- CreateEnum
-CREATE TYPE "CoffeeStatus" AS ENUM ('RECIBIDO', 'DESPULPADO', 'SECANDO', 'PERGAMINO', 'ENVASADO', 'DESPACHADO');
-
--- CreateEnum
-CREATE TYPE "EstimateType" AS ENUM ('PRIMERA', 'SEGUNDA', 'TERCERA', 'CUARTA', 'FINAL');
+SET search_path TO rebuild, public;
 
 -- CreateTable
 CREATE TABLE "users" (

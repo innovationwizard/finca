@@ -25,21 +25,21 @@ const ingestIdx = argv.indexOf("--ingest");
 const COMMIT = argv.includes("--commit");
 const esc = (s: string) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
-type OldRow = { old_worker_id: string; old_full_name: string; old_dpi: string | null; activity_count: number; payroll_count: number; payroll_total: string };
+type OldRow = { old_worker_id: string; old_full_name: string; old_dpi: string | null; activity_count: number; payroll_count: number; payroll_total: string; new_worker_id: string | null };
 type Ssot = { id: string; cui: string; full_name: string };
 
 async function generate() {
   const olds = await prisma.$queryRawUnsafe<OldRow[]>(
-    `SELECT old_worker_id, old_full_name, old_dpi, activity_count, payroll_count, payroll_total
+    `SELECT old_worker_id, old_full_name, old_dpi, activity_count, payroll_count, payroll_total, new_worker_id
      FROM public.worker_reassignment ORDER BY (activity_count + payroll_count) DESC, old_full_name`,
   );
   const ssot = await prisma.$queryRawUnsafe<Ssot[]>(
     `SELECT id, cui, full_name FROM public.workers ORDER BY full_name`,
   );
 
-  const options = ssot
-    .map((w) => `<option value="${esc(w.id)}">${esc(w.full_name)} — ${esc(w.cui)}</option>`)
-    .join("");
+  // Pre-select the already-assigned option so the worksheet is resumable.
+  const optionsFor = (sel: string | null) =>
+    ssot.map((w) => `<option value="${esc(w.id)}"${w.id === sel ? " selected" : ""}>${esc(w.full_name)} — ${esc(w.cui)}</option>`).join("");
 
   const rows = olds
     .map((o) => `
@@ -48,8 +48,8 @@ async function generate() {
         <td class="num">${o.activity_count} act · ${o.payroll_count} pago · Q${esc(o.payroll_total)}</td>
         <td>
           <select data-old="${esc(o.old_worker_id)}">
-            <option value="">— sin asignar —</option>
-            ${options}
+            <option value=""${o.new_worker_id ? "" : " selected"}>— sin asignar —</option>
+            ${optionsFor(o.new_worker_id)}
           </select>
         </td>
       </tr>`)
@@ -73,13 +73,17 @@ button{background:#15803d;color:#fff;border:0;border-radius:10px;padding:10px 16
 </style></head><body><div class="wrap">
 <h1>Reasignación de trabajadores</h1>
 <p class="sub">Asigne cada registro antiguo a su trabajador correcto del padrón (SSOT). Los que tienen trabajos/pagos <b>deben</b> asignarse. Atenuados = sin registros.</p>
-<div class="bar"><span id="counter" class="sub"></span> &nbsp; <button onclick="gen()">Generar resultado</button> <button onclick="copyOut()">Copiar</button></div>
+<div class="bar"><span id="counter" class="sub"></span> &nbsp; <label class="sub" style="cursor:pointer"><input type="checkbox" id="onlyPending" checked> Mostrar solo pendientes</label> &nbsp; <button onclick="gen()">Generar resultado</button> <button onclick="copyOut()">Copiar</button></div>
 <table><thead><tr><th>Registro antiguo</th><th>Carga</th><th>Trabajador correcto (padrón)</th></tr></thead><tbody>${rows}</tbody></table>
 <div id="out"></div>
 </div><script>
 const sels=[...document.querySelectorAll('select[data-old]')];
-function recount(){const total=sels.length,done=sels.filter(s=>s.value).length;document.getElementById('counter').textContent='Asignados: '+done+' / '+total;}
-sels.forEach(s=>s.addEventListener('change',recount));recount();
+const onlyPending=document.getElementById('onlyPending');
+function recount(){const total=sels.length,done=sels.filter(s=>s.value).length;document.getElementById('counter').textContent='Asignados: '+done+' / '+total+' · pendientes: '+(total-done);}
+function applyFilter(){const hide=onlyPending.checked;sels.forEach(s=>{const tr=s.closest('tr');if(tr)tr.style.display=(hide&&s.value)?'none':'';});}
+onlyPending.addEventListener('change',applyFilter);
+sels.forEach(s=>s.addEventListener('change',recount));
+recount();applyFilter();
 function gen(){const map={};sels.forEach(s=>{if(s.value)map[s.dataset.old]=s.value;});const o=document.getElementById('out');o.style.display='block';o.textContent=JSON.stringify(map,null,2);o.scrollIntoView({behavior:'smooth'});}
 function copyOut(){gen();navigator.clipboard.writeText(document.getElementById('out').textContent).then(()=>alert('Copiado. Guárdelo como map.json y envíelo.'));}
 </script></body></html>`;

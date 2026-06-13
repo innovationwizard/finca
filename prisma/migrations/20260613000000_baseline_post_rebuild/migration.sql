@@ -2,13 +2,19 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('MASTER', 'ADMIN', 'MANAGER', 'FIELD', 'CEO', 'CFO');
+CREATE TYPE "UserRole" AS ENUM ('MASTER', 'ADMIN', 'MANAGER', 'FIELD', 'CEO', 'CFO', 'CONSULTANT');
 
 -- CreateEnum
-CREATE TYPE "ActivityUnit" AS ENUM ('QUINTAL', 'MANZANA', 'HECTAREA', 'JORNAL', 'DIA');
+CREATE TYPE "DocumentType" AS ENUM ('DPI', 'BIRTH_CERTIFICATE');
+
+-- CreateEnum
+CREATE TYPE "ActivityUnit" AS ENUM ('QUINTAL', 'MANZANA', 'HECTAREA', 'DIA');
 
 -- CreateEnum
 CREATE TYPE "PayPeriodType" AS ENUM ('SEMANAL', 'CATORCENA');
+
+-- CreateEnum
+CREATE TYPE "WorkerCategory" AS ENUM ('VOLUNTARIO', 'FIJO');
 
 -- CreateEnum
 CREATE TYPE "CoffeeType" AS ENUM ('CEREZA', 'PERGAMINO', 'ORO');
@@ -24,7 +30,7 @@ CREATE TYPE "EstimateType" AS ENUM ('PRIMERA', 'SEGUNDA', 'TERCERA', 'CUARTA', '
 
 -- CreateTable
 CREATE TABLE "users" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "supabase_id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -38,7 +44,7 @@ CREATE TABLE "users" (
 
 -- CreateTable
 CREATE TABLE "system_settings" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "key" TEXT NOT NULL,
     "value" TEXT NOT NULL,
     "label" TEXT NOT NULL,
@@ -52,7 +58,7 @@ CREATE TABLE "system_settings" (
 
 -- CreateTable
 CREATE TABLE "notebook_dictionary" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "category" TEXT NOT NULL,
     "handwritten" TEXT NOT NULL,
     "canonical" TEXT NOT NULL,
@@ -65,7 +71,7 @@ CREATE TABLE "notebook_dictionary" (
 
 -- CreateTable
 CREATE TABLE "lotes" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "area_manzanas" DECIMAL(8,2),
@@ -73,6 +79,7 @@ CREATE TABLE "lotes" (
     "density" TEXT,
     "altitude_masl" INTEGER,
     "variety" TEXT,
+    "poda_percent" DECIMAL(5,2),
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "sort_order" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,13 +90,25 @@ CREATE TABLE "lotes" (
 
 -- CreateTable
 CREATE TABLE "workers" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
+    "cui" TEXT NOT NULL,
+    "apellidos" TEXT NOT NULL,
+    "nombres" TEXT NOT NULL,
     "full_name" TEXT NOT NULL,
-    "dpi" TEXT,
+    "fecha_nacimiento" DATE,
+    "sexo" TEXT,
+    "nacionalidad" TEXT,
+    "lugar_nacimiento" TEXT,
+    "vecindad" TEXT,
+    "pueblo" TEXT,
+    "comunidad_linguistica" TEXT,
+    "estado_civil" TEXT,
+    "person_photo_url" TEXT,
     "nit" TEXT,
     "bank_account" TEXT,
+    "bank_name" TEXT,
     "phone" TEXT,
-    "photo_url" TEXT,
+    "category" "WorkerCategory" NOT NULL DEFAULT 'VOLUNTARIO',
     "is_minor" BOOLEAN NOT NULL DEFAULT false,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "start_date" TIMESTAMP(3),
@@ -101,15 +120,75 @@ CREATE TABLE "workers" (
 );
 
 -- CreateTable
+CREATE TABLE "worker_documents" (
+    "id" UUID NOT NULL,
+    "worker_id" UUID NOT NULL,
+    "type" "DocumentType" NOT NULL,
+    "cui_as_printed" TEXT,
+    "extraction_confidence" DECIMAL(5,2),
+    "notes" TEXT,
+    "source_file" TEXT,
+    "source_page" INTEGER,
+    "imported_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "worker_documents_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "dpi_documents" (
+    "document_id" UUID NOT NULL,
+    "fecha_vencimiento" DATE,
+    "front_image_url" TEXT,
+    "back_image_url" TEXT,
+    "apellidos" TEXT,
+    "nombres" TEXT,
+    "fecha_nacimiento" DATE,
+    "sexo" TEXT,
+    "nacionalidad" TEXT,
+    "lugar_nacimiento" TEXT,
+    "vecindad" TEXT,
+    "pueblo" TEXT,
+    "comunidad_linguistica" TEXT,
+    "estado_civil" TEXT,
+
+    CONSTRAINT "dpi_documents_pkey" PRIMARY KEY ("document_id")
+);
+
+-- CreateTable
+CREATE TABLE "birth_certificate_documents" (
+    "document_id" UUID NOT NULL,
+    "correlativo" TEXT,
+    "fecha_emision_certificado" DATE,
+    "image_url" TEXT,
+    "inscrito_fecha_nacimiento" DATE,
+    "inscrito_lugar_nacimiento" TEXT,
+    "inscrito_sexo" TEXT,
+    "madre_nombres_apellidos" TEXT,
+    "madre_cui" TEXT,
+    "madre_fecha_nacimiento" TEXT,
+    "madre_lugar_origen" TEXT,
+    "padre_nombres_apellidos" TEXT,
+    "padre_cui" TEXT,
+    "padre_fecha_nacimiento" TEXT,
+    "padre_lugar_origen" TEXT,
+
+    CONSTRAINT "birth_certificate_documents_pkey" PRIMARY KEY ("document_id")
+);
+
+-- CreateTable
 CREATE TABLE "activities" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
+    "code" TEXT,
     "unit" "ActivityUnit" NOT NULL,
     "default_price" DECIMAL(10,2),
     "is_harvest" BOOLEAN NOT NULL DEFAULT false,
     "is_beneficio" BOOLEAN NOT NULL DEFAULT false,
     "sort_order" INTEGER NOT NULL DEFAULT 0,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "description" TEXT,
     "min_qty_alert" DECIMAL(10,2),
     "max_qty_alert" DECIMAL(10,2),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -119,8 +198,21 @@ CREATE TABLE "activities" (
 );
 
 -- CreateTable
+CREATE TABLE "activity_prices" (
+    "id" UUID NOT NULL,
+    "activity_id" UUID NOT NULL,
+    "price" DECIMAL(10,2) NOT NULL,
+    "effective_from" DATE NOT NULL,
+    "note" TEXT,
+    "created_by" UUID,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "activity_prices_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "pay_periods" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "type" "PayPeriodType" NOT NULL DEFAULT 'SEMANAL',
     "period_number" INTEGER NOT NULL,
     "agricultural_year" TEXT NOT NULL,
@@ -137,7 +229,7 @@ CREATE TABLE "pay_periods" (
 
 -- CreateTable
 CREATE TABLE "activity_records" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "date" DATE NOT NULL,
     "pay_period_id" UUID NOT NULL,
     "worker_id" UUID NOT NULL,
@@ -157,11 +249,13 @@ CREATE TABLE "activity_records" (
 
 -- CreateTable
 CREATE TABLE "payroll_entries" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "pay_period_id" UUID NOT NULL,
     "worker_id" UUID NOT NULL,
+    "category" "WorkerCategory" NOT NULL DEFAULT 'VOLUNTARIO',
     "total_earned" DECIMAL(10,2) NOT NULL,
     "bonification" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "seventh_day_pay" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "advances" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "deductions" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "total_to_pay" DECIMAL(10,2) NOT NULL,
@@ -174,8 +268,20 @@ CREATE TABLE "payroll_entries" (
 );
 
 -- CreateTable
+CREATE TABLE "holidays" (
+    "id" UUID NOT NULL,
+    "date" DATE NOT NULL,
+    "name" TEXT NOT NULL,
+    "recurring_annual" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "holidays_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "coffee_intakes" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "code" TEXT NOT NULL,
     "date" DATE NOT NULL,
     "coffee_type" "CoffeeType" NOT NULL DEFAULT 'CEREZA',
@@ -188,6 +294,7 @@ CREATE TABLE "coffee_intakes" (
     "payment_status" TEXT,
     "bultos" INTEGER,
     "peso_neto_qq" DECIMAL(10,2) NOT NULL,
+    "peso_verde_qq" DECIMAL(10,2),
     "peso_pergamino_qq" DECIMAL(10,2),
     "rendimiento" DECIMAL(6,2),
     "status" "CoffeeStatus" NOT NULL DEFAULT 'RECIBIDO',
@@ -206,7 +313,7 @@ CREATE TABLE "coffee_intakes" (
 
 -- CreateTable
 CREATE TABLE "plan_entries" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "agricultural_year" TEXT NOT NULL,
     "lote_id" UUID NOT NULL,
     "activity_id" UUID NOT NULL,
@@ -221,7 +328,7 @@ CREATE TABLE "plan_entries" (
 
 -- CreateTable
 CREATE TABLE "production_estimates" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "agricultural_year" TEXT NOT NULL,
     "lote_id" UUID NOT NULL,
     "estimate_type" "EstimateType" NOT NULL,
@@ -239,7 +346,7 @@ CREATE TABLE "production_estimates" (
 
 -- CreateTable
 CREATE TABLE "audit_logs" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" UUID NOT NULL,
     "user_id" UUID NOT NULL,
     "action" TEXT NOT NULL,
     "table_name" TEXT NOT NULL,
@@ -278,10 +385,25 @@ CREATE UNIQUE INDEX "lotes_name_key" ON "lotes"("name");
 CREATE UNIQUE INDEX "lotes_slug_key" ON "lotes"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "workers_dpi_key" ON "workers"("dpi");
+CREATE UNIQUE INDEX "workers_cui_key" ON "workers"("cui");
+
+-- CreateIndex
+CREATE INDEX "worker_documents_worker_id_idx" ON "worker_documents"("worker_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "worker_documents_worker_id_type_key" ON "worker_documents"("worker_id", "type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "activities_name_key" ON "activities"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "activities_code_key" ON "activities"("code");
+
+-- CreateIndex
+CREATE INDEX "activity_prices_activity_id_effective_from_idx" ON "activity_prices"("activity_id", "effective_from");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "activity_prices_activity_id_effective_from_key" ON "activity_prices"("activity_id", "effective_from");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "pay_periods_agricultural_year_period_number_type_key" ON "pay_periods"("agricultural_year", "period_number", "type");
@@ -305,7 +427,10 @@ CREATE INDEX "activity_records_lote_id_idx" ON "activity_records"("lote_id");
 CREATE INDEX "activity_records_activity_id_idx" ON "activity_records"("activity_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "payroll_entries_pay_period_id_worker_id_key" ON "payroll_entries"("pay_period_id", "worker_id");
+CREATE UNIQUE INDEX "payroll_entries_pay_period_id_worker_id_category_key" ON "payroll_entries"("pay_period_id", "worker_id", "category");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "holidays_date_key" ON "holidays"("date");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "coffee_intakes_code_key" ON "coffee_intakes"("code");
@@ -342,6 +467,18 @@ CREATE INDEX "audit_logs_user_id_idx" ON "audit_logs"("user_id");
 
 -- CreateIndex
 CREATE INDEX "audit_logs_created_at_idx" ON "audit_logs"("created_at");
+
+-- AddForeignKey
+ALTER TABLE "worker_documents" ADD CONSTRAINT "worker_documents_worker_id_fkey" FOREIGN KEY ("worker_id") REFERENCES "workers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "dpi_documents" ADD CONSTRAINT "dpi_documents_document_id_fkey" FOREIGN KEY ("document_id") REFERENCES "worker_documents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "birth_certificate_documents" ADD CONSTRAINT "birth_certificate_documents_document_id_fkey" FOREIGN KEY ("document_id") REFERENCES "worker_documents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "activity_prices" ADD CONSTRAINT "activity_prices_activity_id_fkey" FOREIGN KEY ("activity_id") REFERENCES "activities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "activity_records" ADD CONSTRAINT "activity_records_pay_period_id_fkey" FOREIGN KEY ("pay_period_id") REFERENCES "pay_periods"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

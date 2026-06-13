@@ -13,8 +13,11 @@
 //                          audit_logs.record_id (table_name='workers').
 //
 // DROPPED-VETERAN GATE: if any worker_reassignment row carries records
-// (activity/payroll) but has no new_worker_id, ABORT — no real person is left
-// behind. (Runs in dry-run too.)
+// (activity/payroll) but has no new_worker_id AND has not been explicitly
+// purged (purged_at IS NULL), ABORT — no real person is silently left behind.
+// Rows purged by 06a (unidentified/hallucinated identities, Jorge 2026-06-13)
+// are a deliberate, recorded disposition and do not trip the gate.
+// (Runs in dry-run too.)
 //
 // Dry-run by default (transaction + rollback). --commit persists.
 //   npx dotenv -e .env.local -- npx tsx scripts/rebuild/06_apply_reassignment.ts [--commit]
@@ -31,18 +34,26 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
   console.log(`\n=== apply reassignment — ${COMMIT ? "COMMIT" : "DRY-RUN (rollback)"} ===\n`);
 
   // ── Dropped-veteran gate (precondition; always enforced) ───────────────────
+  // A record-bearing unmapped row is only acceptable if it was EXPLICITLY purged
+  // by 06a (purged_at set). Anything record-bearing, unmapped, and NOT purged is
+  // an un-reviewed drop → ABORT.
   const orphans = await prisma.$queryRawUnsafe<{ old_worker_id: string; old_full_name: string; activity_count: number; payroll_count: number }[]>(
     `SELECT old_worker_id, old_full_name, activity_count, payroll_count
      FROM public.worker_reassignment
-     WHERE (activity_count > 0 OR payroll_count > 0) AND new_worker_id IS NULL`,
+     WHERE (activity_count > 0 OR payroll_count > 0) AND new_worker_id IS NULL AND purged_at IS NULL`,
   );
   if (orphans.length > 0) {
-    console.error(`⛔ DROPPED-VETERAN GATE: ${orphans.length} record-bearing old worker(s) have no mapping. ABORTING.`);
+    console.error(`⛔ DROPPED-VETERAN GATE: ${orphans.length} record-bearing old worker(s) are unmapped and NOT purged. ABORTING.`);
+    console.error(`   (If these are the unidentified rows, run 06a_purge_unidentified.ts --commit first.)`);
     for (const o of orphans) console.error(`   ${o.old_full_name} (${o.activity_count} act, ${o.payroll_count} pay)`);
     await prisma.$disconnect();
     process.exit(1);
   }
-  console.log("✓ dropped-veteran gate passed (every record-bearing old worker is mapped).");
+  const [{ purged }] = await prisma.$queryRawUnsafe<{ purged: bigint }[]>(
+    `SELECT COUNT(*)::bigint AS purged FROM public.worker_reassignment
+     WHERE new_worker_id IS NULL AND purged_at IS NOT NULL AND (activity_count > 0 OR payroll_count > 0)`,
+  );
+  console.log(`✓ dropped-veteran gate passed (every record-bearing old worker is either mapped or explicitly purged; purged=${Number(purged)}).`);
 
   const mapRows = await prisma.$queryRawUnsafe<{ old_worker_id: string; new_worker_id: string }[]>(
     `SELECT old_worker_id, new_worker_id FROM public.worker_reassignment WHERE new_worker_id IS NOT NULL`,
@@ -122,7 +133,12 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
          WHERE NOT EXISTS (SELECT 1 FROM public.workers w WHERE w.id = a.worker_id)`,
       );
       if (Number(orphaned) > 0) throw new Error(`${orphaned} activity_records still point at a non-existent worker after remap`);
-      console.log("\n✓ no orphaned activity_records — every record points at a canonical worker.");
+      const [{ porphaned }] = await tx.$queryRawUnsafe<{ porphaned: bigint }[]>(
+        `SELECT COUNT(*)::bigint AS porphaned FROM public.payroll_entries pe
+         WHERE NOT EXISTS (SELECT 1 FROM public.workers w WHERE w.id = pe.worker_id)`,
+      );
+      if (Number(porphaned) > 0) throw new Error(`${porphaned} payroll_entries still point at a non-existent worker after remap`);
+      console.log("\n✓ no orphaned activity_records or payroll_entries — every record points at a canonical worker.");
       console.log("  (worker FKs are added next, Batch 9.2 — they will hard-validate this.)");
 
       if (!COMMIT) throw new RollbackSignal();

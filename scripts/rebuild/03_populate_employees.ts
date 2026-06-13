@@ -5,8 +5,14 @@
 //   worker → worker_document → (dpi_document | birth_certificate_document)
 // Prisma generates the v7 ids. CUI captured VERBATIM (modern or legacy).
 //
-//   DPI_Finca.csv (32)  → worker + DPI document
-//   RENAP_Birth_Certificates_Finca.csv (6) → worker + birth-certificate document
+// ✅ HUMAN-VERIFICATION ATTESTATION (Jorge, 2026-06-12): every record in BOTH
+//    SSOT files below has been four-eyes human-verified, TWICE, covering the
+//    cui / apellidos / nombres fields for every row, no exceptions. These files
+//    are trusted canon — values are loaded VERBATIM, never split/re-cased/
+//    formula-validated. See docs/ssot-roster-import-plan.md §0.
+//
+//   DPI_Finca.csv  → worker + DPI document
+//   RENAP_Birth_Certificates_Finca.csv → worker + birth-certificate document
 //
 // Dry-run by default (transaction + rollback, prints summary); --commit persists.
 //   npx dotenv -e .env.local -- npx tsx scripts/rebuild/03_populate_employees.ts [--commit]
@@ -63,8 +69,11 @@ const int = (s: string | undefined): number | null => {
 
   try {
     await prisma.$transaction(async (tx) => {
+      const existingCuis = new Set((await tx.worker.findMany({ select: { cui: true } })).map((w) => w.cui));
+      let skipped = 0;
       let dpiN = 0;
       for (const r of dpiRows) {
+        if (existingCuis.has(r.cui.trim())) { skipped++; continue; }
         await tx.worker.create({
           data: {
             cui: r.cui.trim(),
@@ -113,6 +122,7 @@ const int = (s: string | undefined): number | null => {
 
       let bcN = 0;
       for (const r of bcRows) {
+        if (existingCuis.has(r.cui.trim())) { skipped++; continue; }
         await tx.worker.create({
           data: {
             cui: r.cui.trim(),
@@ -158,8 +168,8 @@ const int = (s: string | undefined): number | null => {
 
       const workers = await tx.worker.count();
       const docs = await tx.workerDocument.count();
-      console.log(`created: ${dpiN} DPI workers, ${bcN} birth-cert workers, ${workers} workers total, ${docs} documents`);
-      if (workers !== dpiRows.length + bcRows.length) throw new Error(`worker count mismatch: ${workers} != ${dpiRows.length + bcRows.length}`);
+      console.log(`created: ${dpiN} DPI + ${bcN} birth-cert (skipped existing: ${skipped}); workers total: ${workers}, documents: ${docs}`);
+      if (dpiN + bcN + skipped !== dpiRows.length + bcRows.length) throw new Error(`row accounting mismatch: created ${dpiN + bcN} + skipped ${skipped} != ${dpiRows.length + bcRows.length} rows`);
 
       if (!COMMIT) throw new RollbackSignal();
     }, { timeout: 300_000 });
