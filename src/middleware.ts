@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
   // (e.g. /dashboard, /planilla, /login) all land on the notice. Static assets
   // are excluded by the matcher below, so the notice still renders.
   // To LIFT maintenance: set MAINTENANCE_MODE = false (or revert this block) and redeploy.
-  const MAINTENANCE_MODE = true;
+  const MAINTENANCE_MODE = false;
   if (MAINTENANCE_MODE) {
     if (pathname === "/") {
       return NextResponse.next(); // serve the maintenance notice (no auth)
