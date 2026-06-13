@@ -9,7 +9,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Loader2, ArrowRight, X, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, Loader2, ArrowRight, X, Plus, ChevronLeft, ChevronRight, CalendarPlus } from "lucide-react";
 import { resolveActivityPrice, type PriceVigencia } from "@/lib/pricing/resolve-price";
 
 type Worker = { id: string; name: string };
@@ -32,7 +32,7 @@ function mondayOfToday(): string {
 }
 function dm(iso: string) { const [, m, d] = iso.split("-"); return `${d}/${m}`; }
 
-export function CapturaGrid({ workers, activities, lotes, periods }: { workers: Worker[]; activities: Activity[]; lotes: Lote[]; periods: Period[] }) {
+export function CapturaGrid({ workers, activities, lotes, periods, canManagePeriods }: { workers: Worker[]; activities: Activity[]; lotes: Lote[]; periods: Period[]; canManagePeriods: boolean }) {
   const router = useRouter();
   const [weekStart, setWeekStart] = useState(mondayOfToday());
   const [cells, setCells] = useState<Record<string, Cell>>({});
@@ -40,6 +40,7 @@ export function CapturaGrid({ workers, activities, lotes, periods }: { workers: 
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [resolving, setResolving] = useState(false);
 
   // Roster: persisted client-side; defaults to all active workers.
   const [rosterIds, setRosterIds] = useState<string[]>(() => {
@@ -142,6 +143,44 @@ export function CapturaGrid({ workers, activities, lotes, periods }: { workers: 
     return workers.filter((w) => !set.has(w.id) && (!s || w.name.toLowerCase().includes(s))).slice(0, 30);
   }, [workers, rosterIds, search]);
 
+  // Resolve uncovered days in place (MASTER/ADMIN): extend the latest open
+  // period to span them, or create one if none exists. Then refresh so the
+  // days become coverable. Typed cells are preserved (client state survives).
+  const resolveUncovered = useCallback(async () => {
+    if (uncovered.length === 0) return;
+    const minU = uncovered.reduce((a, b) => (a < b ? a : b));
+    const maxU = uncovered.reduce((a, b) => (a > b ? a : b));
+    setResolving(true);
+    setMsg(null);
+    try {
+      let res: Response;
+      if (periods.length > 0) {
+        const latest = periods.reduce((a, b) => (a.endDate >= b.endDate ? a : b));
+        const startDate = minU < latest.startDate ? minU : latest.startDate;
+        const endDate = maxU > latest.endDate ? maxU : latest.endDate;
+        res = await fetch(`/api/pay-periods/${latest.id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ startDate, endDate }),
+        });
+      } else {
+        res = await fetch(`/api/pay-periods`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ startDate: minU, endDate: maxU }),
+        });
+      }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setMsg({ kind: "err", text: d.error || "No se pudo ajustar el período" });
+        return;
+      }
+      router.refresh();
+    } catch {
+      setMsg({ kind: "err", text: "Error de red al ajustar el período" });
+    } finally {
+      setResolving(false);
+    }
+  }, [uncovered, periods, router]);
+
   return (
     <div className="mt-5">
       {/* Toolbar */}
@@ -154,8 +193,22 @@ export function CapturaGrid({ workers, activities, lotes, periods }: { workers: 
       </div>
 
       {uncovered.length > 0 && (
-        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
-          Sin período de pago: {uncovered.map(dm).join(", ")}. Créelos en Planilla para poder guardar esos días.
+        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p>Sin período de pago para: <b>{uncovered.map(dm).join(", ")}</b>.</p>
+          {canManagePeriods ? (
+            <button
+              onClick={resolveUncovered}
+              disabled={resolving}
+              className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
+            >
+              {resolving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CalendarPlus className="h-3.5 w-3.5" />}
+              {periods.length > 0
+                ? `Extender período hasta ${dm(uncovered.reduce((a, b) => (a > b ? a : b)))}`
+                : `Crear período ${dm(uncovered.reduce((a, b) => (a < b ? a : b)))} – ${dm(uncovered.reduce((a, b) => (a > b ? a : b)))}`}
+            </button>
+          ) : (
+            <p className="mt-1 text-xs">Pídale a un administrador que extienda o abra el período para incluir estos días.</p>
+          )}
         </div>
       )}
       {msg && (

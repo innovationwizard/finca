@@ -14,7 +14,9 @@ import { CapturaGrid } from "./grid-client";
 export const metadata = { title: "Captura Semanal — Finca Danilandia" };
 
 export default async function CapturaPage() {
-  await requireRole(...WRITE_ROLES);
+  const user = await requireRole(...WRITE_ROLES);
+  // MASTER/ADMIN can open/extend pay periods inline when days are uncovered.
+  const canManagePeriods = user.role === "MASTER" || user.role === "ADMIN";
 
   const [workers, activities, lotes, periods] = await Promise.all([
     prisma.worker.findMany({ where: { isActive: true }, select: { id: true, fullName: true }, orderBy: { fullName: "asc" } }),
@@ -50,6 +52,7 @@ export default async function CapturaPage() {
         }))}
         lotes={lotes}
         periods={periods.map((p) => ({ id: p.id, periodNumber: p.periodNumber, startDate: p.startDate.toISOString().split("T")[0], endDate: p.endDate.toISOString().split("T")[0] }))}
+        canManagePeriods={canManagePeriods}
       />
     </div>
   );
