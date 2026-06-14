@@ -24,31 +24,52 @@ const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function isoOf(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 function addDays(iso: string, n: number) { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return isoOf(d); }
-function mondayOfToday(): string {
-  const d = new Date();
+function mondayOf(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
   const dow = (d.getDay() + 6) % 7; // Mon=0
   d.setDate(d.getDate() - dow);
   return isoOf(d);
 }
+function mondayOfToday(): string { return mondayOf(isoOf(new Date())); }
 function dm(iso: string) { const [, m, d] = iso.split("-"); return `${d}/${m}`; }
 
-export function CapturaGrid({ workers, activities, lotes, periods, canManagePeriods }: { workers: Worker[]; activities: Activity[]; lotes: Lote[]; periods: Period[]; canManagePeriods: boolean }) {
+type ExistingRecord = { workerId: string; date: string; loteId: string; activityId: string; units: string };
+
+export function CapturaGrid({ workers, activities, lotes, periods, canManagePeriods, existing }: { workers: Worker[]; activities: Activity[]; lotes: Lote[]; periods: Period[]; canManagePeriods: boolean; existing: ExistingRecord[] }) {
   const router = useRouter();
-  const [weekStart, setWeekStart] = useState(mondayOfToday());
-  const [cells, setCells] = useState<Record<string, Cell>>({});
+  // Open on the most recent week that already has entries (so saved data is
+  // visible immediately); fall back to the current week when there are none.
+  const [weekStart, setWeekStart] = useState(() => {
+    if (existing.length) {
+      const latest = existing.reduce((a, b) => (a.date > b.date ? a : b)).date;
+      return mondayOf(latest);
+    }
+    return mondayOfToday();
+  });
+  // Seed from already-saved records so the grid shows existing entries (it was
+  // write-only before, which made saved data look lost). Keyed worker|date.
+  const [cells, setCells] = useState<Record<string, Cell>>(() => {
+    const seed: Record<string, Cell> = {};
+    for (const e of existing) seed[`${e.workerId}|${e.date}`] = { loteId: e.loteId, activityId: e.activityId, units: e.units };
+    return seed;
+  });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [resolving, setResolving] = useState(false);
 
-  // Roster: persisted client-side; defaults to all active workers.
+  // Roster: persisted client-side; defaults to all active workers. Always
+  // include workers who already have records this period, so saved entries are
+  // never hidden by a narrowed roster.
   const [rosterIds, setRosterIds] = useState<string[]>(() => {
+    let base: string[] | null = null;
     if (typeof window !== "undefined") {
       const saved = window.localStorage.getItem(ROSTER_KEY);
-      if (saved) { try { const ids = JSON.parse(saved) as string[]; if (Array.isArray(ids) && ids.length) return ids; } catch { /* ignore */ } }
+      if (saved) { try { const ids = JSON.parse(saved) as string[]; if (Array.isArray(ids) && ids.length) base = ids; } catch { /* ignore */ } }
     }
-    return workers.map((w) => w.id);
+    if (!base) base = workers.map((w) => w.id);
+    return [...new Set([...base, ...existing.map((e) => e.workerId)])];
   });
   const persistRoster = useCallback((ids: string[]) => {
     setRosterIds(ids);

@@ -18,7 +18,7 @@ export default async function CapturaPage() {
   // MASTER/ADMIN can open/extend pay periods inline when days are uncovered.
   const canManagePeriods = user.role === "MASTER" || user.role === "ADMIN";
 
-  const [workers, activities, lotes, periods] = await Promise.all([
+  const [workers, activities, lotes, periods, existingRecords] = await Promise.all([
     prisma.worker.findMany({ where: { isActive: true }, select: { id: true, fullName: true }, orderBy: { fullName: "asc" } }),
     prisma.activity.findMany({
       where: { isActive: true },
@@ -33,6 +33,13 @@ export default async function CapturaPage() {
       where: { agriculturalYear: getCurrentAgriculturalYear() },
       select: { id: true, periodNumber: true, startDate: true, endDate: true, isClosed: true },
       orderBy: { startDate: "asc" },
+    }),
+    // Existing records of the OPEN period(s) so the grid shows what's already
+    // saved instead of looking empty (it was write-only before). One record per
+    // (worker, day) — matches the grid's cell model.
+    prisma.activityRecord.findMany({
+      where: { payPeriod: { agriculturalYear: getCurrentAgriculturalYear(), isClosed: false } },
+      select: { workerId: true, date: true, loteId: true, activityId: true, quantity: true },
     }),
   ]);
 
@@ -56,6 +63,7 @@ export default async function CapturaPage() {
         lotes={lotes}
         periods={periods.map((p) => ({ id: p.id, periodNumber: p.periodNumber, startDate: p.startDate.toISOString().split("T")[0], endDate: p.endDate.toISOString().split("T")[0], isClosed: p.isClosed }))}
         canManagePeriods={canManagePeriods}
+        existing={existingRecords.map((r) => ({ workerId: r.workerId, date: r.date.toISOString().split("T")[0], loteId: r.loteId ?? "", activityId: r.activityId, units: String(Number(r.quantity)) }))}
       />
     </div>
   );
