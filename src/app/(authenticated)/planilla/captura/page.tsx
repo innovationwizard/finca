@@ -2,19 +2,25 @@
 // src/app/(authenticated)/planilla/captura/page.tsx
 // Weekly grid data-entry — emulates the farm's PLANILLAFINCA.xlsx entry sheet.
 // One row per worker; per day a Lote · Actividad · Unidades triplet. Desktop-first.
-// Access: WRITE_ROLES (data entry).
+// Access: read-all roles (e.g. CFO/CONSULTANT auditors) may VIEW the grid
+// read-only; WRITE_ROLES may edit and save. Writes are independently enforced by
+// /api/planilla/captura, so read-only roles cannot persist anything.
 // =============================================================================
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, WRITE_ROLES } from "@/lib/auth/guards";
+import { requireRole, WRITE_ROLES, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { toPriceSchedule } from "@/lib/pricing/activity-prices";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { CapturaGrid } from "./grid-client";
 
 export const metadata = { title: "Captura Semanal — Finca Danilandia" };
 
+// View access = anyone who can write OR can read all data (auditors included).
+const VIEW_ROLES = [...new Set([...READ_ALL_ROLES, ...WRITE_ROLES])];
+
 export default async function CapturaPage() {
-  const user = await requireRole(...WRITE_ROLES);
+  const user = await requireRole(...VIEW_ROLES);
+  const canWrite = WRITE_ROLES.includes(user.role);
   // MASTER/ADMIN can open/extend pay periods inline when days are uncovered.
   const canManagePeriods = user.role === "MASTER" || user.role === "ADMIN";
 
@@ -62,6 +68,7 @@ export default async function CapturaPage() {
         }))}
         lotes={lotes}
         periods={periods.map((p) => ({ id: p.id, periodNumber: p.periodNumber, startDate: p.startDate.toISOString().split("T")[0], endDate: p.endDate.toISOString().split("T")[0], isClosed: p.isClosed }))}
+        canWrite={canWrite}
         canManagePeriods={canManagePeriods}
         existing={existingRecords.map((r) => ({ workerId: r.workerId, date: r.date.toISOString().split("T")[0], loteId: r.loteId ?? "", activityId: r.activityId, units: String(Number(r.quantity)) }))}
       />

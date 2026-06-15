@@ -35,7 +35,7 @@ function dm(iso: string) { const [, m, d] = iso.split("-"); return `${d}/${m}`; 
 
 type ExistingRecord = { workerId: string; date: string; loteId: string; activityId: string; units: string };
 
-export function CapturaGrid({ workers, activities, lotes, periods, canManagePeriods, existing }: { workers: Worker[]; activities: Activity[]; lotes: Lote[]; periods: Period[]; canManagePeriods: boolean; existing: ExistingRecord[] }) {
+export function CapturaGrid({ workers, activities, lotes, periods, canWrite, canManagePeriods, existing }: { workers: Worker[]; activities: Activity[]; lotes: Lote[]; periods: Period[]; canWrite: boolean; canManagePeriods: boolean; existing: ExistingRecord[] }) {
   const router = useRouter();
   // Open on the most recent week that already has entries (so saved data is
   // visible immediately); fall back to the current week when there are none.
@@ -218,7 +218,11 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
         <span className="font-medium text-finca-900">Semana {dm(days[0])} – {dm(days[days.length - 1])}</span>
         <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="rounded p-1 hover:bg-finca-50"><ChevronRight className="h-4 w-4" /></button>
         <span className="ml-auto text-finca-500">{roster.length} trabajadores · {filledCount} celdas · <span className="font-semibold text-finca-900">Q{grandTotal.toLocaleString("es-GT", { minimumFractionDigits: 2 })}</span></span>
-        <button onClick={() => setAddOpen((v) => !v)} className="inline-flex items-center gap-1 rounded-md border border-finca-200 px-2 py-1 text-finca-600 hover:bg-finca-50"><Plus className="h-3.5 w-3.5" /> Trabajador</button>
+        {canWrite ? (
+          <button onClick={() => setAddOpen((v) => !v)} className="inline-flex items-center gap-1 rounded-md border border-finca-200 px-2 py-1 text-finca-600 hover:bg-finca-50"><Plus className="h-3.5 w-3.5" /> Trabajador</button>
+        ) : (
+          <span className="rounded-md bg-finca-100 px-2 py-1 text-xs font-medium text-finca-600">Solo lectura</span>
+        )}
       </div>
 
       {uncovered.length > 0 && (
@@ -291,8 +295,12 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
                 <td className="sticky left-8 z-10 border border-finca-100 bg-white px-2 py-1 font-medium text-finca-900 whitespace-nowrap">
                   <span className="inline-flex items-center gap-1">
                     {w.name}
-                    <button onClick={() => fillAcross(w.id)} title="Copiar lunes a toda la semana" className="text-finca-300 hover:text-finca-600"><ArrowRight className="h-3 w-3" /></button>
-                    <button onClick={() => persistRoster(rosterIds.filter((id) => id !== w.id))} title="Quitar de la lista" className="text-finca-300 hover:text-red-500"><X className="h-3 w-3" /></button>
+                    {canWrite && (
+                      <>
+                        <button onClick={() => fillAcross(w.id)} title="Copiar lunes a toda la semana" className="text-finca-300 hover:text-finca-600"><ArrowRight className="h-3 w-3" /></button>
+                        <button onClick={() => persistRoster(rosterIds.filter((id) => id !== w.id))} title="Quitar de la lista" className="text-finca-300 hover:text-red-500"><X className="h-3 w-3" /></button>
+                      </>
+                    )}
                   </span>
                 </td>
                 {days.map((d) => {
@@ -301,15 +309,15 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
                   return (
                     <td key={d} colSpan={3} className={`border border-finca-100 p-0 ${closed ? "bg-finca-50/70" : ""}`}>
                       <div className="flex">
-                        <select value={c.loteId} disabled={closed} onChange={(e) => setCell(w.id, d, { loteId: e.target.value })} className="w-20 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
+                        <select value={c.loteId} disabled={closed || !canWrite} onChange={(e) => setCell(w.id, d, { loteId: e.target.value })} className="w-20 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
                           <option value="">—</option>
                           {lotes.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                         </select>
-                        <select value={c.activityId} disabled={closed} onChange={(e) => setCell(w.id, d, { activityId: e.target.value, units: c.units || (e.target.value ? "1" : "") })} className="w-24 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
+                        <select value={c.activityId} disabled={closed || !canWrite} onChange={(e) => setCell(w.id, d, { activityId: e.target.value, units: c.units || (e.target.value ? "1" : "") })} className="w-24 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
                           <option value=""></option>
                           {activities.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ${a.name}` : a.name}</option>)}
                         </select>
-                        <input value={c.units} disabled={closed} onChange={(e) => setCell(w.id, d, { units: e.target.value })} inputMode="decimal" className="w-10 bg-transparent px-1 py-1 text-right text-xs tabular-nums focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300" placeholder="1" />
+                        <input value={c.units} disabled={closed || !canWrite} onChange={(e) => setCell(w.id, d, { units: e.target.value })} inputMode="decimal" className="w-10 bg-transparent px-1 py-1 text-right text-xs tabular-nums focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300" placeholder="1" />
                       </div>
                     </td>
                   );
@@ -322,10 +330,12 @@ export function CapturaGrid({ workers, activities, lotes, periods, canManagePeri
       </div>
 
       <div className="mt-4 flex items-center gap-3">
-        <button onClick={handleSave} disabled={saving || filledCount === 0} className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-finca-800 disabled:opacity-50">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-          Guardar {filledCount} registro(s)
-        </button>
+        {canWrite && (
+          <button onClick={handleSave} disabled={saving || filledCount === 0} className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-finca-800 disabled:opacity-50">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+            Guardar {filledCount} registro(s)
+          </button>
+        )}
         <span className="text-sm text-finca-500">Total semana: <span className="font-semibold text-finca-900">Q{grandTotal.toLocaleString("es-GT", { minimumFractionDigits: 2 })}</span></span>
       </div>
     </div>
