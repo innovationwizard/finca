@@ -50,6 +50,7 @@ format/
 SSOT*/
 backups/
 Copia_de_PLANILLA.csv
+Descuentos_PLANILLA.csv
 
 # PWA
 public/sw.js

@@ -50,10 +50,11 @@ function getAccountType(bankAccount: string): string {
   return bankAccount.charAt(0);
 }
 
-// Period code = tipo + MM + YY, derived from the period's start date.
-// e.g. Planilla, May 2026 → "P0526". Column 1 of the CSV line.
-function buildPeriodCode(paymentType: PaymentType, startDateIso: string): string {
-  const [year, month] = startDateIso.split("-");
+// Period code = tipo + MM + YY, keyed off the period's END date (the month the
+// period closes/pays in), NOT the start. e.g. a period 2026-05-14 → 2026-06-13
+// is June → "P0626". Column 1 of the CSV line.
+function buildPeriodCode(paymentType: PaymentType, endDateIso: string): string {
+  const [year, month] = endDateIso.split("-");
   return `${paymentType}${month}${year.slice(-2)}`;
 }
 
@@ -73,6 +74,19 @@ function buildCsvLine(
   const acctType = getAccountType(row.bankAccount);
   const firstName = row.workerName.split(" ")[0].toUpperCase();
   return `${periodCode};${row.bankAccount};${bankCode};${amount};${acctType};${firstName}`;
+}
+
+// Same 6-field layout, but for a worker with NO account: the cuenta (field 2) and
+// the account type (field 5) are left blank, to be filled in manually. Período,
+// banco, monto and nombre are kept so the row is ready to pay once completed.
+function buildCsvLineNoAccount(
+  row: PaymentRow,
+  periodCode: string,
+  bankCode: string,
+): string {
+  const amount = row.totalToPay.toFixed(2);
+  const firstName = row.workerName.split(" ")[0].toUpperCase();
+  return `${periodCode};;${bankCode};${amount};;${firstName}`;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -149,7 +163,7 @@ export function PagosView({
   // ─── CSV content (preview === file, 1:1) ─────────────────────────────────
 
   const periodCode = selectedPeriod
-    ? buildPeriodCode(paymentType, selectedPeriod.startDate)
+    ? buildPeriodCode(paymentType, selectedPeriod.endDate)
     : "";
 
   const csvLines = useMemo(
@@ -173,6 +187,30 @@ export function PagosView({
     const a = document.createElement("a");
     a.href = url;
     a.download = `${periodCode}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── "Sin cuenta" template: same period's accountless workers, account blank ─
+
+  const noAccount = useMemo(() => rows.filter((r) => !r.bankAccount), [rows]);
+  const noAccountLines = useMemo(
+    () =>
+      selectedPeriod
+        ? noAccount.map((r) => buildCsvLineNoAccount(r, periodCode, bankCode))
+        : [],
+    [noAccount, periodCode, bankCode, selectedPeriod],
+  );
+
+  function downloadNoAccountCSV() {
+    if (noAccountLines.length === 0) return;
+    const blob = new Blob([noAccountLines.join("\n") + "\n"], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${periodCode}-sin-cuenta.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -316,7 +354,7 @@ export function PagosView({
           </pre>
         )}
 
-        <div className="border-t border-finca-100 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 border-t border-finca-100 px-4 py-3">
           <button
             onClick={downloadCSV}
             disabled={csvLines.length === 0 || loading}
@@ -324,6 +362,15 @@ export function PagosView({
           >
             <Download className="h-4 w-4" />
             Descargar CSV
+          </button>
+          <button
+            onClick={downloadNoAccountCSV}
+            disabled={noAccountLines.length === 0 || loading}
+            title="Mismo formato, con la cuenta en blanco para llenar a mano"
+            className="inline-flex items-center gap-2 rounded-lg border border-finca-300 px-4 py-2 text-sm font-medium text-finca-700 transition-colors hover:bg-finca-50 disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            Descargar sin cuenta ({noAccount.length})
           </button>
         </div>
       </div>
