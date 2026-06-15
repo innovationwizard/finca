@@ -111,7 +111,7 @@ export default async function ResumenPage() {
           <tbody className="divide-y divide-finca-50">
             {rows.map((r) => (
               <tr key={r.workerId} className="hover:bg-finca-50/30">
-                <td className="px-4 py-2.5 font-medium text-finca-900">
+                <td className="whitespace-nowrap px-4 py-2.5 font-medium text-finca-900">
                   {r.workerName}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-finca-500">
