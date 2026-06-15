@@ -8,6 +8,7 @@ import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { PlanillaList } from "./planilla-list";
 import { NewPeriodModal } from "./new-period-modal";
 import { EditPeriodModal } from "./edit-period-modal";
+import { ClosePeriodModal } from "./close-period-modal";
 import Link from "next/link";
 
 export const metadata = { title: "Planilla" };
@@ -100,6 +101,14 @@ export default async function PlanillaPage() {
           {canCreatePeriod && currentPeriod && (
             <>
               <EditPeriodModal
+                period={{
+                  id: currentPeriod.id,
+                  periodNumber: currentPeriod.periodNumber,
+                  startDate: currentPeriod.startDate.toISOString().split("T")[0],
+                  endDate: currentPeriod.endDate.toISOString().split("T")[0],
+                }}
+              />
+              <ClosePeriodModal
                 period={{
                   id: currentPeriod.id,
                   periodNumber: currentPeriod.periodNumber,
