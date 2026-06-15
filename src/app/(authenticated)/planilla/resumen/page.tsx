@@ -61,7 +61,7 @@ export default async function ResumenPage() {
   const grandTotal = rows.reduce((s, r) => s + r.totalEarned, 0);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-finca-900">
           Resumen de Pago
