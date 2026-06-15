@@ -3,12 +3,17 @@
 // UPSERTS one ActivityRecord per (date, worker, activity, lote) using a
 // deterministic clientId, so re-saving the grid is idempotent and editing a
 // quantity updates in place (no double-pay, no duplicates). Access: WRITE_ROLES.
+//
+// After saving, payroll is recomputed for each affected (open) period in the
+// same transaction, so payroll_entry totals never go stale — the user never
+// needs a separate "Recalcular nómina" step.
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { apiRequireRole, WRITE_ROLES } from "@/lib/auth/guards";
 import { prisma } from "@/lib/prisma";
+import { recomputePayroll } from "@/lib/payroll/recalc";
 
 const rowSchema = z.object({
   workerId: z.string().uuid(),
@@ -51,21 +56,36 @@ export async function POST(request: NextRequest) {
 
   const clientId = (r: typeof rows[number]) => `captura|${r.date}|${r.workerId}|${r.activityId}|${r.loteId ?? "none"}`;
 
+  // Open periods actually touched by this save (validated above) — recompute each.
+  const affectedPeriodIds = [...new Set(rows.map((r) => r.payPeriodId))].filter((id) => okP.has(id));
+
   const result = await prisma.$transaction(
-    rows.map((r) =>
-      prisma.activityRecord.upsert({
-        where: { clientId: clientId(r) },
-        update: { quantity: r.quantity, unitPrice: r.unitPrice, totalEarned: r.totalEarned, loteId: r.loteId, payPeriodId: r.payPeriodId, syncedAt: new Date() },
-        create: {
-          date: new Date(r.date), payPeriodId: r.payPeriodId, workerId: r.workerId, activityId: r.activityId, loteId: r.loteId,
-          quantity: r.quantity, unitPrice: r.unitPrice, totalEarned: r.totalEarned, clientId: clientId(r), syncedAt: new Date(),
-        },
-      }),
-    ),
+    async (tx) => {
+      const upserted = [];
+      for (const r of rows) {
+        upserted.push(
+          await tx.activityRecord.upsert({
+            where: { clientId: clientId(r) },
+            update: { quantity: r.quantity, unitPrice: r.unitPrice, totalEarned: r.totalEarned, loteId: r.loteId, payPeriodId: r.payPeriodId, syncedAt: new Date() },
+            create: {
+              date: new Date(r.date), payPeriodId: r.payPeriodId, workerId: r.workerId, activityId: r.activityId, loteId: r.loteId,
+              quantity: r.quantity, unitPrice: r.unitPrice, totalEarned: r.totalEarned, clientId: clientId(r), syncedAt: new Date(),
+            },
+          }),
+        );
+      }
+      // Keep payroll_entry in sync with the records just saved. Idempotent;
+      // preserves manual bonification/advances/deductions, recomputes séptimo.
+      for (const pid of affectedPeriodIds) {
+        await recomputePayroll(tx, pid);
+      }
+      return upserted;
+    },
+    { timeout: 120_000 },
   );
 
   await prisma.auditLog.create({
-    data: { userId: auth.id, action: "CAPTURA_SAVE", tableName: "activity_records", recordId: result[0]?.id ?? "captura", newValues: { count: result.length, source: "captura_grid" } },
+    data: { userId: auth.id, action: "CAPTURA_SAVE", tableName: "activity_records", recordId: result[0]?.id ?? "captura", newValues: { count: result.length, source: "captura_grid", recalculatedPeriods: affectedPeriodIds.length } },
   });
 
   return NextResponse.json({ success: true, count: result.length });
