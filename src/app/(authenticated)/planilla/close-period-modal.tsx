@@ -73,6 +73,11 @@ export function ClosePeriodModal({ period }: Props) {
                 captura, ni recalcular la nómina, ni modificar la planilla. Hazlo solo
                 cuando el pago al banco esté confirmado.
               </div>
+              <div className="rounded-lg border border-finca-200 bg-finca-50 px-4 py-3 text-sm text-finca-700">
+                Se abrirá automáticamente el siguiente período: inicia el <b>día siguiente</b>
+                (sin saltar días) y el fin sugerido son <b>4 semanas, terminando en sábado</b>
+                (incluye los séptimos). Puedes ajustar las fechas después con “Editar fechas”.
+              </div>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <div className="flex justify-end gap-2 pt-1">
                 <button onClick={() => setOpen(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-finca-600 hover:bg-finca-50">
