@@ -4,7 +4,6 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth/guards";
-import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { PagosView } from "./pagos-view";
 
 export const metadata = { title: "Pagos" };
@@ -12,12 +11,19 @@ export const metadata = { title: "Pagos" };
 export default async function PagosPage() {
   await requireRole("CFO", "MASTER", "CONSULTANT");
 
-  const year = getCurrentAgriculturalYear();
+  // The 3 most recent ALREADY-ENDED pay periods, by date. Deliberately NOT
+  // scoped to the current agricultural year: near a year boundary, the most
+  // recent period — or its one/two predecessors — can fall in the prior year,
+  // and all three must still resolve.
+  const now = new Date();
+  const todayUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
 
-  // Get all pay periods for current agricultural year
   const periods = await prisma.payPeriod.findMany({
-    where: { agriculturalYear: year },
-    orderBy: { periodNumber: "desc" },
+    where: { endDate: { lt: todayUtc } },
+    orderBy: { endDate: "desc" },
+    take: 3,
     select: {
       id: true,
       periodNumber: true,
@@ -37,7 +43,7 @@ export default async function PagosPage() {
     isClosed: p.isClosed,
   }));
 
-  // Get bank code
+  // Bank code — constant column 3 of every CSV line.
   const bankCodeSetting = await prisma.systemSetting.findUnique({
     where: { key: "bank_code" },
   });
@@ -50,15 +56,11 @@ export default async function PagosPage() {
           Pagos
         </h1>
         <p className="mt-1 text-sm text-finca-500">
-          Archivo de pagos bancarios · Año agrícola {year}
+          Descarga aquí el csv de pagos para enviar al banco
         </p>
       </div>
 
-      <PagosView
-        periods={serializedPeriods}
-        agriculturalYear={year}
-        bankCode={bankCode}
-      />
+      <PagosView periods={serializedPeriods} bankCode={bankCode} />
     </div>
   );
 }
