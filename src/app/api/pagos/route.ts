@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
     workerName: e.worker.fullName,
     bankAccount: e.worker.bankAccount ?? "",
     totalToPay: Number(e.totalToPay),
+    isPaid: e.isPaid,
   }));
 
   return NextResponse.json({ rows });

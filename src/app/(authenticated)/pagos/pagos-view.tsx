@@ -33,6 +33,7 @@ type PaymentRow = {
   workerName: string;
   bankAccount: string;
   totalToPay: number;
+  isPaid: boolean;
 };
 
 type PaymentType = "A" | "P";
@@ -145,19 +146,22 @@ export function PagosView({
   // A row is payable (written to the file) iff it has a bank account AND a
   // positive amount. Everything else is surfaced by name so no worker is ever
   // silently left out of a payment file.
-  const { included, excluded } = useMemo(() => {
+  const { included, excluded, paid } = useMemo(() => {
     const inc: PaymentRow[] = [];
     const exc: { row: PaymentRow; reason: string }[] = [];
+    const pd: PaymentRow[] = [];
     for (const r of rows) {
       if (!r.bankAccount) {
         exc.push({ row: r, reason: "sin cuenta bancaria" });
       } else if (r.totalToPay <= 0) {
         exc.push({ row: r, reason: "sin monto a pagar" });
+      } else if (r.isPaid) {
+        pd.push(r); // ya pagado fuera de este lote — se excluye del archivo
       } else {
         inc.push(r);
       }
     }
-    return { included: inc, excluded: exc };
+    return { included: inc, excluded: exc, paid: pd };
   }, [rows]);
 
   // ─── CSV content (preview === file, 1:1) ─────────────────────────────────
@@ -316,6 +320,24 @@ export function PagosView({
             {excluded.map((e) => (
               <li key={e.row.workerId}>
                 {e.row.workerName} — {e.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ─── Already-paid, intentionally excluded (not an error) ───────────── */}
+      {paid.length > 0 && (
+        <div className="mt-4 rounded-xl border border-finca-200 bg-finca-50 px-4 py-3">
+          <p className="text-sm font-medium text-finca-700">
+            {paid.length}{" "}
+            {paid.length === 1 ? "trabajador ya pagado" : "trabajadores ya pagados"} —
+            excluido(s) del archivo
+          </p>
+          <ul className="mt-2 space-y-0.5 text-sm text-finca-500">
+            {paid.map((r) => (
+              <li key={r.workerId}>
+                {r.workerName} — {formatGTQ(r.totalToPay)} (ya pagado)
               </li>
             ))}
           </ul>
