@@ -67,6 +67,18 @@ export function Sidebar({ user }: { user: User }) {
   );
 
   const showAdmin = user.role === "MASTER" || user.role === "ADMIN";
+  const visibleAdmin = showAdmin
+    ? ADMIN_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role))
+    : [];
+
+  // Active = the single most specific matching href. A plain startsWith would
+  // mark "/plan" active while on "/planilla" (substring), and light up a parent
+  // on a child route. So match on exact OR "/"-boundary, longest match wins.
+  const activeHref =
+    [...visibleNav, ...visibleAdmin]
+      .map((i) => i.href)
+      .filter((h) => pathname === h || pathname.startsWith(`${h}/`))
+      .sort((a, b) => b.length - a.length)[0] ?? null;
 
   return (
     <aside className="hidden w-64 shrink-0 border-r border-finca-200 bg-white lg:flex lg:flex-col">
@@ -85,7 +97,7 @@ export function Sidebar({ user }: { user: User }) {
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {visibleNav.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const isActive = item.href === activeHref;
             const Icon = item.icon;
             return (
               <li key={item.href}>
@@ -113,8 +125,8 @@ export function Sidebar({ user }: { user: User }) {
               Administración
             </p>
             <ul className="space-y-1">
-              {ADMIN_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role)).map((item) => {
-                const isActive = pathname.startsWith(item.href);
+              {visibleAdmin.map((item) => {
+                const isActive = item.href === activeHref;
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>

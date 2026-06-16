@@ -41,11 +41,19 @@ export function MobileNav({ user }: { user: User }) {
     (tab) => !tab.roles || tab.roles.includes(user.role),
   );
 
+  // Single most-specific match (exact or "/"-boundary, longest wins) so a
+  // substring like "/plan" never lights up while on "/planilla".
+  const activeHref =
+    visibleTabs
+      .map((t) => t.href)
+      .filter((h) => pathname === h || pathname.startsWith(`${h}/`))
+      .sort((a, b) => b.length - a.length)[0] ?? null;
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-finca-200 bg-white/95 backdrop-blur-sm safe-area-inset-bottom lg:hidden">
       <div className="flex items-center justify-around px-2 py-1">
         {visibleTabs.map((tab) => {
-          const isActive = pathname.startsWith(tab.href);
+          const isActive = tab.href === activeHref;
           const Icon = tab.icon;
           return (
             <Link
