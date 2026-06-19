@@ -158,3 +158,50 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json(updated);
 }
+
+// Hard-delete an activity — ONLY when it has no work records and no plan entries
+// (those FKs are restrict; deleting a referenced activity would break payroll
+// history). If referenced, refuse and tell the admin to deactivate instead
+// (Editar → Activo). Price vigencias cascade-delete with the activity.
+export async function DELETE(request: NextRequest) {
+  const auth = await apiRequireRole(...SETTINGS_ROLES);
+  if (auth instanceof NextResponse) return auth;
+
+  const id = new URL(request.url).searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "Falta el id de la actividad" }, { status: 400 });
+  }
+
+  const existing = await prisma.activity.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Actividad no encontrada" }, { status: 404 });
+  }
+
+  const [recordCount, planCount] = await Promise.all([
+    prisma.activityRecord.count({ where: { activityId: id } }),
+    prisma.planEntry.count({ where: { activityId: id } }),
+  ]);
+  if (recordCount > 0 || planCount > 0) {
+    return NextResponse.json(
+      {
+        error: `No se puede eliminar "${existing.name}": tiene ${recordCount} registro(s) de planilla y ${planCount} entrada(s) de plan. Para conservarla en el historial, desactívela (Editar → Activo).`,
+      },
+      { status: 409 },
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.auditLog.create({
+      data: {
+        userId: auth.id,
+        action: "DELETE",
+        tableName: "activities",
+        recordId: id,
+        oldValues: { name: existing.name, code: existing.code, unit: existing.unit, defaultPrice: existing.defaultPrice?.toString() ?? null },
+      },
+    });
+    await tx.activity.delete({ where: { id } }); // activity_prices cascade
+  });
+
+  return NextResponse.json({ success: true });
+}

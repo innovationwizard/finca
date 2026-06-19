@@ -66,6 +66,31 @@ export function ActivitiesManager({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pricesFor, setPricesFor] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const remove = useCallback(async (a: ActivityRow) => {
+    setError(null);
+    setSuccess(null);
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/activities?id=${a.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Error al eliminar");
+        setConfirmDelete(null);
+        return;
+      }
+      setSuccess(`Actividad "${a.name}" eliminada`);
+      setConfirmDelete(null);
+      startTransition(() => router.refresh());
+      setTimeout(() => setSuccess(null), 3000);
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setDeleting(false);
+    }
+  }, [router]);
 
   const startEdit = useCallback((a: ActivityRow) => {
     setError(null);
@@ -292,6 +317,32 @@ export function ActivitiesManager({
                       >
                         Editar
                       </button>
+                      {confirmDelete === activity.id ? (
+                        <>
+                          <button
+                            onClick={() => remove(activity)}
+                            disabled={deleting}
+                            className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                          >
+                            {deleting ? "Eliminando…" : "Confirmar"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDelete(null)}
+                            disabled={deleting}
+                            className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => { setError(null); setSuccess(null); setConfirmDelete(activity.id); }}
+                          disabled={editing !== null}
+                          className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:border-red-300 hover:bg-red-50 disabled:opacity-40"
+                        >
+                          Eliminar
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -64,3 +64,26 @@ not the notebook batch endpoint), so removal is low-risk. Inventory:
 
 **Order of operations:** remove code refs → delete batch route → drop schema model
 + migrate → delete storage bucket. Run `tsc`/lint after each step.
+
+---
+
+## 3. Polish: hide "Nuevo período" while an open period already exists
+
+**Status: deferred (UX polish, non-blocking).** Closing a period now auto-creates
+the next one (`/api/pay-periods/[id]/close`), so the manual "Crear siguiente
+período" wizard is redundant in the normal flow — and its **stale suggestion**
+(server-rendered `suggestedStartDate` from a pre-refresh view) caused a confusing
+"el rango se traslapa con el período N" screen right after Manuel closed #8 on
+2026-06-16 (the overlap guard correctly refused a duplicate of the just-auto-created
+period — not a bug, but confusing UX).
+
+**Fix:** in `src/app/(authenticated)/planilla/page.tsx`, only render the
+`NewPeriodModal` ("Nuevo período") button when there is **no open period**
+(`!currentPeriod`). With an open period present, the next one is auto-created on
+close, so manual creation isn't needed. Keep the inline `NewPeriodModal` for the
+genuine "no open period" case (gap recovery) — that path is still valid.
+
+- Optional extra: if kept available at all, have the wizard recompute its
+  suggestion live (or detect the existing next period) instead of relying on a
+  server-rendered prop that can go stale after an auto-create.
+- The overlap guard in the POST route stays regardless (last line of defense).
