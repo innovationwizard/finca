@@ -4,7 +4,7 @@
 // Weekly capture grid — emulates DATA MANUEL FLORES from PLANILLAFINCA.xlsx.
 // Rows = workers, columns = days × (Lote, Actividad, Unidades). Dropdowns prevent
 // the dirty free-text codes the xlsx suffers from. Saves one ActivityRecord per
-// filled cell (price resolved by work date), reusing /api/planilla/batch.
+// filled cell (price resolved by work date) via POST /api/planilla/captura.
 // =============================================================================
 
 import { useMemo, useState, useCallback } from "react";

@@ -3,11 +3,27 @@
 Deferred work that is intentionally NOT done now. Each item records enough context
 to execute it safely later. Do not start these without re-confirming scope.
 
+> Progress 2026-06-16 ("proceed with todo later items"):
+> - #3 UX polish — ✅ DONE (NewPeriodModal hidden when an open period exists).
+> - #2 notebook teardown — ✅ code + DB DONE: 3 files deleted, comment fixed,
+>   src/lib/ai removed, rebuild-script refs cleaned, model removed from schema,
+>   `notebook_dictionary` table DROPPED via migration 20260616120000 (64 rows gone,
+>   per "full teardown"). REMAINING: delete the `notebook-photos` Supabase bucket
+>   (external — Jorge, in the Supabase console).
+> - #1 retroactive MG (#7) — ✅ COMPLETE. MG-only fix, +Q2,925 to 15 workers,
+>   séptimo preserved (avoided a Q15,075 blanket-recompute). #7 aPagar
+>   Q71,730 → Q74,655. The back-pay was already disbursed in the weekly review
+>   (paid in reality); the app correction makes the app match. #7 and #8 entries
+>   now marked isPaid (77 total) → app reflects reality + /pagos won't re-export.
+> - Supabase `notebook-photos` bucket — ✅ DELETED by Jorge (confirmed empty).
+>
+> **ALL THREE TODO-LATER ITEMS COMPLETE (2026-06-16).**
+
 ---
 
 ## 1. Retroactive MG fix — closed period #7
 
-**Status: deferred.** The open period #8 was already corrected (29 MG records Q0→Q75
+**Status: deferred — BLOCKED on back-pay decision.** The open period #8 was already corrected (29 MG records Q0→Q75
 + payroll recalculated). The closed period was intentionally left untouched so #8
 could be closed and paid on time.
 

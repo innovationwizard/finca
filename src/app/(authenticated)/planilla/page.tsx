@@ -116,7 +116,9 @@ export default async function PlanillaPage() {
                   endDate: currentPeriod.endDate.toISOString().split("T")[0],
                 }}
               />
-              <NewPeriodModal suggestedStartDate={suggestedStartDate} />
+              {/* No "Nuevo período" here: with an open period present, the next
+                  one is auto-created on close. Manual creation is only offered
+                  below when there is NO open period (gap recovery). */}
             </>
           )}
         </div>

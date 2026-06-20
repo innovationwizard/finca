@@ -119,13 +119,12 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
       }
       console.log(`payroll_entries: ${entries.length} source → ${merged} after merge`);
 
-      // (c) worker soft-refs
-      let nd = 0, al = 0;
+      // (c) worker soft-refs (notebook_dictionary removed 2026-06-16)
+      let al = 0;
       for (const [oldId, newId] of map) {
-        nd += (await tx.notebookDictionary.updateMany({ where: { category: "worker", referenceId: oldId }, data: { referenceId: newId } })).count;
         al += (await tx.auditLog.updateMany({ where: { tableName: "workers", recordId: oldId }, data: { recordId: newId } })).count;
       }
-      console.log(`soft-refs remapped: notebook_dictionary=${nd}, audit_logs=${al}`);
+      console.log(`soft-refs remapped: audit_logs=${al}`);
 
       // conservation: every activity_record now points at a real (SSOT) worker
       const [{ orphaned }] = await tx.$queryRawUnsafe<{ orphaned: bigint }[]>(

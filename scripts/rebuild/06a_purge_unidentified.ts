@@ -62,13 +62,12 @@ const n = (v: bigint | number) => Number(v);
       // (b) payroll_entries
       const delPay = await tx.payrollEntry.deleteMany({ where: { workerId: { in: ids } } });
       // (c) worker soft-refs (no FK; clean them so nothing points at a vanished id)
-      const delNd = await tx.notebookDictionary.deleteMany({ where: { category: "worker", referenceId: { in: ids } } });
+      // notebook_dictionary removed 2026-06-16 (deprecated notebook OCR teardown)
       const delAl = await tx.auditLog.deleteMany({ where: { tableName: "workers", recordId: { in: ids } } });
 
       console.log(`deleted from NEW tables:`);
       console.log(`  activity_records      : ${delAct.count}   (expected ${expAct})`);
       console.log(`  payroll_entries       : ${delPay.count}   (expected ${expPay})`);
-      console.log(`  notebook_dictionary   : ${delNd.count}`);
       console.log(`  audit_logs            : ${delAl.count}`);
 
       // HARD reconciliation — the numbers must tie out exactly.
