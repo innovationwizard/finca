@@ -16,6 +16,7 @@ import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { formatGTQ, formatQuantity } from "@/lib/utils/format";
 import Link from "next/link";
+import type { Route } from "next";
 
 export const metadata = { title: "Planillas anteriores" };
 
@@ -147,9 +148,11 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   }
   const grandTotal = [...workerTotals.values()].reduce((a, b) => a + b, 0);
 
-  const periodHref = (id: string) => `/planilla?periodo=${id}`;
-  const weekHref = (i: number) => `/planilla?periodo=${period.id}&semana=${i}`;
-  const completoHref = `/planilla?periodo=${period.id}&semana=all`;
+  // Cast to Route: typedRoutes can't infer literal routes from dynamic query
+  // strings, so these built-at-runtime hrefs come out as `string`.
+  const periodHref = (id: string) => `/planilla?periodo=${id}` as Route;
+  const weekHref = (i: number) => `/planilla?periodo=${period.id}&semana=${i}` as Route;
+  const completoHref = `/planilla?periodo=${period.id}&semana=all` as Route;
 
   return (
     <div className="mx-auto max-w-full px-4 py-8 sm:px-6 lg:px-8">
