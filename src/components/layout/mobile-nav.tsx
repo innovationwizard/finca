@@ -26,7 +26,7 @@ type MobileTab = {
 };
 
 const MOBILE_TABS: MobileTab[] = [
-  { href: "/planilla", label: "Planilla", icon: ClipboardList },
+  { href: "/planilla", label: "Anteriores", icon: ClipboardList },
   { href: "/ingreso-cafe", label: "Café", icon: Coffee },
   { href: "/resumenes", label: "Resúmenes", icon: FileBarChart },
   { href: "/trabajadores", label: "Personal", icon: Users },

@@ -41,8 +41,8 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/planilla", label: "Planilla", icon: ClipboardList },
   { href: "/planilla/captura", label: "Captura Semanal", icon: Table2 },
+  { href: "/planilla", label: "Planillas anteriores", icon: ClipboardList },
   { href: "/ingreso-cafe", label: "Ingreso Café", icon: Coffee },
   { href: "/plan", label: "Plan Anual", icon: CalendarRange },
   { href: "/resumenes", label: "Resúmenes", icon: FileBarChart },

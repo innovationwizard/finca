@@ -12,6 +12,8 @@ import { requireRole, WRITE_ROLES, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { toPriceSchedule } from "@/lib/pricing/activity-prices";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { CapturaGrid } from "./grid-client";
+import { EditPeriodModal } from "../edit-period-modal";
+import { ClosePeriodModal } from "../close-period-modal";
 
 export const metadata = { title: "Captura Semanal — Finca Danilandia" };
 
@@ -49,13 +51,41 @@ export default async function CapturaPage() {
     }),
   ]);
 
+  // The open period (if any) drives the edit/close period actions below. Periods
+  // are loaded sorted by startDate; at most one is open per ag year.
+  const openPeriod = periods.find((p) => !p.isClosed) ?? null;
+
   return (
     <div className="px-4 py-6 sm:px-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Captura Semanal</h1>
-      <p className="mt-1 text-sm text-finca-500">
-        Cuadrícula semanal — una fila por trabajador, y por cada día: Lote · Actividad · Unidades.
-        Igual que la planilla en Excel, pero con listas para evitar errores.
-      </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Captura Semanal</h1>
+          <p className="mt-1 text-sm text-finca-500">
+            Cuadrícula semanal — una fila por trabajador, y por cada día: Lote · Actividad · Unidades.
+            Igual que la planilla en Excel, pero con listas para evitar errores.
+          </p>
+        </div>
+        {canManagePeriods && openPeriod && (
+          <div className="flex shrink-0 items-center gap-2">
+            <EditPeriodModal
+              period={{
+                id: openPeriod.id,
+                periodNumber: openPeriod.periodNumber,
+                startDate: openPeriod.startDate.toISOString().split("T")[0],
+                endDate: openPeriod.endDate.toISOString().split("T")[0],
+              }}
+            />
+            <ClosePeriodModal
+              period={{
+                id: openPeriod.id,
+                periodNumber: openPeriod.periodNumber,
+                startDate: openPeriod.startDate.toISOString().split("T")[0],
+                endDate: openPeriod.endDate.toISOString().split("T")[0],
+              }}
+            />
+          </div>
+        )}
+      </div>
       <CapturaGrid
         workers={workers.map((w) => ({ id: w.id, name: w.fullName }))}
         activities={activities.map((a) => ({
