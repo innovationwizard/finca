@@ -265,27 +265,28 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
         </div>
       )}
 
-      {/* The grid */}
-      <div className="overflow-x-auto rounded-xl border border-finca-200 bg-white shadow-sm">
+      {/* The grid — scrolls in both axes inside a bounded height so the header
+          rows (top) and the #/Trabajador columns (left) all stay pinned. */}
+      <div className="max-h-[calc(100vh-16rem)] overflow-auto rounded-xl border border-finca-200 bg-white shadow-sm">
         <table className="border-collapse text-xs">
           <thead>
-            <tr className="bg-finca-50">
-              <th className="sticky left-0 z-10 border border-finca-100 bg-finca-50 px-2 py-1.5 text-left font-medium text-finca-600">#</th>
-              <th className="sticky left-8 z-10 border border-finca-100 bg-finca-50 px-2 py-1.5 text-left font-medium text-finca-600">Trabajador</th>
+            <tr className="h-8 bg-finca-50">
+              <th className="sticky left-0 top-0 z-30 h-8 border border-finca-100 bg-finca-50 px-2 py-1.5 text-left font-medium text-finca-600">#</th>
+              <th className="sticky left-8 top-0 z-30 border border-finca-100 bg-finca-50 px-2 py-1.5 text-left font-medium text-finca-600">Trabajador</th>
               {days.map((d, i) => (
-                <th key={d} colSpan={3} className={`border border-finca-100 px-2 py-1.5 text-center font-medium ${dayClosed(d) ? "text-finca-300" : "text-finca-700"}`} title={dayClosed(d) ? "Período cerrado — histórico" : undefined}>
+                <th key={d} colSpan={3} className={`sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-1.5 text-center font-medium ${dayClosed(d) ? "text-finca-300" : "text-finca-700"}`} title={dayClosed(d) ? "Período cerrado — histórico" : undefined}>
                   {DAY_LABELS[i]} {dm(d)}{dayClosed(d) ? " 🔒" : ""}
                 </th>
               ))}
-              <th className="border border-finca-100 px-2 py-1.5 text-right font-medium text-finca-600">Total</th>
+              <th className="sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-1.5 text-right font-medium text-finca-600">Total</th>
             </tr>
             <tr className="bg-finca-50 text-finca-400">
-              <th className="sticky left-0 z-10 border border-finca-100 bg-finca-50"></th>
-              <th className="sticky left-8 z-10 border border-finca-100 bg-finca-50"></th>
+              <th className="sticky left-0 top-8 z-30 border border-finca-100 bg-finca-50"></th>
+              <th className="sticky left-8 top-8 z-30 border border-finca-100 bg-finca-50"></th>
               {days.map((d) => (
                 <FragmentHeader key={d} />
               ))}
-              <th className="border border-finca-100"></th>
+              <th className="sticky top-8 z-20 border border-finca-100 bg-finca-50"></th>
             </tr>
           </thead>
           <tbody>
@@ -345,9 +346,9 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
 function FragmentHeader() {
   return (
     <>
-      <th className="border border-finca-100 px-1 py-1 text-center font-normal">Lote</th>
-      <th className="border border-finca-100 px-1 py-1 text-center font-normal">Activ.</th>
-      <th className="border border-finca-100 px-1 py-1 text-center font-normal">Un.</th>
+      <th className="sticky top-8 z-20 border border-finca-100 bg-finca-50 px-1 py-1 text-center font-normal">Lote</th>
+      <th className="sticky top-8 z-20 border border-finca-100 bg-finca-50 px-1 py-1 text-center font-normal">Activ.</th>
+      <th className="sticky top-8 z-20 border border-finca-100 bg-finca-50 px-1 py-1 text-center font-normal">Un.</th>
     </>
   );
 }
