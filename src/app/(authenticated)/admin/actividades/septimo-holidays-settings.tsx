@@ -2,8 +2,9 @@
 
 // =============================================================================
 // src/app/(authenticated)/admin/actividades/septimo-holidays-settings.tsx
-// Séptimo bonus amount + official/non-working holidays (which reduce the
-// séptimo's required-workday count). Settings roles only (page-guarded).
+// Official/non-working holidays (which reduce the séptimo's required-workday
+// count). The séptimo AMOUNT is edited in the "Configuración de Planilla" grid
+// above (septimo_amount). Settings roles only (page-guarded).
 // =============================================================================
 
 import { useState, useTransition } from "react";
@@ -13,27 +14,15 @@ import { Trash2, Plus } from "lucide-react";
 type Holiday = { id: string; date: string; name: string; recurringAnnual: boolean };
 type Msg = { kind: "ok" | "err"; text: string } | null;
 
-export function SeptimoHolidaysSettings({ amount, holidays }: { amount: number; holidays: Holiday[] }) {
+export function SeptimoHolidaysSettings({ holidays }: { holidays: Holiday[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [amt, setAmt] = useState(String(amount));
   const [msg, setMsg] = useState<Msg>(null);
   const [hDate, setHDate] = useState("");
   const [hName, setHName] = useState("");
   const [hRec, setHRec] = useState(false);
 
   const refresh = () => startTransition(() => router.refresh());
-
-  const saveAmount = async () => {
-    setMsg(null);
-    const n = Number(amt);
-    if (!Number.isFinite(n) || n < 0) { setMsg({ kind: "err", text: "Monto inválido" }); return; }
-    const res = await fetch("/api/admin/septimo-amount", {
-      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: n }),
-    });
-    if (res.ok) { setMsg({ kind: "ok", text: "Monto del séptimo actualizado" }); refresh(); }
-    else { setMsg({ kind: "err", text: (await res.json()).error ?? "Error al guardar" }); }
-  };
 
   const addHoliday = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,25 +49,6 @@ export function SeptimoHolidaysSettings({ amount, holidays }: { amount: number; 
           {msg.text}
         </div>
       )}
-
-      {/* Séptimo amount */}
-      <div className="rounded-xl border border-stone-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-stone-900">Monto del séptimo (Q)</h3>
-        <p className="mt-1 text-xs text-stone-500">
-          Premio por asistir todos los días requeridos de la semana. No es pago por trabajar el domingo.
-        </p>
-        <div className="mt-3 flex items-center gap-2">
-          <input
-            type="number" min="0" step="0.01" inputMode="decimal"
-            value={amt} onChange={(e) => setAmt(e.target.value)}
-            className="w-40 rounded-lg border border-stone-200 px-3 py-2 text-sm tabular-nums focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400"
-          />
-          <button onClick={saveAmount} disabled={isPending}
-            className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50">
-            Guardar
-          </button>
-        </div>
-      </div>
 
       {/* Holidays */}
       <div className="rounded-xl border border-stone-200 bg-white p-5">
