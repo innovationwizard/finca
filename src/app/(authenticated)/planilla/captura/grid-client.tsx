@@ -58,6 +58,7 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [resolving, setResolving] = useState(false);
+  const [workerFilter, setWorkerFilter] = useState(""); // view a single worker; display-only (save still covers all)
 
   // Roster: persisted client-side; defaults to all active workers. Always
   // include workers who already have records this period, so saved entries are
@@ -79,6 +80,9 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
   const workerById = useMemo(() => new Map(workers.map((w) => [w.id, w])), [workers]);
   const activityById = useMemo(() => new Map(activities.map((a) => [a.id, a])), [activities]);
   const roster = useMemo(() => rosterIds.map((id) => workerById.get(id)).filter(Boolean) as Worker[], [rosterIds, workerById]);
+  // Display-only narrowing: filtering never changes `roster`, so totals and save
+  // still cover everyone (no typed data is lost behind the filter).
+  const visibleRoster = useMemo(() => (workerFilter ? roster.filter((w) => w.id === workerFilter) : roster), [roster, workerFilter]);
 
   const days = useMemo(() => {
     // Mon–Sat (6 workdays). The séptimo is a computed attendance bonus, not an
@@ -265,6 +269,21 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
         </div>
       )}
 
+      {/* Per-worker filter (display-only) — right above the titles row. */}
+      <div className="mb-3">
+        <select
+          value={workerFilter}
+          onChange={(e) => setWorkerFilter(e.target.value)}
+          aria-label="Filtrar por trabajador"
+          className="rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-700 focus:border-earth-400 focus:outline-none sm:w-72"
+        >
+          <option value="">Todos los trabajadores</option>
+          {roster.map((w) => (
+            <option key={w.id} value={w.id}>{w.name}</option>
+          ))}
+        </select>
+      </div>
+
       {/* The grid — scrolls in both axes inside a bounded height so the header
           rows (top) and the #/Trabajador columns (left) all stay pinned. */}
       <div className="max-h-[calc(100vh-16rem)] overflow-auto rounded-xl border border-finca-200 bg-white shadow-sm">
@@ -290,7 +309,7 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
             </tr>
           </thead>
           <tbody>
-            {roster.map((w, idx) => (
+            {visibleRoster.map((w, idx) => (
               <tr key={w.id} className="hover:bg-finca-50/40">
                 <td className="sticky left-0 z-10 border border-finca-100 bg-white px-2 py-1 text-finca-400">{idx + 1}</td>
                 <td className="sticky left-8 z-10 border border-finca-100 bg-white px-2 py-1 font-medium text-finca-900 whitespace-nowrap">
