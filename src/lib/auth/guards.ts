@@ -75,6 +75,15 @@ export const READ_ALL_ROLES: UserRole[] = ["MASTER", "ADMIN", "MANAGER", "CEO", 
 export const WRITE_ROLES: UserRole[] = ["MASTER", "ADMIN", "FIELD"];
 
 /**
+ * Payroll adjustments (descuentos / adicionales) for the open period.
+ * MASTER + MANAGER input; ADMIN + CFO may open the page read-only (review).
+ * These feed PayrollEntry.totalToPay → the bank file, so the write set is kept
+ * deliberately narrow.
+ */
+export const PAY_ADJUST_WRITE_ROLES: UserRole[] = ["MASTER", "MANAGER"];
+export const PAY_ADJUST_VIEW_ROLES: UserRole[] = ["MASTER", "MANAGER", "ADMIN", "CFO"];
+
+/**
  * Where a user lands after login. Plan Anual (/plan) for everyone who can view
  * it; FIELD (caporal, data entry only — not in READ_ALL_ROLES) lands on the
  * Planilla so they don't hit an authorization error.

@@ -103,3 +103,65 @@ genuine "no open period" case (gap recovery) — that path is still valid.
   suggestion live (or detect the existing next period) instead of relying on a
   server-rendered prop that can go stale after an auto-create.
 - The overlap guard in the POST route stays regardless (last line of defense).
+
+---
+
+> Added 2026-06-23 (while building the **Descuentos y Adicionales** input page —
+> `/planilla/ajustes`, route `/api/planilla/ajustes`, role consts
+> `PAY_ADJUST_*_ROLES` in `src/lib/auth/guards.ts`).
+
+## 4. Vo.Bo. (approval) workflow for ADICIONALES
+
+**Status: deferred — to scope today (2026-06-23).** The SSOT payroll sheet's
+ADICIONALES column header carries a "Vo.Bo. Luis Arimany" note. Per Jorge, that
+note **refers to a workflow**, not a data field: adicionales require a *visto
+bueno* (sign-off) — by Luis Arimany / an authorizing role — before they count.
+
+The page built today lets MASTER/MANAGER enter adicionales (and descuentos) with
+**no approval gate** — amounts apply immediately to `PayrollEntry.totalToPay` →
+the bank file. Later, add an approval step so an entered adicional must be
+approved before it flows to TOTAL A PAGAR / `/pagos`.
+
+**Scope to confirm before building:**
+- Who approves (which role) — likely ADMIN (Luis Arimany) per the note.
+- Do **descuentos** also need approval, or **adicionales** only?
+- Where the Vo.Bo. is recorded — e.g. `status` + `approvedBy`/`approvedAt` on
+  `PayrollEntry`, or a dedicated adjustments table (today the amount lives
+  directly on `PayrollEntry.bonification`/`.deductions`).
+- Whether amounts apply **provisionally** before approval or are withheld from
+  `totalToPay` until approved (affects the bank-file export).
+- Reconcile with the six-eyes payroll review already in place.
+
+## 5. Re-confirm MANAGER write access on Descuentos y Adicionales
+
+**Status: deferred — Jorge will double-check.** The page was gated to
+**MASTER + MANAGER = write, ADMIN + CFO = read-only** per Jorge's choice. Jorge
+first said "only Manuel should input these (maybe a new role)," then chose to
+**reuse the existing `MANAGER` role** rather than add one.
+
+**Consequence to verify:** `MANAGER` already maps to a person in the enum
+(schema comment: "Roberto"). Reusing it means the **current MANAGER holder gains
+write access** to descuentos/adicionales. Jorge: "understood, will double-check
+later."
+
+**If a distinct role is wanted for Manuel instead:**
+- Add a `UserRole` enum value (e.g. `NOMINA` / `PAYROLL`) + Prisma migration.
+- Assign Manuel that role via `/admin/usuarios`.
+- Repoint `PAY_ADJUST_WRITE_ROLES` (and possibly `PAY_ADJUST_VIEW_ROLES`) in
+  `src/lib/auth/guards.ts`; the page/API read from those constants, so no other
+  edits needed.
+
+## 6. Fix hardcoded Q0.00 in the Resumen de Pago page
+
+**Status: deferred — stale view, no-hardcoded-values cleanup.**
+`src/app/(authenticated)/planilla/resumen/page.tsx` reads `activityRecord`
+(earnings only) and **hardcodes `Q0.00`** for Bonificación and Anticipos in both
+the per-worker rows and the totals footer. It therefore ignores `PayrollEntry`
+entirely — so séptimo, and now the descuentos/adicionales entered on
+`/planilla/ajustes`, do **not** appear there.
+
+**Fix:** source the page from `PayrollEntry` for the period (totalEarned,
+bonification, seventhDayPay, advances, deductions, totalToPay) instead of
+re-aggregating `activityRecord`, mirroring `/api/resumenes`. Remove every
+hardcoded `Q0.00`; show real values + DESCUENTOS and TOTAL A PAGAR. Reconcile
+the columns with the SSOT (TOTAL = devengado + séptimo).
