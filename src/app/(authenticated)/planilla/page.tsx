@@ -17,6 +17,7 @@ import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { formatGTQ, formatQuantity } from "@/lib/utils/format";
 import Link from "next/link";
 import type { Route } from "next";
+import { WorkerFilter } from "./worker-filter";
 
 export const metadata = { title: "Planillas anteriores" };
 
@@ -61,7 +62,7 @@ function periodWeeks(start: Date, end: Date): Week[] {
   return weeks;
 }
 
-type Props = { searchParams: Promise<{ periodo?: string; semana?: string }> };
+type Props = { searchParams: Promise<{ periodo?: string; semana?: string; trabajador?: string }> };
 
 export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   // FIELD (caporal) reviews history alongside the read-all roles, as before.
@@ -128,6 +129,10 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
     orderBy: { fullName: "asc" },
   });
 
+  // Per-worker filter (?trabajador=). Empty/unknown id → show everyone.
+  const selectedWorker = workers.some((w) => w.id === params.trabajador) ? params.trabajador! : "";
+  const displayWorkers = selectedWorker ? workers.filter((w) => w.id === selectedWorker) : workers;
+
   // Cell map: `${workerId}|${dayIso}` → entries (a worker may have >1 activity
   // in a day; we never collapse them — every record is shown).
   type Entry = { code: string | null; name: string; lote: string | null; units: number; unit: string; total: number };
@@ -146,7 +151,7 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
     });
     workerTotals.set(r.workerId, (workerTotals.get(r.workerId) ?? 0) + Number(r.totalEarned));
   }
-  const grandTotal = [...workerTotals.values()].reduce((a, b) => a + b, 0);
+  const grandTotal = displayWorkers.reduce((s, w) => s + (workerTotals.get(w.id) ?? 0), 0);
 
   // Cast to Route: typedRoutes can't infer literal routes from dynamic query
   // strings, so these built-at-runtime hrefs come out as `string`.
@@ -214,6 +219,14 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
         </Link>
       </div>
 
+      {/* Per-worker filter */}
+      <div className="mt-4">
+        <WorkerFilter
+          workers={workers.map((w) => ({ id: w.id, name: w.fullName }))}
+          selected={selectedWorker}
+        />
+      </div>
+
       {/* ── Tier 3: the grid ──────────────────────────────────────────────── */}
       <div className="mt-5 overflow-x-auto rounded-xl border border-finca-200 bg-white shadow-sm">
         <table className="border-collapse text-[11px] leading-tight">
@@ -247,7 +260,7 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
             </tr>
           </thead>
           <tbody>
-            {workers.map((w, idx) => (
+            {displayWorkers.map((w, idx) => (
               <tr key={w.id} className="align-top hover:bg-finca-50/40">
                 <td className="sticky left-0 z-10 w-8 border border-finca-100 bg-white px-2 py-1 text-finca-400">{idx + 1}</td>
                 <td className="sticky left-8 z-10 whitespace-nowrap border border-finca-100 bg-white px-2 py-1 font-medium text-finca-900">
