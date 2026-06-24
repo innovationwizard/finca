@@ -18,6 +18,7 @@ export default async function TrabajadoresPage() {
       fullName: true,
       cui: true,
       phone: true,
+      bankAccount: true,
       isActive: true,
       isMinor: true,
       startDate: true,

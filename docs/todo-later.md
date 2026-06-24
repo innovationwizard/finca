@@ -165,3 +165,48 @@ bonification, seventhDayPay, advances, deductions, totalToPay) instead of
 re-aggregating `activityRecord`, mirroring `/api/resumenes`. Remove every
 hardcoded `Q0.00`; show real values + DESCUENTOS and TOTAL A PAGAR. Reconcile
 the columns with the SSOT (TOTAL = devengado + séptimo).
+
+## 7. Required note per non-zero descuento / adicional (CFO audit)
+
+**Status: deferred — requested by CFO for audit purposes.** Every **non-zero**
+DESCUENTOS or ADICIONALES value must carry a linked **note/justification**. This
+reverses the initial "amounts only" choice made when building `/planilla/ajustes`
+(2026-06-23).
+
+- **Storage:** amounts live on `PayrollEntry.deductions` / `.bonification` (one
+  row per worker/period). A single note column can't tell a descuento note from
+  an adicional note → either add **two columns** (`deductions_note`,
+  `bonification_note`) or move adjustments to a **dedicated table** (`type`,
+  `amount`, `note`, `createdBy`, timestamps). The separate table also supports
+  multiple line items per worker and the Vo.Bo. workflow (#4) — likely the better
+  shape; decide together with #4.
+- **Rule:** note is **required** when its amount is non-zero; cleared when the
+  amount returns to 0. Enforce on the API (reject save) and in the UI.
+- **UI:** add a note input beside each editable cell on `/planilla/ajustes`;
+  block save if a non-zero amount has no note.
+- **Migration** required. Writes are already audited.
+- **Coordinate with #4** (Vo.Bo. approval) — a dedicated adjustments table would
+  serve both this and the approval flow in one schema change.
+
+## 8. CFO pre-authorization review screen (pivot + chart) for the open period
+
+**Status: deferred — build today with the Vo.Bo. authorization (#4).** The CFO
+needs to review the **open period** *before* authorizing it (the Vo.Bo. step).
+Decisions (Jorge, 2026-06-23): a **new dedicated screen** (not just `/resumenes`)
+showing **pivot tables + one summary chart**.
+
+- **Why new, not /resumenes:** `/resumenes` already gives a period-scoped pivot
+  (tabs: Semana / Persona / Lote, CFO-accessible) and overlaps heavily — reuse
+  its `/api/resumenes` aggregation logic — but Jorge wants a distinct review
+  screen tied to the authorization flow.
+- **Must include DESCUENTOS:** `/api/resumenes` currently omits `deductions` from
+  its aggregation ([resumenes/route.ts] PayrollAgg). Add `deductions` so the CFO
+  sees Devengado · Séptimo · Bonificación(Adicionales) · Descuentos · Total a
+  Pagar — the full pre-auth picture. (Distinct from #6, which is the other
+  `/planilla/resumen` page.)
+- **Chart:** one summary chart (e.g. Total a Pagar by category, or by lote).
+- **Notes (#7):** surface the per-adjustment notes here for audit review.
+- **Access:** CFO (the reviewer) + MASTER; confirm whether MANAGER/ADMIN also see
+  it. Read-only.
+- **Flow:** this view is the CFO's input to the Vo.Bo. authorization (#4) — design
+  them together (the screen likely hosts or links to the authorization action).

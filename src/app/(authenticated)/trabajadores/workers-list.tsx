@@ -14,6 +14,7 @@ type WorkerRow = {
   fullName: string;
   cui: string;
   phone: string | null;
+  bankAccount: string | null;
   isActive: boolean;
   isMinor: boolean;
   startDate: string | null;
@@ -110,6 +111,7 @@ export function WorkersList({ workers }: { workers: WorkerRow[] }) {
                 <th className="px-4 py-3 font-medium text-finca-600">Nombre</th>
                 <th className="px-4 py-3 font-medium text-finca-600">DPI</th>
                 <th className="px-4 py-3 font-medium text-finca-600">Teléfono</th>
+                <th className="px-4 py-3 font-medium text-finca-600">Cuenta bancaria</th>
                 <th className="px-4 py-3 font-medium text-finca-600">Estado</th>
                 <th className="px-4 py-3 font-medium text-finca-600">Fecha Inicio</th>
               </tr>
@@ -138,6 +140,9 @@ export function WorkersList({ workers }: { workers: WorkerRow[] }) {
                   </td>
                   <td className="px-4 py-2.5 text-finca-600">
                     {w.phone ?? "—"}
+                  </td>
+                  <td className="px-4 py-2.5 tabular-nums text-finca-600">
+                    {w.bankAccount || "—"}
                   </td>
                   <td className="px-4 py-2.5">
                     <span
