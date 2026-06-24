@@ -13,7 +13,6 @@ import { toPriceSchedule } from "@/lib/pricing/activity-prices";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { CapturaGrid } from "./grid-client";
 import { EditPeriodModal } from "../edit-period-modal";
-import { ClosePeriodModal } from "../close-period-modal";
 
 export const metadata = { title: "Captura Semanal — Finca Danilandia" };
 
@@ -67,15 +66,9 @@ export default async function CapturaPage() {
         </div>
         {canManagePeriods && openPeriod && (
           <div className="flex shrink-0 items-center gap-2">
+            {/* "Cerrar período" moved to Revisión y Autorización as "Autorizar
+                pago" (ADMIN/MASTER). Captura keeps only date editing. */}
             <EditPeriodModal
-              period={{
-                id: openPeriod.id,
-                periodNumber: openPeriod.periodNumber,
-                startDate: openPeriod.startDate.toISOString().split("T")[0],
-                endDate: openPeriod.endDate.toISOString().split("T")[0],
-              }}
-            />
-            <ClosePeriodModal
               period={{
                 id: openPeriod.id,
                 periodNumber: openPeriod.periodNumber,

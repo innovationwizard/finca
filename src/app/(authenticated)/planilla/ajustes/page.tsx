@@ -43,7 +43,7 @@ export default async function AjustesPage() {
     prisma.worker.findMany({ where: { isActive: true }, select: { id: true, fullName: true }, orderBy: { fullName: "asc" } }),
     prisma.payrollEntry.findMany({
       where: { payPeriodId: period.id },
-      select: { workerId: true, totalEarned: true, seventhDayPay: true, deductions: true, bonification: true },
+      select: { workerId: true, totalEarned: true, seventhDayPay: true, deductions: true, bonification: true, deductionsNote: true, bonificationNote: true },
     }),
   ]);
   const entryByWorker = new Map(entries.map((e) => [e.workerId, e]));
@@ -56,6 +56,8 @@ export default async function AjustesPage() {
       gross: e ? Number(e.totalEarned) + Number(e.seventhDayPay) : 0,
       deductions: e ? Number(e.deductions) : 0,
       bonification: e ? Number(e.bonification) : 0,
+      deductionsNote: e?.deductionsNote ?? "",
+      bonificationNote: e?.bonificationNote ?? "",
     };
   });
 

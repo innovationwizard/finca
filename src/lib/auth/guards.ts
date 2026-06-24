@@ -84,6 +84,13 @@ export const PAY_ADJUST_WRITE_ROLES: UserRole[] = ["MASTER", "MANAGER"];
 export const PAY_ADJUST_VIEW_ROLES: UserRole[] = ["MASTER", "MANAGER", "ADMIN", "CFO"];
 
 /**
+ * Payroll review & authorization screen (Revisión y Autorización). CFO audits
+ * read-only; MASTER/ADMIN (SETTINGS_ROLES) additionally authorize payment, which
+ * closes the open period via the existing close endpoint.
+ */
+export const PAYROLL_REVIEW_ROLES: UserRole[] = ["MASTER", "ADMIN", "CFO"];
+
+/**
  * Where a user lands after login. Plan Anual (/plan) for everyone who can view
  * it; FIELD (caporal, data entry only — not in READ_ALL_ROLES) lands on the
  * Planilla so they don't hit an authorization error.

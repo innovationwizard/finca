@@ -19,6 +19,32 @@ to execute it safely later. Do not start these without re-confirming scope.
 >
 > **ALL THREE TODO-LATER ITEMS COMPLETE (2026-06-16).**
 
+> Update 2026-06-23 ("work on those TODO" — payroll review/authorize workflow).
+> Workflow locked: MANAGER (Manuel) captures + inputs descuentos/adicionales →
+> CFO (José Roberto) audits read-only → ADMIN (Luis Arimany) audits + **Autoriza
+> pago**, which **closes** the period. MANAGER no longer closes.
+> Decisions for **#4 + #7 + #8** (built together):
+> - **One shared screen** `/planilla/autorizacion` (PAYROLL_REVIEW_ROLES =
+>   MASTER/ADMIN/CFO view; MASTER/ADMIN authorize). Auditor read-only; approver
+>   gets "Autorizar pago".
+> - **Authorize = close**: reuses the existing close endpoint (lock + auto-create
+>   next period; records `closedBy`/`closedAt` + audit log). Gated ADMIN+MASTER.
+>   #4 "Vo.Bo." = this authorize action. No separate approval table.
+> - **Gating = warn-only**: exceptions/totals shown; button always enabled (no
+>   hard block, no reconciliation checkbox). Bank cross-check stays manual.
+> - **No snapshot table**: rely on locked PayrollEntry + closedBy/closedAt + audit
+>   log (the close already freezes the data).
+> - **#7 notes DONE**: `bonification_note` / `deductions_note` added to
+>   `payroll_entries` (migration `20260623000000_payroll_adjustment_notes`),
+>   required when amount ≠ 0, enforced in `/api/planilla/ajustes` + UI. Feeds the
+>   "ajuste sin nota" exception flag.
+> - Research persisted in `docs/payroll-audit-dashboard-research.md`.
+>
+> ✅ **Migration hygiene resolved (2026-06-23):** the `20260623000000` migration
+> was applied manually via Supabase SQL editor, then marked applied in Prisma's
+> history with `prisma migrate resolve --applied 20260623000000_payroll_adjustment_notes`.
+> Future `migrate deploy` runs will skip it correctly.
+
 ---
 
 ## 1. Retroactive MG fix — closed period #7

@@ -13,18 +13,28 @@ import { prisma } from "@/lib/prisma";
 import { apiRequireRole, PAY_ADJUST_WRITE_ROLES } from "@/lib/auth/guards";
 import { calcNetPay } from "@/lib/utils/calculations";
 
+// A note is REQUIRED whenever its amount is non-zero (CFO audit requirement),
+// and cleared to null when the amount is zero.
+const rowSchema = z
+  .object({
+    workerId: z.string().uuid(),
+    deductions: z.number().min(0).max(1_000_000),
+    bonification: z.number().min(0).max(1_000_000),
+    deductionsNote: z.string().trim().max(500).optional().default(""),
+    bonificationNote: z.string().trim().max(500).optional().default(""),
+  })
+  .refine((r) => r.deductions === 0 || r.deductionsNote.length > 0, {
+    message: "El descuento requiere una nota.",
+    path: ["deductionsNote"],
+  })
+  .refine((r) => r.bonification === 0 || r.bonificationNote.length > 0, {
+    message: "El adicional requiere una nota.",
+    path: ["bonificationNote"],
+  });
+
 const schema = z.object({
   payPeriodId: z.string().uuid(),
-  rows: z
-    .array(
-      z.object({
-        workerId: z.string().uuid(),
-        deductions: z.number().min(0).max(1_000_000),
-        bonification: z.number().min(0).max(1_000_000),
-      }),
-    )
-    .min(1)
-    .max(2000),
+  rows: z.array(rowSchema).min(1).max(2000),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -69,6 +79,9 @@ export async function PATCH(request: NextRequest) {
     for (const row of rows) {
       const deductions = r2(row.deductions);
       const bonification = r2(row.bonification);
+      // Notes are cleared to null when the matching amount is zero.
+      const deductionsNote = deductions === 0 ? null : row.deductionsNote;
+      const bonificationNote = bonification === 0 ? null : row.bonificationNote;
       // One entry per (period, worker, category). A worker normally has one.
       const existing = await tx.payrollEntry.findFirst({ where: { payPeriodId, workerId: row.workerId } });
 
@@ -77,16 +90,21 @@ export async function PATCH(request: NextRequest) {
         const seventhDayPay = Number(existing.seventhDayPay);
         const advances = Number(existing.advances);
         const totalToPay = calcNetPay(totalEarned, bonification, seventhDayPay, advances, deductions);
-        if (Number(existing.deductions) === deductions && Number(existing.bonification) === bonification) continue;
-        await tx.payrollEntry.update({ where: { id: existing.id }, data: { deductions, bonification, totalToPay } });
+        if (
+          Number(existing.deductions) === deductions &&
+          Number(existing.bonification) === bonification &&
+          (existing.deductionsNote ?? null) === deductionsNote &&
+          (existing.bonificationNote ?? null) === bonificationNote
+        ) continue;
+        await tx.payrollEntry.update({ where: { id: existing.id }, data: { deductions, bonification, deductionsNote, bonificationNote, totalToPay } });
         await tx.auditLog.create({
           data: {
             userId: auth.id,
             action: "UPDATE",
             tableName: "payroll_entries",
             recordId: existing.id,
-            oldValues: { deductions: Number(existing.deductions), bonification: Number(existing.bonification), totalToPay: Number(existing.totalToPay) },
-            newValues: { deductions, bonification, totalToPay },
+            oldValues: { deductions: Number(existing.deductions), bonification: Number(existing.bonification), deductionsNote: existing.deductionsNote, bonificationNote: existing.bonificationNote, totalToPay: Number(existing.totalToPay) },
+            newValues: { deductions, bonification, deductionsNote, bonificationNote, totalToPay },
           },
         });
         updated++;
@@ -104,6 +122,8 @@ export async function PATCH(request: NextRequest) {
             advances: 0,
             deductions,
             bonification,
+            deductionsNote,
+            bonificationNote,
             totalToPay,
           },
         });
@@ -113,7 +133,7 @@ export async function PATCH(request: NextRequest) {
             action: "CREATE",
             tableName: "payroll_entries",
             recordId: created.id,
-            newValues: { deductions, bonification, totalToPay },
+            newValues: { deductions, bonification, deductionsNote, bonificationNote, totalToPay },
           },
         });
         updated++;
