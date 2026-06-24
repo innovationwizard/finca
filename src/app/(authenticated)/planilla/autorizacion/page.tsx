@@ -139,6 +139,34 @@ export default async function AutorizacionPage() {
     histogram[i].count++;
   }
 
+  // Granular activity records for the period → Excel-style filterable detail
+  // table (one row per worker · día · actividad).
+  const recordRows = await prisma.activityRecord.findMany({
+    where: { payPeriodId: period.id },
+    select: {
+      id: true,
+      date: true,
+      quantity: true,
+      unitPrice: true,
+      totalEarned: true,
+      worker: { select: { fullName: true } },
+      activity: { select: { code: true, name: true } },
+      lote: { select: { name: true } },
+    },
+    orderBy: [{ date: "asc" }, { worker: { fullName: "asc" } }],
+  });
+  const records = recordRows.map((r) => ({
+    id: r.id,
+    date: r.date.toISOString().split("T")[0],
+    worker: r.worker.fullName,
+    lote: r.lote?.name ?? "",
+    code: r.activity.code ?? "",
+    activity: r.activity.name,
+    quantity: Number(r.quantity),
+    unitPrice: Number(r.unitPrice),
+    total: Number(r.totalEarned),
+  }));
+
   // Composition by category (≤ few categories, per research).
   const composition = (["VOLUNTARIO", "FIJO"] as const).map((cat) => {
     const rs = rows.filter((r) => r.category === cat);
@@ -162,6 +190,7 @@ export default async function AutorizacionPage() {
       kpis={{ totalToPay, workerCount: rows.length, exceptionWorkerCount, sinCuentaCount }}
       histogram={histogram}
       composition={composition}
+      records={records}
       prevPeriodNumber={prev?.periodNumber ?? null}
     />
   );
