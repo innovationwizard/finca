@@ -42,6 +42,10 @@ prisma/migrations/dev/
 # data files
 *.csv
 WhatsApp Image*
+# payroll workbooks/exports at repo root (PII); docs/**/*.xlsx stay tracked
+/*.xlsx
+# Office lock/temp files (e.g. ~$2406PLANILLA.xlsx)
+~$*
 
 # PII artifacts (real worker data — never commit)
 revision-trabajadores.html
