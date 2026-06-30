@@ -75,6 +75,13 @@ export const READ_ALL_ROLES: UserRole[] = ["MASTER", "ADMIN", "MANAGER", "CEO", 
 export const WRITE_ROLES: UserRole[] = ["MASTER", "ADMIN", "FIELD"];
 
 /**
+ * Captura Semanal write access. MANAGER (Manuel, the payroll preparer) enters the
+ * weekly grid but is NOT a general editor (not in WRITE_ROLES), so captura grants
+ * it explicitly here rather than broadening WRITE_ROLES across the app.
+ */
+export const CAPTURA_WRITE_ROLES: UserRole[] = ["MASTER", "ADMIN", "FIELD", "MANAGER"];
+
+/**
  * Payroll adjustments (descuentos / adicionales) for the open period.
  * MASTER + MANAGER input; ADMIN + CFO may open the page read-only (review).
  * These feed PayrollEntry.totalToPay → the bank file, so the write set is kept

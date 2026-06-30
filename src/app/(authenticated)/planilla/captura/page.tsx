@@ -8,7 +8,7 @@
 // =============================================================================
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, WRITE_ROLES, READ_ALL_ROLES } from "@/lib/auth/guards";
+import { requireRole, CAPTURA_WRITE_ROLES, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { toPriceSchedule } from "@/lib/pricing/activity-prices";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { CapturaGrid } from "./grid-client";
@@ -17,11 +17,11 @@ import { EditPeriodModal } from "../edit-period-modal";
 export const metadata = { title: "Captura Semanal — Finca Danilandia" };
 
 // View access = anyone who can write OR can read all data (auditors included).
-const VIEW_ROLES = [...new Set([...READ_ALL_ROLES, ...WRITE_ROLES])];
+const VIEW_ROLES = [...new Set([...READ_ALL_ROLES, ...CAPTURA_WRITE_ROLES])];
 
 export default async function CapturaPage() {
   const user = await requireRole(...VIEW_ROLES);
-  const canWrite = WRITE_ROLES.includes(user.role);
+  const canWrite = CAPTURA_WRITE_ROLES.includes(user.role);
   // MASTER/ADMIN can open/extend pay periods inline when days are uncovered.
   const canManagePeriods = user.role === "MASTER" || user.role === "ADMIN";
 

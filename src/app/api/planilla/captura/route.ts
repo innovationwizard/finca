@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { apiRequireRole, WRITE_ROLES } from "@/lib/auth/guards";
+import { apiRequireRole, CAPTURA_WRITE_ROLES } from "@/lib/auth/guards";
 import { prisma } from "@/lib/prisma";
 import { recomputePayroll } from "@/lib/payroll/recalc";
 
@@ -28,7 +28,7 @@ const rowSchema = z.object({
 const schema = z.object({ rows: z.array(rowSchema).min(1).max(2000) });
 
 export async function POST(request: NextRequest) {
-  const auth = await apiRequireRole(...WRITE_ROLES);
+  const auth = await apiRequireRole(...CAPTURA_WRITE_ROLES);
   if (auth instanceof NextResponse) return auth;
 
   const parsed = schema.safeParse(await request.json());
