@@ -48,6 +48,7 @@ WhatsApp Image*
 ~$*
 
 # PII artifacts (real worker data — never commit)
+/auditoria-pago-*.md
 revision-trabajadores.html
 reassignment-worksheet.html
 format/
