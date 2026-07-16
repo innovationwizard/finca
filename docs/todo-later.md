@@ -45,6 +45,28 @@ to execute it safely later. Do not start these without re-confirming scope.
 > history with `prisma migrate resolve --applied 20260623000000_payroll_adjustment_notes`.
 > Future `migrate deploy` runs will skip it correctly.
 
+> Progress 2026-07-16 ("period creation ui was replaced with auto create on
+> closing the previous period. remove it."):
+> - **#3 — ✅ RESOLVED by removal, not by hiding.** `new-period-modal.tsx` +
+>   `create-pay-period-wizard.tsx` deleted (commit `51f0fa6`). They were already
+>   dead code — nothing imported them — so the "hide when an open period exists"
+>   fix this item described was moot. Gap recovery is covered by Captura's
+>   uncovered-days banner; `POST /api/pay-periods` + its overlap guard unchanged.
+> - **Added `scripts/open-successor-period.ts`** — opens the successor of the
+>   currently open period **without closing it**. Range derived verbatim from
+>   `close/route.ts` `nextRange()`, same `SETTINGS_ROLES` gate + audit
+>   attribution as the API, aborts on >1 open period or any overlap, dry-run by
+>   default. Used 2026-07-16 to create **#10 (2026-07-16 → 2026-08-08)** so
+>   07-13/07-14 could be captured while **#9** awaited payment authorization
+>   (closing #9 later sees #10 overlapping and skips its auto-create — no
+>   duplicate).
+> - **Why it was needed:** the successor is normally created only as a
+>   side-effect of closing the previous period, but closing is gated on payment
+>   authorization. Days past the previous period's `endDate` are therefore
+>   uncovered, and Captura refuses to save the **whole displayed week** when any
+>   day in it is uncovered — blocking days that are themselves valid. This
+>   recurs at every period boundary unless the successor exists beforehand.
+
 ---
 
 ## 1. Retroactive MG fix — closed period #7
@@ -111,24 +133,38 @@ not the notebook batch endpoint), so removal is low-risk. Inventory:
 
 ## 3. Polish: hide "Nuevo período" while an open period already exists
 
-**Status: deferred (UX polish, non-blocking).** Closing a period now auto-creates
-the next one (`/api/pay-periods/[id]/close`), so the manual "Crear siguiente
-período" wizard is redundant in the normal flow — and its **stale suggestion**
-(server-rendered `suggestedStartDate` from a pre-refresh view) caused a confusing
-"el rango se traslapa con el período N" screen right after Manuel closed #8 on
-2026-06-16 (the overlap guard correctly refused a duplicate of the just-auto-created
-period — not a bug, but confusing UX).
+**Status: ✅ RESOLVED 2026-07-16 — superseded: the UI was removed entirely rather
+than hidden.** Kept here for the context of *why* it existed.
 
-**Fix:** in `src/app/(authenticated)/planilla/page.tsx`, only render the
-`NewPeriodModal` ("Nuevo período") button when there is **no open period**
-(`!currentPeriod`). With an open period present, the next one is auto-created on
-close, so manual creation isn't needed. Keep the inline `NewPeriodModal` for the
-genuine "no open period" case (gap recovery) — that path is still valid.
+**Original context.** Closing a period auto-creates the next one
+(`/api/pay-periods/[id]/close`), so the manual "Crear siguiente período" wizard
+was redundant in the normal flow — and its **stale suggestion** (server-rendered
+`suggestedStartDate` from a pre-refresh view) caused a confusing "el rango se
+traslapa con el período N" screen right after Manuel closed #8 on 2026-06-16 (the
+overlap guard correctly refused a duplicate of the just-auto-created period — not
+a bug, but confusing UX). The plan was to render `NewPeriodModal` only when there
+was **no open period**, keeping it for the "gap recovery" case.
 
-- Optional extra: if kept available at all, have the wizard recompute its
-  suggestion live (or detect the existing next period) instead of relying on a
-  server-rendered prop that can go stale after an auto-create.
-- The overlap guard in the POST route stays regardless (last line of defense).
+**What actually happened.** The wizard had already been unmounted from
+`src/app/(authenticated)/planilla/page.tsx` — nothing imported
+`new-period-modal.tsx` — so it was dead code, and the conditional-render fix had
+nothing left to apply to. Per Jorge ("period creation ui was replaced with auto
+create on closing the previous period. remove it."), both files were **deleted**
+on 2026-07-16 (commit `51f0fa6`).
+
+**The "gap recovery" path this item wanted to preserve is covered elsewhere:**
+Captura's uncovered-days banner (`grid-client.tsx` → `resolveUncovered`,
+MASTER/ADMIN) **POSTs** `/api/pay-periods` to create a period when **no** period
+is open, and **PATCHes** to extend the latest open one when there is. The POST
+route and its overlap guard are unchanged (still the last line of defense).
+
+- ⚠️ **Known sharp edge in that banner:** with an open period present it always
+  **extends** it. When the uncovered days fall *after* the open period's end
+  (the normal boundary case), extending pulls those days — and the week's
+  Saturday, which decides séptimo ownership — into a period that may already be
+  reviewed and awaiting payment, silently changing its payout. The correct move
+  there is to open the **successor** (`scripts/open-successor-period.ts`), not
+  extend. Not fixed; recorded here.
 
 ---
 

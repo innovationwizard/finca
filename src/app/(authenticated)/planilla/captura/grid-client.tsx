@@ -136,14 +136,20 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
   const filledCount = useMemo(() => Object.values(cells).filter((c) => c.activityId).length, [cells]);
 
   const handleSave = useCallback(async () => {
-    if (uncovered.length > 0) { setMsg({ kind: "err", text: `Hay días sin período de pago (${uncovered.map(dm).join(", ")}). Resuélvalo en el aviso de arriba antes de guardar.` }); return; }
+    // Block only when typed data sits on an uncovered day — the `if (!period)
+    // continue` below would drop it silently. An EMPTY uncovered day has nothing
+    // to lose, so it must not hold hostage the covered days of the same week
+    // (a week straddling a period boundary is normal). The amber banner still
+    // warns about every uncovered day regardless.
+    const blocked = uncovered.filter((d) => roster.some((w) => getCell(w.id, d).activityId));
+    if (blocked.length > 0) { setMsg({ kind: "err", text: `Hay datos capturados en días sin período de pago (${blocked.map(dm).join(", ")}). Resuélvalo en el aviso de arriba antes de guardar.` }); return; }
     const rows: Record<string, unknown>[] = [];
     for (const w of roster) {
       for (const d of days) {
         const c = getCell(w.id, d);
         if (!c.activityId) continue;
         const period = openPeriodFor(d);
-        if (!period) continue; // closed/uncovered day — not enterable (inputs are disabled for these)
+        if (!period) continue; // closed day (inputs disabled) or uncovered day (`blocked` above proved it empty)
         const units = parseFloat(c.units) || 1;
         const price = priceFor(c.activityId, d);
         rows.push({
