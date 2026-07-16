@@ -299,6 +299,12 @@ model PayPeriod {
 
   @@unique([agriculturalYear, periodNumber, type])
   @@map("pay_periods")
+  // INVARIANT: only ONE period may be open at a time, even after its end date
+  // has passed (extend it via "Editar fechas"; the successor is created only on
+  // close). Enforced in the DB by the partial unique index
+  // `pay_periods_single_open` — migration 20260716200000_single_open_pay_period.
+  // Prisma cannot express a partial index, so it lives in raw SQL only: do NOT
+  // let `migrate dev` drop it if it ever proposes to.
 }
 
 model ActivityRecord {

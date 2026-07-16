@@ -1,17 +1,27 @@
 // =============================================================================
 // src/app/api/pay-periods/route.ts — Pay period management
 //
-// INVARIANT (Jorge, 2026-07-16): "no gap is ever allowed". A new period must
+// INVARIANT 1 (Jorge, 2026-07-16): "At any given point in time, only one period
+// can be open, even when the end date of that period is passed." A successor is
+// NEVER opened ahead of its predecessor's close. When work continues past the
+// open period's end date and payment is not yet authorized, that period is
+// EXTENDED via "Editar fechas" (PATCH [id]) — the period genuinely ran longer,
+// so it genuinely owns that work and its séptimo. The successor is created only
+// by closing it (close/route.ts). Creation here is therefore legal only when
+// nothing is open.
+//
+// INVARIANT 2 (Jorge, 2026-07-16): "no gap is ever allowed". A new period must
 // start the day after the LAST existing period ends — startDate is constrained
 // to max(endDate) + 1. Omit it and it is derived; supply a different date and
 // the request is refused. Only the very first period ever (no periods exist) may
 // choose its own start.
 //
-// The other two doors onto the same invariant: close/route.ts auto-creates the
-// successor at prevEnd + 1, and PATCH [id] cascades the successor chain when an
-// end date moves. Legacy gaps predate the invariant and are NOT repairable here
-// (a create can only ever append) — close them by editing dates: the period
-// after a gap has no strict predecessor, so its start is still editable.
+// The other doors onto the same invariants: close/route.ts auto-creates the
+// successor at prevEnd + 1 (and only after closing, so one-open holds), and
+// PATCH [id] cascades the successor chain when an end date moves. Legacy gaps
+// predate invariant 2 and are NOT repairable here (a create can only ever
+// append) — close them by editing dates: the period after a gap has no strict
+// predecessor, so its start is still editable.
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -64,6 +74,24 @@ export async function POST(request: NextRequest) {
     if (v != null && !ISO.test(v)) {
       return NextResponse.json({ error: `${label} debe tener formato YYYY-MM-DD` }, { status: 400 });
     }
+  }
+
+  // One open period at a time (INVARIANT 1). An open period whose end date has
+  // passed is still open — extend it, don't open its successor early.
+  const openPeriod = await prisma.payPeriod.findFirst({
+    where: { isClosed: false },
+    select: { periodNumber: true, startDate: true, endDate: true },
+  });
+  if (openPeriod) {
+    return NextResponse.json(
+      {
+        error:
+          `Ya existe un período abierto: ${openPeriod.periodNumber} (${iso(openPeriod.startDate)}…${iso(openPeriod.endDate)}). ` +
+          `Solo puede haber un período abierto a la vez. Si se sigue trabajando después de su fecha de fin, ` +
+          `extienda ese período con "Editar fechas"; el siguiente se crea solo al cerrarlo (Autorizar pago).`,
+      },
+      { status: 409 },
+    );
   }
 
   // No gap: a new period appends to the last one. Derived when not supplied.

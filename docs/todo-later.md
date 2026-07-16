@@ -52,20 +52,33 @@ to execute it safely later. Do not start these without re-confirming scope.
 >   dead code — nothing imported them — so the "hide when an open period exists"
 >   fix this item described was moot. Gap recovery is covered by Captura's
 >   uncovered-days banner; `POST /api/pay-periods` + its overlap guard unchanged.
-> - **Added `scripts/open-successor-period.ts`** — opens the successor of the
->   currently open period **without closing it**. Range derived verbatim from
->   `close/route.ts` `nextRange()`, same `SETTINGS_ROLES` gate + audit
->   attribution as the API, aborts on >1 open period or any overlap, dry-run by
->   default. Used 2026-07-16 to create **#10 (2026-07-16 → 2026-08-08)** so
->   07-13/07-14 could be captured while **#9** awaited payment authorization
->   (closing #9 later sees #10 overlapping and skips its auto-create — no
->   duplicate).
-> - **Why it was needed:** the successor is normally created only as a
->   side-effect of closing the previous period, but closing is gated on payment
->   authorization. Days past the previous period's `endDate` are therefore
->   uncovered, and Captura refuses to save the **whole displayed week** when any
->   day in it is uncovered — blocking days that are themselves valid. This
->   recurs at every period boundary unless the successor exists beforehand.
+> - **`scripts/open-successor-period.ts` — added, then REVERTED the same day.**
+>   It opened the successor of the open period without closing it, and was used
+>   to create #10 (07-16 → 08-08) so 07-13/07-14 could be captured while #9
+>   awaited payment authorization. **This was the wrong fix** and the script has
+>   been deleted — see the rule below. Its two blast radii:
+>   - It broke the **single-open-period** assumption. `autorizacion`, `ajustes`,
+>     `dashboard` and `resumen` resolve "the" period with
+>     `findFirst({isClosed:false}, orderBy periodNumber desc)` — the NEWEST open
+>     — so they pointed at the empty #10 while `captura` (oldest open) pointed at
+>     #9. Revisión y Autorización would have authorized and closed an EMPTY
+>     period, leaving #9's Q67,010.61 unpaid.
+>   - Cleaned up the same day by deleting the empty #10 (0 records, 0 payroll
+>     entries — nothing lost), audited as `DELETE_PAY_PERIOD`. The one-off script
+>     that did it was removed afterwards: the rule below makes the state it
+>     repaired impossible.
+> - **THE RULE (Jorge, 2026-07-16), now enforced:** *"At any given point in time,
+>   only one period can be open, even when the end date of that period is
+>   passed."* When work continues past the open period's end and payment is not
+>   yet authorized, that period is **EXTENDED via "Editar fechas"** — it really
+>   did run longer, so it really does own that work and its séptimo. A successor
+>   is created ONLY by closing (Autorizar pago). Enforced by a 409 in
+>   `POST /api/pay-periods` and by the partial unique index
+>   `pay_periods_single_open` (migration `20260716200000`).
+> - **What actually blocked 07-13/07-14** was not the missing period: those days
+>   sat inside #9 and were valid. Captura refused to save the **whole displayed
+>   week** because 07-16..07-18 were uncovered. Fixed separately — the guard now
+>   trips only when typed data sits on an uncovered day.
 
 ---
 
@@ -158,13 +171,13 @@ MASTER/ADMIN) **POSTs** `/api/pay-periods` to create a period when **no** period
 is open, and **PATCHes** to extend the latest open one when there is. The POST
 route and its overlap guard are unchanged (still the last line of defense).
 
-- ⚠️ **Known sharp edge in that banner:** with an open period present it always
-  **extends** it. When the uncovered days fall *after* the open period's end
-  (the normal boundary case), extending pulls those days — and the week's
-  Saturday, which decides séptimo ownership — into a period that may already be
-  reviewed and awaiting payment, silently changing its payout. The correct move
-  there is to open the **successor** (`scripts/open-successor-period.ts`), not
-  extend. Not fixed; recorded here.
+- ✅ **The banner's extend is CORRECT** — recorded because this was misread on
+  2026-07-16. With an open period present the banner extends it, and when the
+  uncovered days fall *after* that period's end (the normal boundary case) that
+  is exactly right: only one period may be open at a time, so work continuing
+  past the end date means the period **genuinely ran longer**. It therefore
+  genuinely owns those days and that week's séptimo — the payout growing is the
+  feature, not corruption. Opening a successor early is the error.
 
 ---
 
