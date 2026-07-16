@@ -202,9 +202,12 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
           body: JSON.stringify({ startDate, endDate }),
         });
       } else {
+        // No open period: append one ending on the last uncovered day. The start
+        // is DERIVED server-side as max(endDate)+1 — a period may never begin
+        // after a gap, so the client must not choose it (minU could skip days).
         res = await fetch(`/api/pay-periods`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ startDate: minU, endDate: maxU }),
+          body: JSON.stringify({ endDate: maxU }),
         });
       }
       if (!res.ok) {

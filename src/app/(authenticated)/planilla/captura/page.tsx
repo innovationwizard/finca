@@ -51,8 +51,28 @@ export default async function CapturaPage() {
   ]);
 
   // The open period (if any) drives the edit/close period actions below. Periods
-  // are loaded sorted by startDate; at most one is open per ag year.
+  // are loaded sorted by startDate; the earliest open one is the one being
+  // captured into (a successor may be open ahead of its predecessor's close).
   const openPeriod = periods.find((p) => !p.isClosed) ?? null;
+
+  // A successor's start is derived from its predecessor's end, so it isn't
+  // editable. Queried unscoped: the predecessor can sit in the PREVIOUS
+  // agricultural year (they tile across the year boundary), which `periods` —
+  // scoped to the current year — would miss. Same for the successor, whose dates
+  // the modal previews as the cascade warning.
+  const DAY_MS = 86_400_000;
+  const [predecessor, successor] = openPeriod
+    ? await Promise.all([
+        prisma.payPeriod.findFirst({
+          where: { endDate: new Date(openPeriod.startDate.getTime() - DAY_MS) },
+          select: { id: true },
+        }),
+        prisma.payPeriod.findFirst({
+          where: { startDate: new Date(openPeriod.endDate.getTime() + DAY_MS) },
+          select: { periodNumber: true, startDate: true, endDate: true },
+        }),
+      ])
+    : [null, null];
 
   return (
     <div className="px-4 py-6 sm:px-6">
@@ -75,6 +95,16 @@ export default async function CapturaPage() {
                 startDate: openPeriod.startDate.toISOString().split("T")[0],
                 endDate: openPeriod.endDate.toISOString().split("T")[0],
               }}
+              hasPredecessor={!!predecessor}
+              successor={
+                successor
+                  ? {
+                      periodNumber: successor.periodNumber,
+                      startDate: successor.startDate.toISOString().split("T")[0],
+                      endDate: successor.endDate.toISOString().split("T")[0],
+                    }
+                  : null
+              }
             />
           </div>
         )}

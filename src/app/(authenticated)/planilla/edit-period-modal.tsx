@@ -2,8 +2,13 @@
 
 // =============================================================================
 // src/app/(authenticated)/planilla/edit-period-modal.tsx
-// Button + modal to edit the open pay period's start/end dates (MASTER/ADMIN).
-// Lets an admin extend the current period instead of creating a new one.
+// Button + modal to edit the open pay period's dates (MASTER/ADMIN).
+//
+// A successor's start is DERIVED (predecessor.endDate + 1) and is never edited
+// here — when `hasPredecessor`, only the end date is offered, and the start is
+// shown read-only for context. Changing the end MOVES the successor chain by the
+// same delta (duration preserved), so the admin is told before saving. The API
+// enforces both rules independently; this is UX, not the guard.
 // =============================================================================
 
 import { useState } from "react";
@@ -12,9 +17,16 @@ import { CalendarCog, X } from "lucide-react";
 
 type Props = {
   period: { id: string; periodNumber: number; startDate: string; endDate: string };
+  // A strict predecessor exists (a period ending the day before this one starts)
+  // → this period's start is derived and not editable.
+  hasPredecessor: boolean;
+  // Successor that will be shifted by an end-date change, for the warning.
+  successor?: { periodNumber: number; startDate: string; endDate: string } | null;
 };
 
-export function EditPeriodModal({ period }: Props) {
+const dm = (iso: string) => { const [, m, d] = iso.split("-"); return `${d}/${m}`; };
+
+export function EditPeriodModal({ period, hasPredecessor, successor }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [startDate, setStartDate] = useState(period.startDate);
@@ -22,7 +34,16 @@ export function EditPeriodModal({ period }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const dirty = startDate !== period.startDate || endDate !== period.endDate;
+  const dirty = (!hasPredecessor && startDate !== period.startDate) || endDate !== period.endDate;
+  // Days the successor chain will shift by, if the end moved.
+  const deltaDays = Math.round((Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${period.endDate}T00:00:00Z`)) / 86_400_000);
+  const shifted = successor && deltaDays !== 0 && !Number.isNaN(deltaDays)
+    ? {
+        n: successor.periodNumber,
+        start: new Date(Date.parse(`${successor.startDate}T00:00:00Z`) + deltaDays * 86_400_000).toISOString().slice(0, 10),
+        end: new Date(Date.parse(`${successor.endDate}T00:00:00Z`) + deltaDays * 86_400_000).toISOString().slice(0, 10),
+      }
+    : null;
 
   async function save() {
     setError(null);
@@ -32,7 +53,8 @@ export function EditPeriodModal({ period }: Props) {
       const res = await fetch(`/api/pay-periods/${period.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startDate, endDate }),
+        // Derived start is never sent — the API rejects changing it.
+        body: JSON.stringify(hasPredecessor ? { endDate } : { startDate, endDate }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Error al guardar"); setSaving(false); return; }
@@ -72,12 +94,23 @@ export function EditPeriodModal({ period }: Props) {
             <div className="space-y-4 p-5">
               <div>
                 <label className="block text-sm font-medium text-finca-700">Fecha de inicio</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-finca-200 px-3 py-2 text-sm focus:border-finca-400 focus:outline-none"
-                />
+                {hasPredecessor ? (
+                  <>
+                    <p className="mt-1 w-full rounded-lg border border-finca-100 bg-finca-50 px-3 py-2 text-sm tabular-nums text-finca-500">
+                      {period.startDate}
+                    </p>
+                    <p className="mt-1 text-xs text-finca-500">
+                      Se deriva del período anterior (empieza el día siguiente a su fin) — no se edita aquí. Para moverla, cambie la fecha de fin del período anterior.
+                    </p>
+                  </>
+                ) : (
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-finca-200 px-3 py-2 text-sm focus:border-finca-400 focus:outline-none"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-finca-700">Fecha de fin</label>
@@ -88,6 +121,13 @@ export function EditPeriodModal({ period }: Props) {
                   className="mt-1 w-full rounded-lg border border-finca-200 px-3 py-2 text-sm focus:border-finca-400 focus:outline-none"
                 />
               </div>
+              {shifted && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  El período {shifted.n} se moverá {deltaDays > 0 ? `${deltaDays} día(s) adelante` : `${Math.abs(deltaDays)} día(s) atrás`}, conservando su duración:{" "}
+                  <b>{dm(successor!.startDate)} – {dm(successor!.endDate)}</b> → <b>{dm(shifted.start)} – {dm(shifted.end)}</b>.
+                  {" "}El séptimo se re-deriva por fecha en el próximo <i>Recalcular nómina</i>.
+                </div>
+              )}
               {error && <p className="text-sm text-red-600">{error}</p>}
               <div className="flex justify-end gap-2 pt-1">
                 <button onClick={() => setOpen(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-finca-600 hover:bg-finca-50">
