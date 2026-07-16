@@ -10,6 +10,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, CAPTURA_WRITE_ROLES, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { toPriceSchedule } from "@/lib/pricing/activity-prices";
+import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { CapturaGrid } from "./grid-client";
 import { EditPeriodModal } from "../edit-period-modal";
@@ -50,10 +51,10 @@ export default async function CapturaPage() {
     }),
   ]);
 
-  // The open period (if any) drives the edit/close period actions below. Periods
-  // are loaded sorted by startDate; the earliest open one is the one being
-  // captured into (a successor may be open ahead of its predecessor's close).
-  const openPeriod = periods.find((p) => !p.isClosed) ?? null;
+  // The open period drives the edit-period action below. Resolved through the
+  // shared definition so this page can never disagree with autorizacion /
+  // ajustes / dashboard / resumen about which period is current.
+  const openPeriod = await getCurrentPayPeriod();
 
   // A successor's start is derived from its predecessor's end, so it isn't
   // editable. Queried unscoped: the predecessor can sit in the PREVIOUS

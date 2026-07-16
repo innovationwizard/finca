@@ -9,6 +9,7 @@ import {
   getAgriculturalYearStart,
   getAgriculturalYearEnd,
 } from "@/lib/utils/agricultural-year";
+import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
 import {
   WeeklyCoffeeChart,
   CostPerLoteChart,
@@ -67,10 +68,7 @@ export default async function DashboardPage() {
   // -------------------------------------------------------------------------
   // KPI 2: Current open pay period total
   // -------------------------------------------------------------------------
-  const currentPeriod = await prisma.payPeriod.findFirst({
-    where: { agriculturalYear: year, isClosed: false },
-    orderBy: { periodNumber: "desc" },
-  });
+  const currentPeriod = await getCurrentPayPeriod();
 
   let periodTotal = 0;
   if (currentPeriod) {

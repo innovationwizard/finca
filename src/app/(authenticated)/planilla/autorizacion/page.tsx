@@ -10,7 +10,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole, PAYROLL_REVIEW_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
-import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
+import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
 import { AutorizacionClient } from "./autorizacion-client";
 
 export const metadata = { title: "Revisión y Autorización" };
@@ -23,13 +23,8 @@ const VARIANCE_THRESHOLD = 0.5;
 export default async function AutorizacionPage() {
   const user = await requireRole(...PAYROLL_REVIEW_ROLES);
   const canAuthorize = SETTINGS_ROLES.includes(user.role);
-  const year = getCurrentAgriculturalYear();
 
-  const period = await prisma.payPeriod.findFirst({
-    where: { agriculturalYear: year, isClosed: false },
-    orderBy: { periodNumber: "desc" },
-    select: { id: true, periodNumber: true, startDate: true, endDate: true },
-  });
+  const period = await getCurrentPayPeriod();
 
   if (!period) {
     return (

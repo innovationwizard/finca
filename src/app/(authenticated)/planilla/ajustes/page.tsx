@@ -8,7 +8,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole, PAY_ADJUST_VIEW_ROLES, PAY_ADJUST_WRITE_ROLES } from "@/lib/auth/guards";
-import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
+import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
 import { AjustesGrid } from "./ajustes-grid";
 
 export const metadata = { title: "Descuentos y Adicionales" };
@@ -16,13 +16,7 @@ export const metadata = { title: "Descuentos y Adicionales" };
 export default async function AjustesPage() {
   const user = await requireRole(...PAY_ADJUST_VIEW_ROLES);
   const canWrite = PAY_ADJUST_WRITE_ROLES.includes(user.role);
-  const year = getCurrentAgriculturalYear();
-
-  const period = await prisma.payPeriod.findFirst({
-    where: { agriculturalYear: year, isClosed: false },
-    orderBy: { periodNumber: "desc" },
-    select: { id: true, periodNumber: true, startDate: true, endDate: true },
-  });
+  const period = await getCurrentPayPeriod();
 
   if (!period) {
     return (
@@ -65,7 +59,9 @@ export default async function AjustesPage() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Descuentos y Adicionales</h1>
       <p className="mt-1 text-sm text-finca-500">
-        Semana {period.periodNumber} · Año {year} ·{" "}
+        {/* The period's OWN year — it may differ from today's at the Feb/Mar
+            boundary, since the year comes from the start date. */}
+        Semana {period.periodNumber} · Año {period.agriculturalYear} ·{" "}
         {period.startDate.toLocaleDateString("es-GT")} — {period.endDate.toLocaleDateString("es-GT")}
         {!canWrite && " · Solo lectura"}
       </p>

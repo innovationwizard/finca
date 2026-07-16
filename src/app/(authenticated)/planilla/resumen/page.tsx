@@ -4,7 +4,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
-import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
+import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
 import { formatGTQ } from "@/lib/utils/format";
 
 export const metadata = { title: "Resumen de Pago" };
@@ -12,12 +12,7 @@ export const metadata = { title: "Resumen de Pago" };
 export default async function ResumenPage() {
   await requireRole(...READ_ALL_ROLES);
 
-  const year = getCurrentAgriculturalYear();
-
-  const currentPeriod = await prisma.payPeriod.findFirst({
-    where: { agriculturalYear: year, isClosed: false },
-    orderBy: { periodNumber: "desc" },
-  });
+  const currentPeriod = await getCurrentPayPeriod();
 
   if (!currentPeriod) {
     return (
@@ -67,7 +62,9 @@ export default async function ResumenPage() {
           Resumen de Pago
         </h1>
         <p className="mt-1 text-sm text-finca-500">
-          Semana {currentPeriod.periodNumber} · Año {year} ·{" "}
+          {/* The period's OWN year — it may differ from today's at the
+              Feb/Mar boundary, since the year comes from the start date. */}
+          Semana {currentPeriod.periodNumber} · Año {currentPeriod.agriculturalYear} ·{" "}
           {currentPeriod.startDate.toLocaleDateString("es-GT")} —{" "}
           {currentPeriod.endDate.toLocaleDateString("es-GT")}
         </p>
