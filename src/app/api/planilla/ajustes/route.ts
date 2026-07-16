@@ -75,6 +75,12 @@ export async function PATCH(request: NextRequest) {
   }
 
   let updated = 0;
+  // Explicit timeout, matching /api/planilla/captura. Prisma's default for an
+  // interactive transaction is 5s, and this loop makes up to three sequential
+  // round-trips per row (findFirst + update + auditLog.create) — ~40 workers
+  // blows 5s once enough rows actually change, and Prisma then closes the
+  // transaction mid-flight (P2028). It failed only as the number of EDITED rows
+  // grew, which is why smaller saves worked: unchanged rows skip both writes.
   await prisma.$transaction(async (tx) => {
     for (const row of rows) {
       const deductions = r2(row.deductions);
@@ -139,7 +145,7 @@ export async function PATCH(request: NextRequest) {
         updated++;
       }
     }
-  });
+  }, { timeout: 120_000 });
 
   return NextResponse.json({ updated });
 }
