@@ -99,6 +99,25 @@ export const PAY_ADJUST_VIEW_ROLES: UserRole[] = ["MASTER", "MANAGER", "ADMIN", 
 export const PAYROLL_REVIEW_ROLES: UserRole[] = ["MASTER", "ADMIN", "CFO", "MANAGER"];
 
 /**
+ * Editing the OPEN period's dates ("Editar fechas" on Captura Semanal, and the
+ * uncovered-days banner's extend). MANAGER (Manuel, the preparer) is included
+ * because he is the one who HITS the need: only one period may be open at a
+ * time, so when work continues past its end date the period is extended — and he
+ * is the one capturing when that happens. Previously MASTER/ADMIN only, which
+ * stopped him at every period boundary waiting for an admin.
+ *
+ * Deliberately NOT SETTINGS_ROLES: that also gates "Autorizar pago" (closing the
+ * period → the bank file), worker records, prices, holidays and séptimo amount.
+ * Manuel must never gain those — he prepares payroll, he does not authorize it.
+ * Creating a period stays on SETTINGS_ROLES too; this is date editing only.
+ *
+ * Note this DOES let MANAGER change a payout: extending across a Saturday moves
+ * that week's séptimo into the period. That is the point — the period really did
+ * run longer — and every edit is audited with the actor.
+ */
+export const PERIOD_DATES_ROLES: UserRole[] = ["MASTER", "ADMIN", "MANAGER"];
+
+/**
  * Where a user lands after login. Plan Anual (/plan) for everyone who can view
  * it; FIELD (caporal, data entry only — not in READ_ALL_ROLES) lands on the
  * Planilla so they don't hit an authorization error.

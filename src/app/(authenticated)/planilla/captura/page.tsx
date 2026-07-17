@@ -8,7 +8,7 @@
 // =============================================================================
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, CAPTURA_WRITE_ROLES, READ_ALL_ROLES } from "@/lib/auth/guards";
+import { requireRole, CAPTURA_WRITE_ROLES, READ_ALL_ROLES, PERIOD_DATES_ROLES } from "@/lib/auth/guards";
 import { toPriceSchedule } from "@/lib/pricing/activity-prices";
 import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
@@ -23,8 +23,9 @@ const VIEW_ROLES = [...new Set([...READ_ALL_ROLES, ...CAPTURA_WRITE_ROLES])];
 export default async function CapturaPage() {
   const user = await requireRole(...VIEW_ROLES);
   const canWrite = CAPTURA_WRITE_ROLES.includes(user.role);
-  // MASTER/ADMIN can open/extend pay periods inline when days are uncovered.
-  const canManagePeriods = user.role === "MASTER" || user.role === "ADMIN";
+  // Who may edit the open period's dates ("Editar fechas" + the uncovered-days
+  // banner). Routed through the shared constant rather than an inline role test.
+  const canManagePeriods = PERIOD_DATES_ROLES.includes(user.role);
 
   const [workers, activities, lotes, periods, existingRecords] = await Promise.all([
     prisma.worker.findMany({ where: { isActive: true }, select: { id: true, fullName: true }, orderBy: { fullName: "asc" } }),

@@ -1,7 +1,8 @@
 // =============================================================================
 // src/app/api/pay-periods/[id]/route.ts — Edit a pay period's dates.
-// MASTER/ADMIN only (SETTINGS_ROLES). Allows changing endDate — and startDate
-// only for a period that has no predecessor (see the invariant below).
+// PERIOD_DATES_ROLES (MASTER/ADMIN/MANAGER — the preparer hits this need first;
+// closing the period stays MASTER/ADMIN). Allows changing endDate — and
+// startDate only for a period that has no predecessor (see the invariant below).
 //
 // WHY dates are editable (pay periods are normally preset & met; these are
 // exceptional):
@@ -35,7 +36,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { apiRequireRole, SETTINGS_ROLES } from "@/lib/auth/guards";
+import { apiRequireRole, PERIOD_DATES_ROLES } from "@/lib/auth/guards";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 86_400_000;
@@ -45,7 +46,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await apiRequireRole(...SETTINGS_ROLES);
+  const auth = await apiRequireRole(...PERIOD_DATES_ROLES);
   if (auth instanceof NextResponse) return auth;
 
   const { id } = await params;
