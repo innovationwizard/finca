@@ -13,19 +13,26 @@ export function formatGTQ(amount: number): string {
 }
 
 /**
- * Format quantity with unit: (3.5, "qq") → "3.50 qq"
+ * Short label for a unit enum: "QUINTAL" → "qq". Unknown units pass through.
  */
-export function formatQuantity(qty: number, unit: string): string {
+export function unitAbbr(unit: string): string {
   const abbr: Record<string, string> = {
     QUINTAL: "qq",
     MANZANA: "mz",
     HECTAREA: "ha",
     DIA: "día",
   };
+  return abbr[unit] ?? unit;
+}
+
+/**
+ * Format quantity with unit: (3.5, "qq") → "3.50 qq"
+ */
+export function formatQuantity(qty: number, unit: string): string {
   return `${qty.toLocaleString("es-GT", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })} ${abbr[unit] ?? unit}`;
+  })} ${unitAbbr(unit)}`;
 }
 
 /**

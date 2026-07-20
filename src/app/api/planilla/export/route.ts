@@ -14,13 +14,15 @@ import * as XLSX from "xlsx";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
-import { formatDecimal } from "@/lib/utils/format";
+import { formatDecimal, unitAbbr } from "@/lib/utils/format";
 import {
   DAY_LABELS,
   dm,
+  dmy,
   periodWeeks,
   buildGrid,
   cellKey,
+  activityLabel,
   entryActivityLabel,
   entryDetailLabel,
   weekLabel,
@@ -159,6 +161,73 @@ function buildSheet(
   return ws;
 }
 
+// ── Ledger ("Diario") format ─────────────────────────────────────────────────
+// One row per activity record instead of one row per worker, with Lote and
+// Actividad in their own columns. Same records, same period/worker scope.
+type LedgerRecord = {
+  workerId: string;
+  date: Date;
+  quantity: unknown; // Prisma Decimal
+  unitPrice: unknown; // Prisma Decimal
+  totalEarned: unknown; // Prisma Decimal
+  activity: { name: string; code: string | null; unit: string };
+  lote: { name: string } | null;
+};
+
+const LEDGER_HEADER = ["#", "Fecha", "Trabajador", "Lote", "Actividad", "Unidades", "Unidad", "Costo unitario", "Costo"];
+
+// Build one ledger worksheet from a set of records (already scoped to a week or
+// the whole period). Rows are ordered by date, then worker name, then activity.
+function buildLedgerSheet(records: LedgerRecord[], workerName: Map<string, string>): XLSX.WorkSheet {
+  const isoOf = (d: Date) => d.toISOString().slice(0, 10);
+  const rows = [...records].sort((a, b) => {
+    const byDate = isoOf(a.date).localeCompare(isoOf(b.date));
+    if (byDate) return byDate;
+    const byWorker = (workerName.get(a.workerId) ?? "").localeCompare(workerName.get(b.workerId) ?? "", "es");
+    if (byWorker) return byWorker;
+    return activityLabel(a.activity.code, a.activity.name).localeCompare(activityLabel(b.activity.code, b.activity.name), "es");
+  });
+
+  const aoa: (string | number)[][] = [LEDGER_HEADER];
+  let grandTotal = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const total = Number(r.totalEarned);
+    grandTotal += total;
+    aoa.push([
+      i + 1,
+      dmy(isoOf(r.date)),
+      workerName.get(r.workerId) ?? "",
+      r.lote?.name ?? "—",
+      activityLabel(r.activity.code, r.activity.name),
+      Number(r.quantity),
+      unitAbbr(r.activity.unit),
+      Number(r.unitPrice),
+      total,
+    ]);
+  }
+  // Grand-total footer: label under "Actividad", sum under "Costo".
+  const footer: (string | number)[] = ["", "", "", "", "Total", "", "", "", grandTotal];
+  aoa.push(footer);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = [
+    { wch: 5 }, { wch: 12 }, { wch: 26 }, { wch: 16 }, { wch: 28 },
+    { wch: 11 }, { wch: 8 }, { wch: 14 }, { wch: 13 },
+  ];
+
+  // Money/quantity number format on the numeric columns (Unidades=5, Costo
+  // unitario=7, Costo=8), skipping the header row.
+  for (let r = 1; r < aoa.length; r++) {
+    for (const c of [5, 7, 8]) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (cell && typeof cell.v === "number") cell.z = MONEY_FMT;
+    }
+  }
+
+  return ws;
+}
+
 // Strip a worker name down to a filename-safe ASCII token (accents removed,
 // runs of non-alphanumerics collapsed to "-").
 function fileToken(name: string): string {
@@ -178,6 +247,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const periodId = searchParams.get("periodo");
   const workerId = searchParams.get("trabajador");
+  const diario = searchParams.get("formato") === "diario"; // ledger vs grid
   if (!periodId) {
     return NextResponse.json({ error: "Falta el parámetro 'periodo'" }, { status: 400 });
   }
@@ -223,14 +293,29 @@ export async function GET(request: NextRequest) {
   const selectedWorker = workerId && roster.some((w) => w.id === workerId) ? workerId : "";
   const workers = selectedWorker ? roster.filter((w) => w.id === selectedWorker) : roster;
 
-  const grid = buildGrid(records);
-
   const wb = XLSX.utils.book_new();
-  for (const w of weeks) {
-    XLSX.utils.book_append_sheet(wb, buildSheet([w], workers, grid), sheetName(w));
-  }
-  if (weeks.length > 1) {
-    XLSX.utils.book_append_sheet(wb, buildSheet(weeks, workers, grid), "Período completo");
+
+  if (diario) {
+    // Ledger: one row per record, scoped to the same worker set the grid shows.
+    const workerName = new Map(workers.map((w) => [w.id, w.fullName]));
+    const scoped = records.filter((r) => workerName.has(r.workerId));
+    for (const w of weeks) {
+      const daySet = new Set(w.days);
+      const weekRecords = scoped.filter((r) => daySet.has(r.date.toISOString().slice(0, 10)));
+      XLSX.utils.book_append_sheet(wb, buildLedgerSheet(weekRecords, workerName), sheetName(w));
+    }
+    if (weeks.length > 1) {
+      XLSX.utils.book_append_sheet(wb, buildLedgerSheet(scoped, workerName), "Período completo");
+    }
+  } else {
+    // Grid: one row per worker, days across columns.
+    const grid = buildGrid(records);
+    for (const w of weeks) {
+      XLSX.utils.book_append_sheet(wb, buildSheet([w], workers, grid), sheetName(w));
+    }
+    if (weeks.length > 1) {
+      XLSX.utils.book_append_sheet(wb, buildSheet(weeks, workers, grid), "Período completo");
+    }
   }
 
   const buffer: Buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
@@ -238,7 +323,8 @@ export async function GET(request: NextRequest) {
   const workerSuffix = selectedWorker
     ? `-${fileToken(roster.find((w) => w.id === selectedWorker)!.fullName)}`
     : "";
-  const filename = `planilla-periodo-${period.periodNumber}${workerSuffix}.xlsx`;
+  const base = diario ? "planilla-diario" : "planilla-periodo";
+  const filename = `${base}-${period.periodNumber}${workerSuffix}.xlsx`;
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,

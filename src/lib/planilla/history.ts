@@ -20,6 +20,7 @@ export const dayMsUTC = (d: Date): number => Date.UTC(d.getUTCFullYear(), d.getU
 export const weekMondayMs = (ms: number): number => ms - ((new Date(ms).getUTCDay() + 6) % 7) * DAY_MS; // Mon=0
 export const weekSaturdayMs = (ms: number): number => ms + (6 - new Date(ms).getUTCDay()) * DAY_MS;
 export const dm = (iso: string): string => { const [, m, d] = iso.split("-"); return `${d}/${m}`; };
+export const dmy = (iso: string): string => { const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; };
 
 export function weekLabel(monIso: string, satIso: string): string {
   const [, m1, d1] = monIso.split("-");
@@ -96,9 +97,11 @@ export function buildGrid(records: GridRecord[]): Grid {
 
 export const cellKey = (workerId: string, dayIso: string): string => `${workerId}|${dayIso}`;
 
-// The activity label shown on the grid's first cell line: "CODE · Name" or just
-// the name when the activity has no code.
-export const entryActivityLabel = (e: Entry): string => (e.code ? `${e.code} · ${e.name}` : e.name);
+// The activity label: "CODE · Name", or just the name when there is no code.
+export const activityLabel = (code: string | null, name: string): string => (code ? `${code} · ${name}` : name);
+
+// The activity label shown on the grid's first cell line.
+export const entryActivityLabel = (e: Entry): string => activityLabel(e.code, e.name);
 
 // The detail line under it: "Lote · 3.50 qq" (or "—" when there is no lote).
 export const entryDetailLabel = (e: Entry): string => `${e.lote ?? "—"} · ${formatQuantity(e.units, e.unit)}`;

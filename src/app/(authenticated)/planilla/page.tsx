@@ -121,9 +121,11 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   // xlsx download of every view of THIS period (one sheet per week + Período
   // completo), honoring the active worker filter. Always all weeks — the week
   // selection above only chooses what's on screen, not what's downloaded.
-  const exportHref = `/api/planilla/export?periodo=${period.id}${
-    selectedWorker ? `&trabajador=${selectedWorker}` : ""
-  }`;
+  //   · exportHref       → grid: one row per worker, days across columns.
+  //   · exportDiarioHref → ledger: one row per activity record.
+  const exportQuery = `periodo=${period.id}${selectedWorker ? `&trabajador=${selectedWorker}` : ""}`;
+  const exportHref = `/api/planilla/export?${exportQuery}`;
+  const exportDiarioHref = `/api/planilla/export?${exportQuery}&formato=diario`;
 
   return (
     <div className="mx-auto max-w-full px-4 py-8 sm:px-6 lg:px-8">
@@ -185,22 +187,34 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
         </Link>
       </div>
 
-      {/* Per-worker filter + xlsx download */}
+      {/* Per-worker filter + xlsx downloads */}
       <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
         <WorkerFilter
           workers={workers.map((w) => ({ id: w.id, name: w.fullName }))}
           selected={selectedWorker}
         />
-        <a
-          href={exportHref}
-          className="inline-flex h-9 items-center gap-2 rounded-lg border border-finca-200 bg-white px-4 text-sm font-medium text-finca-700 transition-colors hover:bg-finca-50"
-          title={`Descargar el período ${period.periodNumber} en Excel: una hoja por semana más el período completo${
-            selectedWorker ? " (solo el trabajador filtrado)" : ""
-          }`}
-        >
-          <Download className="h-4 w-4" />
-          Descargar Excel
-        </a>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={exportHref}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-finca-200 bg-white px-4 text-sm font-medium text-finca-700 transition-colors hover:bg-finca-50"
+            title={`Descargar el período ${period.periodNumber} en Excel: una hoja por semana más el período completo, una fila por trabajador${
+              selectedWorker ? " (solo el trabajador filtrado)" : ""
+            }`}
+          >
+            <Download className="h-4 w-4" />
+            Descargar Excel
+          </a>
+          <a
+            href={exportDiarioHref}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-finca-200 bg-white px-4 text-sm font-medium text-finca-700 transition-colors hover:bg-finca-50"
+            title={`Descargar el período ${period.periodNumber} en Excel diario: una fila por registro (Fecha, Trabajador, Lote, Actividad, Costo unitario, Costo)${
+              selectedWorker ? " (solo el trabajador filtrado)" : ""
+            }`}
+          >
+            <Download className="h-4 w-4" />
+            Descargar Excel Diario
+          </a>
+        </div>
       </div>
 
       {/* ── Tier 3: the grid ──────────────────────────────────────────────── */}
