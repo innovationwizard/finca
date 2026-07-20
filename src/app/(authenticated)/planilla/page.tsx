@@ -14,53 +14,25 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
-import { formatGTQ, formatQuantity } from "@/lib/utils/format";
+import { formatGTQ } from "@/lib/utils/format";
 import Link from "next/link";
 import type { Route } from "next";
+import { Download } from "lucide-react";
 import { WorkerFilter } from "./worker-filter";
+import {
+  DAY_LABELS,
+  dayMsUTC,
+  dm,
+  isoUTC,
+  weekLabel,
+  periodWeeks,
+  buildGrid,
+  cellKey,
+  entryActivityLabel,
+  entryDetailLabel,
+} from "@/lib/planilla/history";
 
 export const metadata = { title: "Planillas anteriores" };
-
-// ── Date helpers (UTC: @db.Date values are UTC midnight; UTC has no DST, so
-//    stepping by 86_400_000 ms always lands on the next midnight) ──────────────
-const DAY_MS = 86_400_000;
-const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]; // Mon–Sat (no Sunday: the séptimo is computed, never entered)
-
-const isoUTC = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
-const dayMsUTC = (d: Date): number => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-const weekMondayMs = (ms: number): number => ms - ((new Date(ms).getUTCDay() + 6) % 7) * DAY_MS; // Mon=0
-const weekSaturdayMs = (ms: number): number => ms + (6 - new Date(ms).getUTCDay()) * DAY_MS;
-const dm = (iso: string): string => { const [, m, d] = iso.split("-"); return `${d}/${m}`; };
-
-function weekLabel(monIso: string, satIso: string): string {
-  const [, m1, d1] = monIso.split("-");
-  const [, m2, d2] = satIso.split("-");
-  return `De ${MONTHS_ES[Number(m1) - 1]} ${Number(d1)} a ${MONTHS_ES[Number(m2) - 1]} ${Number(d2)}`;
-}
-
-type Week = { index: number; monday: string; saturday: string; days: string[] };
-
-// The Mon–Sat calendar weeks the period spans: from the Monday of the week
-// containing its start to the Saturday of the week containing its end. This
-// matches the séptimo "owned week" set for a normal period (which ends on a
-// Saturday) while still covering every day — and therefore every record — of a
-// period whose dates were edited off a week boundary (early payment, etc.).
-function periodWeeks(start: Date, end: Date): Week[] {
-  const firstMon = weekMondayMs(dayMsUTC(start));
-  const lastSat = weekSaturdayMs(dayMsUTC(end));
-  const weeks: Week[] = [];
-  let idx = 0;
-  for (let t = firstMon; t <= lastSat; t += 7 * DAY_MS) {
-    weeks.push({
-      index: idx++,
-      monday: isoUTC(t),
-      saturday: isoUTC(t + 5 * DAY_MS),
-      days: Array.from({ length: 6 }, (_, i) => isoUTC(t + i * DAY_MS)),
-    });
-  }
-  return weeks;
-}
 
 type Props = { searchParams: Promise<{ periodo?: string; semana?: string; trabajador?: string }> };
 
@@ -133,24 +105,10 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   const selectedWorker = workers.some((w) => w.id === params.trabajador) ? params.trabajador! : "";
   const displayWorkers = selectedWorker ? workers.filter((w) => w.id === selectedWorker) : workers;
 
-  // Cell map: `${workerId}|${dayIso}` → entries (a worker may have >1 activity
-  // in a day; we never collapse them — every record is shown).
-  type Entry = { code: string | null; name: string; lote: string | null; units: number; unit: string; total: number };
-  const cells = new Map<string, Entry[]>();
-  const workerTotals = new Map<string, number>();
-  for (const r of records) {
-    const dayIso = r.date.toISOString().slice(0, 10);
-    const k = `${r.workerId}|${dayIso}`;
-    (cells.get(k) ?? cells.set(k, []).get(k)!).push({
-      code: r.activity.code,
-      name: r.activity.name,
-      lote: r.lote?.name ?? null,
-      units: Number(r.quantity),
-      unit: r.activity.unit,
-      total: Number(r.totalEarned),
-    });
-    workerTotals.set(r.workerId, (workerTotals.get(r.workerId) ?? 0) + Number(r.totalEarned));
-  }
+  // Cell map + per-worker totals (shared with the xlsx export so the download
+  // can never diverge from what this grid shows). A worker may have >1 activity
+  // in a day; entries are never collapsed — every record is shown.
+  const { cells, workerTotals } = buildGrid(records);
   const grandTotal = displayWorkers.reduce((s, w) => s + (workerTotals.get(w.id) ?? 0), 0);
 
   // Cast to Route: typedRoutes can't infer literal routes from dynamic query
@@ -158,6 +116,13 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   const periodHref = (id: string) => `/planilla?periodo=${id}` as Route;
   const weekHref = (i: number) => `/planilla?periodo=${period.id}&semana=${i}` as Route;
   const completoHref = `/planilla?periodo=${period.id}&semana=all` as Route;
+
+  // xlsx download of every view of THIS period (one sheet per week + Período
+  // completo), honoring the active worker filter. Always all weeks — the week
+  // selection above only chooses what's on screen, not what's downloaded.
+  const exportHref = `/api/planilla/export?periodo=${period.id}${
+    selectedWorker ? `&trabajador=${selectedWorker}` : ""
+  }`;
 
   return (
     <div className="mx-auto max-w-full px-4 py-8 sm:px-6 lg:px-8">
@@ -219,12 +184,22 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
         </Link>
       </div>
 
-      {/* Per-worker filter */}
-      <div className="mt-4">
+      {/* Per-worker filter + xlsx download */}
+      <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
         <WorkerFilter
           workers={workers.map((w) => ({ id: w.id, name: w.fullName }))}
           selected={selectedWorker}
         />
+        <a
+          href={exportHref}
+          className="inline-flex h-9 items-center gap-2 rounded-lg border border-finca-200 bg-white px-4 text-sm font-medium text-finca-700 transition-colors hover:bg-finca-50"
+          title={`Descargar el período ${period.periodNumber} en Excel: una hoja por semana más el período completo${
+            selectedWorker ? " (solo el trabajador filtrado)" : ""
+          }`}
+        >
+          <Download className="h-4 w-4" />
+          Descargar Excel
+        </a>
       </div>
 
       {/* ── Tier 3: the grid ──────────────────────────────────────────────── */}
@@ -267,17 +242,17 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
                   {w.fullName}
                 </td>
                 {visibleDays.map((d) => {
-                  const entries = cells.get(`${w.id}|${d}`);
+                  const entries = cells.get(cellKey(w.id, d));
                   return (
                     <td key={d} className="min-w-[6.5rem] max-w-[9rem] border border-finca-100 px-1.5 py-1 align-top">
                       {entries
                         ? entries.map((e, i) => (
                             <div key={i} className={i > 0 ? "mt-1 border-t border-finca-50 pt-1" : ""}>
-                              <div className="truncate font-medium text-finca-700" title={e.code ? `${e.code} · ${e.name}` : e.name}>
-                                {e.code ? `${e.code} · ${e.name}` : e.name}
+                              <div className="truncate font-medium text-finca-700" title={entryActivityLabel(e)}>
+                                {entryActivityLabel(e)}
                               </div>
-                              <div className="truncate text-finca-400" title={`${e.lote ?? "Sin lote"} · ${formatQuantity(e.units, e.unit)}`}>
-                                {e.lote ?? "—"} · {formatQuantity(e.units, e.unit)}
+                              <div className="truncate text-finca-400" title={entryDetailLabel(e)}>
+                                {entryDetailLabel(e)}
                               </div>
                             </div>
                           ))
