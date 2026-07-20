@@ -88,6 +88,7 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
       workerId: true,
       date: true,
       quantity: true,
+      unitPrice: true,
       totalEarned: true,
       activity: { select: { name: true, code: true, unit: true } },
       lote: { select: { name: true } },

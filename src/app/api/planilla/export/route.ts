@@ -2,10 +2,11 @@
 // src/app/api/planilla/export/route.ts — Planillas Anteriores → Excel
 // Streams a single .xlsx workbook for one CLOSED pay period: one sheet per
 // Mon–Sat week the period spans, plus a "Período completo" sheet with every
-// week side by side. Rows = active roster, columns = days × (Actividad · Lote ·
-// Unidades), with a per-worker Total column and a grand-total footer — the same
-// grid the page renders, sharing @/lib/planilla/history so the download can
-// never diverge from the screen. Honors ?trabajador= (single-worker filter).
+// week side by side. Rows = active roster; each day is three columns —
+// Actividad, Costo unitario, Costo (units × unit price) — so the math behind
+// every day's pay is on the sheet, plus a per-worker Total column and a
+// grand-total footer. Shares @/lib/planilla/history so the download can never
+// diverge from the screen. Honors ?trabajador= (single-worker filter).
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -13,6 +14,7 @@ import * as XLSX from "xlsx";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
+import { formatDecimal } from "@/lib/utils/format";
 import {
   DAY_LABELS,
   dm,
@@ -29,12 +31,25 @@ import {
 export const runtime = "nodejs"; // the xlsx writer needs Node APIs, not edge
 export const dynamic = "force-dynamic"; // auth + always-fresh period data
 
-// One day-cell's text: every activity the worker did that day, "Actividad" line
-// over "Lote · Unidades" line, blank line between multiple activities. Empty
-// string when the worker had no record that day.
-function dayCellText(entries: Entry[] | undefined): string {
-  if (!entries || entries.length === 0) return "";
-  return entries.map((e) => `${entryActivityLabel(e)}\n${entryDetailLabel(e)}`).join("\n\n");
+// Quetzal number format (2 decimals, thousands separator) for every money cell.
+const MONEY_FMT = "#,##0.00";
+
+// Each day breaks into 3 columns: what was done, its unit price, and the
+// resulting cost (units × unit price). Returns [Actividad, Costo unitario,
+// Costo]; the two cost cells are numbers on a single-activity day (so Excel
+// treats them as money) and stacked text when a worker had several activities
+// that day (line N of each column is the same activity).
+const COLS_PER_DAY = 3;
+function dayTriple(entries: Entry[] | undefined): [string, string | number, string | number] {
+  if (!entries || entries.length === 0) return ["", "", ""];
+  const actividad = entries.map((e) => `${entryActivityLabel(e)}\n${entryDetailLabel(e)}`).join("\n\n");
+  if (entries.length === 1) {
+    const e = entries[0];
+    return [actividad, e.unitPrice, e.total]; // numeric → money-formatted
+  }
+  const costoUnit = entries.map((e) => formatDecimal(e.unitPrice)).join("\n\n");
+  const costo = entries.map((e) => formatDecimal(e.total)).join("\n\n");
+  return [actividad, costoUnit, costo];
 }
 
 // Excel sheet names: ≤31 chars, and none of : \ / ? * [ ]. dm() uses "/", so
@@ -44,8 +59,10 @@ const sheetName = (w: Week): string => `Sem ${w.index + 1} ${dm(w.monday).replac
 type SheetWorker = { id: string; fullName: string };
 
 // Build one worksheet from a contiguous run of weeks (one week → a weekly sheet;
-// all weeks → "Período completo"). Mirrors the page: a week-band header row is
-// added only when more than one week is shown.
+// all weeks → "Período completo"). Every day is three columns (Actividad ·
+// Costo unitario · Costo). Header stack, top-down: an optional week band (only
+// for Período completo), a day band, then the per-day sub-headers. "#",
+// "Trabajador" and "Total" span the whole header stack.
 function buildSheet(
   weeks: Week[],
   workers: SheetWorker[],
@@ -53,62 +70,90 @@ function buildSheet(
 ): XLSX.WorkSheet {
   const days = weeks.flatMap((w) => w.days);
   const showBand = weeks.length > 1;
-  const aoa: (string | number)[][] = [];
+  const totalCol = 2 + days.length * COLS_PER_DAY; // last column index
+  const width = totalCol + 1;
   const merges: XLSX.Range[] = [];
 
-  // Optional week-band row (only for Período completo): the week label spanning
-  // its 6 day columns.
+  const dayBaseCol = (dayPos: number) => 2 + dayPos * COLS_PER_DAY;
+
+  // ── Header stack ───────────────────────────────────────────────────────────
+  const headerRows = showBand ? 3 : 2;
+  const weekBandR = 0;
+  const dayBandR = showBand ? 1 : 0;
+  const subR = showBand ? 2 : 1;
+  const head: (string | number)[][] = Array.from({ length: headerRows }, () => Array(width).fill(""));
+
+  // "#", "Trabajador", "Total" span the full header stack.
+  head[0][0] = "#";
+  head[0][1] = "Trabajador";
+  head[0][totalCol] = "Total";
+  for (const c of [0, 1, totalCol]) merges.push({ s: { r: 0, c }, e: { r: headerRows - 1, c } });
+
+  // Week band (Período completo only): the week label over its 18 columns.
   if (showBand) {
-    const band: (string | number)[] = ["", ""];
-    let col = 2; // after "#" and "Trabajador"
-    for (const w of weeks) {
-      band.push(weekLabel(w.monday, w.saturday));
-      merges.push({ s: { r: 0, c: col }, e: { r: 0, c: col + 5 } });
-      for (let i = 1; i < 6; i++) band.push("");
-      col += 6;
+    for (let wi = 0; wi < weeks.length; wi++) {
+      const c = dayBaseCol(wi * 6);
+      head[weekBandR][c] = weekLabel(weeks[wi].monday, weeks[wi].saturday);
+      merges.push({ s: { r: weekBandR, c }, e: { r: weekBandR, c: c + 6 * COLS_PER_DAY - 1 } });
     }
-    band.push(""); // Total column
-    aoa.push(band);
   }
 
-  // Day-label header row: "#", "Trabajador", "Lun 05/05" …, "Total".
-  const header: (string | number)[] = ["#", "Trabajador"];
-  for (let i = 0; i < days.length; i++) header.push(`${DAY_LABELS[i % 6]} ${dm(days[i])}`);
-  header.push("Total");
-  aoa.push(header);
+  // Day band: "Lun 05/05" over that day's 3 columns; then the sub-headers.
+  for (let p = 0; p < days.length; p++) {
+    const c = dayBaseCol(p);
+    head[dayBandR][c] = `${DAY_LABELS[p % 6]} ${dm(days[p])}`;
+    merges.push({ s: { r: dayBandR, c }, e: { r: dayBandR, c: c + COLS_PER_DAY - 1 } });
+    head[subR][c] = "Actividad";
+    head[subR][c + 1] = "Costo unitario";
+    head[subR][c + 2] = "Costo";
+  }
 
-  // One row per roster worker.
+  const aoa: (string | number)[][] = [...head];
+
+  // ── One row per roster worker ──────────────────────────────────────────────
   let grandTotal = 0;
   for (let idx = 0; idx < workers.length; idx++) {
     const w = workers[idx];
-    const row: (string | number)[] = [idx + 1, w.fullName];
-    for (const d of days) row.push(dayCellText(grid.cells.get(cellKey(w.id, d))));
+    const row: (string | number)[] = Array(width).fill("");
+    row[0] = idx + 1;
+    row[1] = w.fullName;
+    for (let p = 0; p < days.length; p++) {
+      const [actividad, costoUnit, costo] = dayTriple(grid.cells.get(cellKey(w.id, days[p])));
+      const c = dayBaseCol(p);
+      row[c] = actividad;
+      row[c + 1] = costoUnit;
+      row[c + 2] = costo;
+    }
     const total = grid.workerTotals.get(w.id) ?? 0;
-    row.push(total);
+    row[totalCol] = total;
     grandTotal += total;
     aoa.push(row);
   }
 
   // Grand-total footer row.
-  const footer: (string | number)[] = ["", "Total"];
-  for (let i = 0; i < days.length; i++) footer.push("");
-  footer.push(grandTotal);
+  const footer: (string | number)[] = Array(width).fill("");
+  footer[1] = "Total";
+  footer[totalCol] = grandTotal;
   aoa.push(footer);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  if (merges.length) ws["!merges"] = merges;
+  ws["!merges"] = merges;
 
-  // Column widths: narrow "#", wide name, roomy day cells, roomy total.
-  ws["!cols"] = [{ wch: 4 }, { wch: 26 }, ...days.map(() => ({ wch: 22 })), { wch: 13 }];
+  // Column widths: "#", name, then (Actividad, Costo unitario, Costo) per day, Total.
+  ws["!cols"] = [
+    { wch: 4 },
+    { wch: 26 },
+    ...days.flatMap(() => [{ wch: 24 }, { wch: 13 }, { wch: 12 }]),
+    { wch: 13 },
+  ];
 
-  // Quetzal number format on every Total cell (day-label row is at index
-  // showBand?1:0; totals live in the last column of each subsequent row).
-  const totalCol = 2 + days.length;
-  const firstDataRow = showBand ? 2 : 1; // rows before this are band/header
-  for (let r = firstDataRow; r < aoa.length; r++) {
-    const ref = XLSX.utils.encode_cell({ r, c: totalCol });
-    const cell = ws[ref];
-    if (cell && typeof cell.v === "number") cell.z = "#,##0.00";
+  // Money format on every numeric cell (Costo unitario, Costo, per-worker Total,
+  // grand total). Text cells — labels, multi-activity stacks — are left as-is.
+  for (let r = headerRows; r < aoa.length; r++) {
+    for (let c = 2; c <= totalCol; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (cell && typeof cell.v === "number") cell.z = MONEY_FMT;
+    }
   }
 
   return ws;
@@ -161,6 +206,7 @@ export async function GET(request: NextRequest) {
       workerId: true,
       date: true,
       quantity: true,
+      unitPrice: true,
       totalEarned: true,
       activity: { select: { name: true, code: true, unit: true } },
       lote: { select: { name: true } },

@@ -52,13 +52,16 @@ export function periodWeeks(start: Date, end: Date): Week[] {
 
 // A single activity a worker performed on a day. A worker may have >1 activity
 // in a day; we never collapse them — every record is shown.
-export type Entry = { code: string | null; name: string; lote: string | null; units: number; unit: string; total: number };
+//   unitPrice · units = total  (the "math behind" the day's cost — see the
+//   xlsx export, which breaks these out into Actividad / Costo unitario / Costo).
+export type Entry = { code: string | null; name: string; lote: string | null; units: number; unit: string; unitPrice: number; total: number };
 
 // The minimum record shape the grid needs (a subset of ActivityRecord + joins).
 export type GridRecord = {
   workerId: string;
   date: Date;
   quantity: unknown; // Prisma Decimal — coerced via Number()
+  unitPrice: unknown; // Prisma Decimal — coerced via Number()
   totalEarned: unknown; // Prisma Decimal — coerced via Number()
   activity: { name: string; code: string | null; unit: string };
   lote: { name: string } | null;
@@ -83,6 +86,7 @@ export function buildGrid(records: GridRecord[]): Grid {
       lote: r.lote?.name ?? null,
       units: Number(r.quantity),
       unit: r.activity.unit,
+      unitPrice: Number(r.unitPrice),
       total: Number(r.totalEarned),
     });
     workerTotals.set(r.workerId, (workerTotals.get(r.workerId) ?? 0) + Number(r.totalEarned));
