@@ -45,7 +45,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { href: "/planilla/captura", label: "Captura Semanal", icon: Table2 },
   { href: "/planilla", label: "Planillas anteriores", icon: ClipboardList },
-  { href: "/planilla/ajustes", label: "Descuentos y Adicionales", icon: Calculator, roles: ["MASTER", "MANAGER", "ADMIN", "CFO"] },
+  { href: "/planilla/ajustes", label: "Descuentos, Anticipos y Adicionales", icon: Calculator, roles: ["MASTER", "MANAGER", "ADMIN", "CFO"] },
   { href: "/planilla/autorizacion", label: "Revisión y Autorización", icon: ShieldCheck, roles: ["MASTER", "ADMIN", "CFO", "MANAGER"] },
   { href: "/ingreso-cafe", label: "Ingreso Café", icon: Coffee },
   { href: "/plan", label: "Plan Anual", icon: CalendarRange },

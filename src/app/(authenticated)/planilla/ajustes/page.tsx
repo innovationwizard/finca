@@ -1,9 +1,10 @@
 // =============================================================================
-// src/app/(authenticated)/planilla/ajustes/page.tsx — Descuentos y Adicionales
+// src/app/(authenticated)/planilla/ajustes/page.tsx — Ajustes de planilla
 // Per-worker manual adjustments for the OPEN pay period, mirroring the SSOT:
-//   TOTAL (devengado + séptimo) − DESCUENTOS + ADICIONALES = TOTAL A PAGAR.
-// Sets PayrollEntry.deductions / .bonification (→ bank file). View: MASTER,
-// MANAGER, ADMIN, CFO. Edit: MASTER, MANAGER (others see it read-only).
+//   TOTAL (devengado + séptimo) − DESCUENTOS − ANTICIPOS + ADICIONALES
+//     = TOTAL A PAGAR.
+// Sets PayrollEntry.deductions / .bonification / .advances (→ bank file). View:
+// MASTER, MANAGER, ADMIN, CFO. Edit: MASTER, MANAGER (others see it read-only).
 // =============================================================================
 
 import { prisma } from "@/lib/prisma";
@@ -11,7 +12,7 @@ import { requireRole, PAY_ADJUST_VIEW_ROLES, PAY_ADJUST_WRITE_ROLES } from "@/li
 import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
 import { AjustesGrid } from "./ajustes-grid";
 
-export const metadata = { title: "Descuentos y Adicionales" };
+export const metadata = { title: "Descuentos, Anticipos y Adicionales" };
 
 export default async function AjustesPage() {
   const user = await requireRole(...PAY_ADJUST_VIEW_ROLES);
@@ -21,7 +22,7 @@ export default async function AjustesPage() {
   if (!period) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Descuentos y Adicionales</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Descuentos, Anticipos y Adicionales</h1>
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-6 py-8 text-center">
           <p className="text-sm text-amber-800">
             No hay un período de pago abierto. Los ajustes solo se editan sobre el período abierto.
@@ -37,7 +38,7 @@ export default async function AjustesPage() {
     prisma.worker.findMany({ where: { isActive: true }, select: { id: true, fullName: true }, orderBy: { fullName: "asc" } }),
     prisma.payrollEntry.findMany({
       where: { payPeriodId: period.id },
-      select: { workerId: true, totalEarned: true, seventhDayPay: true, deductions: true, bonification: true, deductionsNote: true, bonificationNote: true },
+      select: { workerId: true, totalEarned: true, seventhDayPay: true, deductions: true, bonification: true, advances: true, deductionsNote: true, bonificationNote: true, advancesNote: true },
     }),
   ]);
   const entryByWorker = new Map(entries.map((e) => [e.workerId, e]));
@@ -50,14 +51,16 @@ export default async function AjustesPage() {
       gross: e ? Number(e.totalEarned) + Number(e.seventhDayPay) : 0,
       deductions: e ? Number(e.deductions) : 0,
       bonification: e ? Number(e.bonification) : 0,
+      advances: e ? Number(e.advances) : 0,
       deductionsNote: e?.deductionsNote ?? "",
       bonificationNote: e?.bonificationNote ?? "",
+      advancesNote: e?.advancesNote ?? "",
     };
   });
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Descuentos y Adicionales</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Descuentos, Anticipos y Adicionales</h1>
       <p className="mt-1 text-sm text-finca-500">
         {/* The period's OWN year — it may differ from today's at the Feb/Mar
             boundary, since the year comes from the start date. */}

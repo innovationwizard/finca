@@ -23,6 +23,7 @@ type Row = {
   septimo: number;
   adicionales: number;
   descuentos: number;
+  anticipos: number;
   totalToPay: number;
   banco: string;
   cuenta: string;
@@ -89,7 +90,7 @@ export function AutorizacionClient({
       if (q && !r.name.toLowerCase().includes(q)) return false;
       if (category && r.category !== category) return false;
       if (onlyExceptions && !Object.values(r.flags).some(Boolean)) return false;
-      if (onlyAdjustments && r.adicionales === 0 && r.descuentos === 0) return false;
+      if (onlyAdjustments && r.adicionales === 0 && r.descuentos === 0 && r.anticipos === 0) return false;
       if (flagFilter && !r.flags[flagFilter]) return false;
       return true;
     });
@@ -264,6 +265,7 @@ export function AutorizacionClient({
               <th className="sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-2 text-right font-medium">Séptimo</th>
               <th className="sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-2 text-right font-medium">Adicionales</th>
               <th className="sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-2 text-right font-medium">Descuentos</th>
+              <th className="sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-2 text-right font-medium">Anticipos</th>
               <th className="sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-2 text-right font-medium">Total a Pagar</th>
               <th className="sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-2 font-medium">Banco</th>
               <th className="sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-2 font-medium">Cuenta</th>
@@ -279,6 +281,7 @@ export function AutorizacionClient({
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{formatGTQ(r.septimo)}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{r.adicionales ? formatGTQ(r.adicionales) : "—"}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{r.descuentos ? formatGTQ(r.descuentos) : "—"}</td>
+                <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{r.anticipos ? formatGTQ(r.anticipos) : "—"}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums font-semibold text-finca-900">{formatGTQ(r.totalToPay)}</td>
                 <td className="whitespace-nowrap border border-finca-100 px-2 py-1.5 text-finca-500">{r.banco || "—"}</td>
                 <td className="whitespace-nowrap border border-finca-100 px-2 py-1.5 tabular-nums text-finca-500">{r.cuenta || "—"}</td>
@@ -294,7 +297,7 @@ export function AutorizacionClient({
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={10} className="border border-finca-100 px-3 py-8 text-center text-finca-400">Sin resultados.</td></tr>
+              <tr><td colSpan={11} className="border border-finca-100 px-3 py-8 text-center text-finca-400">Sin resultados.</td></tr>
             )}
           </tbody>
         </table>

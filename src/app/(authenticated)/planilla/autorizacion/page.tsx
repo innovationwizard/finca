@@ -46,8 +46,10 @@ export default async function AutorizacionPage() {
       seventhDayPay: true,
       bonification: true,
       deductions: true,
+      advances: true,
       bonificationNote: true,
       deductionsNote: true,
+      advancesNote: true,
       totalToPay: true,
       worker: { select: { fullName: true, bankAccount: true, bankName: true, isActive: true } },
     },
@@ -85,6 +87,7 @@ export default async function AutorizacionPage() {
       const septimo = Number(e.seventhDayPay);
       const adicionales = Number(e.bonification);
       const descuentos = Number(e.deductions);
+      const anticipos = Number(e.advances);
       const cuenta = e.worker.bankAccount?.trim() ?? "";
       const prevTotal = prevTotals.has(e.workerId) ? prevTotals.get(e.workerId)! : null;
       return {
@@ -95,6 +98,7 @@ export default async function AutorizacionPage() {
         septimo,
         adicionales,
         descuentos,
+        anticipos,
         totalToPay,
         banco: e.worker.bankName ?? "",
         cuenta,
@@ -107,7 +111,8 @@ export default async function AutorizacionPage() {
           inactivoConPago: !e.worker.isActive && totalToPay !== 0,
           ajusteSinNota:
             (descuentos > 0 && !(e.deductionsNote?.trim())) ||
-            (adicionales > 0 && !(e.bonificationNote?.trim())),
+            (adicionales > 0 && !(e.bonificationNote?.trim())) ||
+            (anticipos > 0 && !(e.advancesNote?.trim())),
           variacion:
             prevTotal != null && prevTotal > 0 &&
             Math.abs(totalToPay - prevTotal) / prevTotal > VARIANCE_THRESHOLD,

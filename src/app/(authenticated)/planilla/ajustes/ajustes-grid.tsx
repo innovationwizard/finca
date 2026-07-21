@@ -2,10 +2,15 @@
 
 // =============================================================================
 // src/app/(authenticated)/planilla/ajustes/ajustes-grid.tsx
-// Editable per-worker DESCUENTOS / ADICIONALES grid. TOTAL A PAGAR recomputes
-// live (TOTAL − descuento + adicional). Each non-zero amount REQUIRES a note
-// (CFO audit). Saves only changed rows to PATCH /api/planilla/ajustes;
-// read-only roles see disabled inputs.
+// Editable per-worker DESCUENTOS / ANTICIPOS / ADICIONALES grid. TOTAL A PAGAR
+// recomputes live (TOTAL − descuento − anticipo + adicional). Each non-zero
+// amount REQUIRES a note (CFO audit). Saves only changed rows to PATCH
+// /api/planilla/ajustes; read-only roles see disabled inputs.
+//
+// ANTICIPOS is separate from DESCUENTOS on purpose: both are subtracted, but an
+// anticipo is pay already advanced to the worker while a descuento is a charge
+// against them. Pooling them (as happened before this column existed) makes the
+// Anticipos figure unreportable.
 // =============================================================================
 
 import { useMemo, useState, useCallback } from "react";
@@ -19,10 +24,19 @@ type Row = {
   gross: number;
   deductions: number;
   bonification: number;
+  advances: number;
   deductionsNote: string;
   bonificationNote: string;
+  advancesNote: string;
 };
-type Draft = { deductions: string; bonification: string; deductionsNote: string; bonificationNote: string };
+type Draft = {
+  deductions: string;
+  bonification: string;
+  advances: string;
+  deductionsNote: string;
+  bonificationNote: string;
+  advancesNote: string;
+};
 
 const n = (s: string) => {
   const v = parseFloat(s);
@@ -42,8 +56,10 @@ export function AjustesGrid({ periodId, rows, canWrite }: { periodId: string; ro
       seed[r.workerId] = {
         deductions: r.deductions ? String(r.deductions) : "",
         bonification: r.bonification ? String(r.bonification) : "",
+        advances: r.advances ? String(r.advances) : "",
         deductionsNote: r.deductionsNote ?? "",
         bonificationNote: r.bonificationNote ?? "",
+        advancesNote: r.advancesNote ?? "",
       };
     }
     return seed;
@@ -66,8 +82,10 @@ export function AjustesGrid({ periodId, rows, canWrite }: { periodId: string; ro
         return (
           n(d.deductions) !== r.deductions ||
           n(d.bonification) !== r.bonification ||
+          n(d.advances) !== r.advances ||
           d.deductionsNote.trim() !== (r.deductionsNote ?? "") ||
-          d.bonificationNote.trim() !== (r.bonificationNote ?? "")
+          d.bonificationNote.trim() !== (r.bonificationNote ?? "") ||
+          d.advancesNote.trim() !== (r.advancesNote ?? "")
         );
       }),
     [rows, drafts],
@@ -77,24 +95,25 @@ export function AjustesGrid({ periodId, rows, canWrite }: { periodId: string; ro
   const missingNote = useCallback(
     (d: Draft) =>
       (n(d.deductions) > 0 && d.deductionsNote.trim() === "") ||
-      (n(d.bonification) > 0 && d.bonificationNote.trim() === ""),
+      (n(d.bonification) > 0 && d.bonificationNote.trim() === "") ||
+      (n(d.advances) > 0 && d.advancesNote.trim() === ""),
     [],
   );
   const invalid = useMemo(() => changed.filter((r) => missingNote(drafts[r.workerId])), [changed, drafts, missingNote]);
 
   const totals = useMemo(() => {
-    let gross = 0, desc = 0, adic = 0, pay = 0;
+    let gross = 0, desc = 0, ant = 0, adic = 0, pay = 0;
     for (const r of rows) {
       const d = drafts[r.workerId];
-      const de = n(d.deductions), bo = n(d.bonification);
-      gross += r.gross; desc += de; adic += bo; pay += r.gross - de + bo;
+      const de = n(d.deductions), bo = n(d.bonification), an = n(d.advances);
+      gross += r.gross; desc += de; ant += an; adic += bo; pay += r.gross - de - an + bo;
     }
-    return { gross, desc, adic, pay };
+    return { gross, desc, ant, adic, pay };
   }, [rows, drafts]);
 
   const handleSave = useCallback(async () => {
     if (changed.length === 0) { setMsg({ kind: "err", text: "No hay cambios para guardar." }); return; }
-    if (invalid.length > 0) { setMsg({ kind: "err", text: `Cada descuento o adicional requiere una nota (${invalid.length} sin nota).` }); return; }
+    if (invalid.length > 0) { setMsg({ kind: "err", text: `Cada descuento, anticipo o adicional requiere una nota (${invalid.length} sin nota).` }); return; }
     setSaving(true); setMsg(null);
     try {
       const res = await fetch("/api/planilla/ajustes", {
@@ -108,8 +127,10 @@ export function AjustesGrid({ periodId, rows, canWrite }: { periodId: string; ro
               workerId: r.workerId,
               deductions: n(d.deductions),
               bonification: n(d.bonification),
+              advances: n(d.advances),
               deductionsNote: d.deductionsNote.trim(),
               bonificationNote: d.bonificationNote.trim(),
+              advancesNote: d.advancesNote.trim(),
             };
           }),
         }),
@@ -157,6 +178,7 @@ export function AjustesGrid({ periodId, rows, canWrite }: { periodId: string; ro
               <th className="px-3 py-2.5 font-medium">Trabajador</th>
               <th className="px-3 py-2.5 text-right font-medium">Total</th>
               <th className="px-3 py-2.5 font-medium">Descuentos</th>
+              <th className="px-3 py-2.5 font-medium">Anticipos</th>
               <th className="px-3 py-2.5 font-medium">Adicionales</th>
               <th className="px-3 py-2.5 text-right font-medium">Total a Pagar</th>
             </tr>
@@ -164,9 +186,10 @@ export function AjustesGrid({ periodId, rows, canWrite }: { periodId: string; ro
           <tbody className="divide-y divide-finca-50">
             {visible.map((r, idx) => {
               const d = drafts[r.workerId];
-              const pay = r.gross - n(d.deductions) + n(d.bonification);
+              const pay = r.gross - n(d.deductions) - n(d.advances) + n(d.bonification);
               const needDesc = n(d.deductions) > 0 && d.deductionsNote.trim() === "";
               const needBon = n(d.bonification) > 0 && d.bonificationNote.trim() === "";
+              const needAnt = n(d.advances) > 0 && d.advancesNote.trim() === "";
               return (
                 <tr key={r.workerId} className="hover:bg-finca-50/30">
                   <td className="px-2 py-1.5 align-top text-finca-400 tabular-nums">{idx + 1}</td>
@@ -195,6 +218,26 @@ export function AjustesGrid({ periodId, rows, canWrite }: { periodId: string; ro
                   <td className="min-w-[12rem] px-3 py-1.5 align-top">
                     <input
                       type="number" step="0.01" min="0" inputMode="decimal"
+                      value={d.advances}
+                      disabled={!canWrite}
+                      onChange={(e) => setField(r.workerId, "advances", e.target.value)}
+                      placeholder="0.00"
+                      className="w-full rounded border border-finca-200 px-2 py-1 text-right text-sm tabular-nums focus:border-earth-400 focus:outline-none disabled:cursor-not-allowed disabled:bg-finca-50 disabled:text-finca-400"
+                    />
+                    {n(d.advances) > 0 && (
+                      <input
+                        type="text" maxLength={500}
+                        value={d.advancesNote}
+                        disabled={!canWrite}
+                        onChange={(e) => setField(r.workerId, "advancesNote", e.target.value)}
+                        placeholder="Nota / motivo (requerido)"
+                        className={noteClass(needAnt)}
+                      />
+                    )}
+                  </td>
+                  <td className="min-w-[12rem] px-3 py-1.5 align-top">
+                    <input
+                      type="number" step="0.01" min="0" inputMode="decimal"
                       value={d.bonification}
                       disabled={!canWrite}
                       onChange={(e) => setField(r.workerId, "bonification", e.target.value)}
@@ -217,7 +260,7 @@ export function AjustesGrid({ periodId, rows, canWrite }: { periodId: string; ro
               );
             })}
             {visible.length === 0 && (
-              <tr><td colSpan={6} className="px-3 py-8 text-center text-sm text-finca-400">Sin resultados.</td></tr>
+              <tr><td colSpan={7} className="px-3 py-8 text-center text-sm text-finca-400">Sin resultados.</td></tr>
             )}
           </tbody>
           <tfoot>
@@ -226,6 +269,7 @@ export function AjustesGrid({ periodId, rows, canWrite }: { periodId: string; ro
               <td className="px-3 py-2.5">Total</td>
               <td className="px-3 py-2.5 text-right tabular-nums">{formatGTQ(totals.gross)}</td>
               <td className="px-3 py-2.5 text-right tabular-nums">{formatGTQ(totals.desc)}</td>
+              <td className="px-3 py-2.5 text-right tabular-nums">{formatGTQ(totals.ant)}</td>
               <td className="px-3 py-2.5 text-right tabular-nums">{formatGTQ(totals.adic)}</td>
               <td className="px-3 py-2.5 text-right tabular-nums">{formatGTQ(totals.pay)}</td>
             </tr>

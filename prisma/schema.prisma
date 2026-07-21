@@ -349,6 +349,7 @@ model PayrollEntry {
   // Audit notes (CFO requirement): required when the matching amount is non-zero.
   bonificationNote String?     @map("bonification_note")
   deductionsNote   String?     @map("deductions_note")
+  advancesNote     String?     @map("advances_note")
   totalToPay   Decimal         @map("total_to_pay") @db.Decimal(10, 2)
   isPaid       Boolean         @default(false) @map("is_paid")
   paidAt       DateTime?       @map("paid_at")

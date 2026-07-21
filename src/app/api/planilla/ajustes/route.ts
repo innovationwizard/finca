@@ -1,10 +1,16 @@
 // =============================================================================
-// src/app/api/planilla/ajustes/route.ts — Descuentos / Adicionales input.
-// Sets PayrollEntry.deductions (DESCUENTOS) and .bonification (ADICIONALES) for
-// the OPEN pay period and recomputes totalToPay. These feed the bank file, so
-// writes are limited to PAY_ADJUST_WRITE_ROLES (MASTER + MANAGER), the period
-// must be open, and every change is audited. recomputePayroll preserves these
-// two fields on later captura saves, so the values persist.
+// src/app/api/planilla/ajustes/route.ts — Descuentos / Adicionales / Anticipos.
+// Sets PayrollEntry.deductions (DESCUENTOS), .bonification (ADICIONALES) and
+// .advances (ANTICIPOS) for the OPEN pay period and recomputes totalToPay.
+// These feed the bank file, so writes are limited to PAY_ADJUST_WRITE_ROLES
+// (MASTER + MANAGER), the period must be open, and every change is audited.
+// recomputePayroll preserves these three fields on later captura saves, so the
+// values persist.
+//
+// ANTICIPOS had no write path before 2026-07: advances was read by calcNetPay
+// and displayed in several "Anticipos" columns, but nothing ever set it, so
+// anticipos were recorded as DESCUENTOS noted "Anticipo". Net pay was correct
+// either way (both terms are subtracted), but the split was misreported.
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,8 +26,10 @@ const rowSchema = z
     workerId: z.string().uuid(),
     deductions: z.number().min(0).max(1_000_000),
     bonification: z.number().min(0).max(1_000_000),
+    advances: z.number().min(0).max(1_000_000),
     deductionsNote: z.string().trim().max(500).optional().default(""),
     bonificationNote: z.string().trim().max(500).optional().default(""),
+    advancesNote: z.string().trim().max(500).optional().default(""),
   })
   .refine((r) => r.deductions === 0 || r.deductionsNote.length > 0, {
     message: "El descuento requiere una nota.",
@@ -30,6 +38,10 @@ const rowSchema = z
   .refine((r) => r.bonification === 0 || r.bonificationNote.length > 0, {
     message: "El adicional requiere una nota.",
     path: ["bonificationNote"],
+  })
+  .refine((r) => r.advances === 0 || r.advancesNote.length > 0, {
+    message: "El anticipo requiere una nota.",
+    path: ["advancesNote"],
   });
 
 const schema = z.object({
@@ -85,39 +97,42 @@ export async function PATCH(request: NextRequest) {
     for (const row of rows) {
       const deductions = r2(row.deductions);
       const bonification = r2(row.bonification);
+      const advances = r2(row.advances);
       // Notes are cleared to null when the matching amount is zero.
       const deductionsNote = deductions === 0 ? null : row.deductionsNote;
       const bonificationNote = bonification === 0 ? null : row.bonificationNote;
+      const advancesNote = advances === 0 ? null : row.advancesNote;
       // One entry per (period, worker, category). A worker normally has one.
       const existing = await tx.payrollEntry.findFirst({ where: { payPeriodId, workerId: row.workerId } });
 
       if (existing) {
         const totalEarned = Number(existing.totalEarned);
         const seventhDayPay = Number(existing.seventhDayPay);
-        const advances = Number(existing.advances);
         const totalToPay = calcNetPay(totalEarned, bonification, seventhDayPay, advances, deductions);
         if (
           Number(existing.deductions) === deductions &&
           Number(existing.bonification) === bonification &&
+          Number(existing.advances) === advances &&
           (existing.deductionsNote ?? null) === deductionsNote &&
-          (existing.bonificationNote ?? null) === bonificationNote
+          (existing.bonificationNote ?? null) === bonificationNote &&
+          (existing.advancesNote ?? null) === advancesNote
         ) continue;
-        await tx.payrollEntry.update({ where: { id: existing.id }, data: { deductions, bonification, deductionsNote, bonificationNote, totalToPay } });
+        await tx.payrollEntry.update({ where: { id: existing.id }, data: { deductions, bonification, advances, deductionsNote, bonificationNote, advancesNote, totalToPay } });
         await tx.auditLog.create({
           data: {
             userId: auth.id,
             action: "UPDATE",
             tableName: "payroll_entries",
             recordId: existing.id,
-            oldValues: { deductions: Number(existing.deductions), bonification: Number(existing.bonification), deductionsNote: existing.deductionsNote, bonificationNote: existing.bonificationNote, totalToPay: Number(existing.totalToPay) },
-            newValues: { deductions, bonification, deductionsNote, bonificationNote, totalToPay },
+            oldValues: { deductions: Number(existing.deductions), bonification: Number(existing.bonification), advances: Number(existing.advances), deductionsNote: existing.deductionsNote, bonificationNote: existing.bonificationNote, advancesNote: existing.advancesNote, totalToPay: Number(existing.totalToPay) },
+            newValues: { deductions, bonification, advances, deductionsNote, bonificationNote, advancesNote, totalToPay },
           },
         });
         updated++;
       } else {
         // No earnings yet — a pure adjustment (e.g. a stand-alone adicional).
-        if (deductions === 0 && bonification === 0) continue;
-        const totalToPay = calcNetPay(0, bonification, 0, 0, deductions);
+        if (deductions === 0 && bonification === 0 && advances === 0) continue;
+        const totalToPay = calcNetPay(0, bonification, 0, advances, deductions);
         const created = await tx.payrollEntry.create({
           data: {
             payPeriodId,
@@ -125,11 +140,12 @@ export async function PATCH(request: NextRequest) {
             category: categoryOf.get(row.workerId) ?? "VOLUNTARIO",
             totalEarned: 0,
             seventhDayPay: 0,
-            advances: 0,
+            advances,
             deductions,
             bonification,
             deductionsNote,
             bonificationNote,
+            advancesNote,
             totalToPay,
           },
         });
@@ -139,7 +155,7 @@ export async function PATCH(request: NextRequest) {
             action: "CREATE",
             tableName: "payroll_entries",
             recordId: created.id,
-            newValues: { deductions, bonification, deductionsNote, bonificationNote, totalToPay },
+            newValues: { deductions, bonification, advances, deductionsNote, bonificationNote, advancesNote, totalToPay },
           },
         });
         updated++;
