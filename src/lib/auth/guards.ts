@@ -5,6 +5,7 @@
 import { UserRole } from "@prisma/client";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { currentPlanRoute, type PlanRoutePath } from "@/lib/plan/plan-routes";
 import { NextResponse } from "next/server";
 
 export type AuthenticatedUser = {
@@ -118,12 +119,14 @@ export const PAYROLL_REVIEW_ROLES: UserRole[] = ["MASTER", "ADMIN", "CFO", "MANA
 export const PERIOD_DATES_ROLES: UserRole[] = ["MASTER", "ADMIN", "MANAGER"];
 
 /**
- * Where a user lands after login. Plan Anual (/plan) for everyone who can view
- * it; FIELD (caporal, data entry only — not in READ_ALL_ROLES) lands on the
- * Planilla so they don't hit an authorization error.
+ * Where a user lands after login. The current cosecha's Plan Anual for everyone
+ * who can view it — resolved from lib/plan/plan-routes.ts so it follows the
+ * season instead of pointing at a hardcoded year; FIELD (caporal, data entry
+ * only — not in READ_ALL_ROLES) lands on the Planilla so they don't hit an
+ * authorization error.
  */
-export function landingPathForRole(role: UserRole): "/plan" | "/planilla" {
-  return READ_ALL_ROLES.includes(role) ? "/plan" : "/planilla";
+export function landingPathForRole(role: UserRole): PlanRoutePath | "/planilla" {
+  return READ_ALL_ROLES.includes(role) ? currentPlanRoute() : "/planilla";
 }
 
 /**

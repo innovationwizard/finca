@@ -10,6 +10,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, PAY_ADJUST_VIEW_ROLES, PAY_ADJUST_WRITE_ROLES } from "@/lib/auth/guards";
 import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
+import { periodCosecha } from "@/lib/payroll/period-cosecha";
+import { formatAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { AjustesGrid } from "./ajustes-grid";
 
 export const metadata = { title: "Descuentos, Anticipos y Adicionales" };
@@ -62,9 +64,11 @@ export default async function AjustesPage() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Descuentos, Anticipos y Adicionales</h1>
       <p className="mt-1 text-sm text-finca-500">
-        {/* The period's OWN year — it may differ from today's at the Feb/Mar
-            boundary, since the year comes from the start date. */}
-        Semana {period.periodNumber} · Año {period.agriculturalYear} ·{" "}
+        {/* The period's OWN cosecha, derived from its start date — it may differ
+            from today's at the Sep/Oct boundary. Derived rather than read from
+            `agriculturalYear`, which still holds what the old March→February
+            rule stamped; see lib/payroll/period-cosecha.ts. */}
+        Semana {period.periodNumber} · Cosecha {formatAgriculturalYear(periodCosecha(period))} ·{" "}
         {period.startDate.toLocaleDateString("es-GT")} — {period.endDate.toLocaleDateString("es-GT")}
         {!canWrite && " · Solo lectura"}
       </p>

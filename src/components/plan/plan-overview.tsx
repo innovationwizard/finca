@@ -1,63 +1,73 @@
 // =============================================================================
-// src/app/(authenticated)/plan/page.tsx — Plan Anual overview (Server Component)
+// src/components/plan/plan-overview.tsx — Plan Anual overview (Server Component)
+// The whole body of a cosecha's plan page: KPIs, Plan vs Ejecutado summary, the
+// per-lote links and the editable week grid.
+//
+// One cosecha per route (/plan2526, /plan2627, ...), each passing its own
+// `agriculturalYear`. This used to be a single /plan page with a year dropdown,
+// which meant the page title said one cosecha while the grid could be showing
+// another. The season is now in the URL, so it cannot drift.
 // =============================================================================
 
 import Link from "next/link";
+import type { Route } from "next";
 import { CalendarRange, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireRole, READ_ALL_ROLES, WRITE_ROLES } from "@/lib/auth/guards";
 import {
   getCurrentAgriculturalYear,
   formatAgriculturalYear,
+  formatAgriculturalYearShort,
   getAgriculturalMonths,
   getAgriculturalYearStart,
   getAgriculturalYearEnd,
-  getAgriculturalMonth,
-  getWeekInMonth,
 } from "@/lib/utils/agricultural-year";
+import { cellOf, weekStartOf } from "@/lib/plan/plan-week";
 import { PlanGrid } from "./plan-grid";
-import { YearSelector, LoteSelector } from "./year-lote-selector";
+import { LoteSelector } from "./lote-selector";
 import { PlanSummaryTable } from "./plan-summary-table";
 import { PlanKpiCards } from "./plan-kpi-cards";
 
-export const metadata = { title: "Plan Anual" };
-
-type Props = {
-  searchParams: Promise<{ year?: string; loteId?: string }>;
+export type PlanOverviewProps = {
+  /** Cosecha code this page is pinned to, e.g. "2526". */
+  agriculturalYear: string;
+  /** This page's own route, e.g. "/plan2526". */
+  basePath: string;
+  /** Lote filter from the URL; null = GENERAL (all lotes aggregated). */
+  loteId: string | null;
 };
 
-export default async function PlanPage({ searchParams }: Props) {
+export async function PlanOverview({
+  agriculturalYear,
+  basePath,
+  loteId,
+}: PlanOverviewProps) {
   const user = await requireRole(...READ_ALL_ROLES);
-  const params = await searchParams;
 
   const currentYear = getCurrentAgriculturalYear();
-  const selectedYear = params.year ?? currentYear;
-  const selectedLoteId = params.loteId ?? null;
+  const selectedLoteId = loteId;
 
-  // Generate available years: current ± 2
-  const yearStart = parseInt(currentYear.slice(0, 2), 10);
-  const availableYears: { code: string; label: string }[] = [];
-  for (let i = yearStart - 2; i <= yearStart + 1; i++) {
-    const code = `${String(i).padStart(2, "0")}${String(i + 1).padStart(2, "0")}`;
-    availableYears.push({ code, label: formatAgriculturalYear(code) });
-  }
-
-  // Fetch lotes
   const lotes = await prisma.lote.findMany({
     where: { isActive: true },
     select: { id: true, name: true, slug: true },
     orderBy: { sortOrder: "asc" },
   });
 
-  // Fetch activities
   const activities = await prisma.activity.findMany({
     where: { isActive: true },
     select: { id: true, name: true, sortOrder: true },
     orderBy: { sortOrder: "asc" },
   });
 
-  // Fetch plan entries
-  const planWhere: Record<string, unknown> = { agriculturalYear: selectedYear };
+  // The cosecha's date window. Plan cells and executed records are both selected
+  // by date — the cosecha a row belongs to is derived from its date, never
+  // stored, so moving the window moves nothing in the database.
+  const startDate = getAgriculturalYearStart(agriculturalYear);
+  const endDate = getAgriculturalYearEnd(agriculturalYear);
+
+  const planWhere: Record<string, unknown> = {
+    weekStart: { gte: startDate, lte: endDate },
+  };
   if (selectedLoteId) planWhere.loteId = selectedLoteId;
 
   const planEntries = await prisma.planEntry.findMany({
@@ -65,15 +75,11 @@ export default async function PlanPage({ searchParams }: Props) {
     select: {
       activityId: true,
       loteId: true,
-      month: true,
-      week: true,
+      weekStart: true,
       plannedJornales: true,
     },
   });
 
-  // Fetch actual activity records for comparison
-  const startDate = getAgriculturalYearStart(selectedYear);
-  const endDate = getAgriculturalYearEnd(selectedYear);
   const actualWhere: Record<string, unknown> = {
     date: { gte: startDate, lte: endDate },
   };
@@ -89,15 +95,27 @@ export default async function PlanPage({ searchParams }: Props) {
     },
   });
 
-  // Transform actual records to the format expected by PlanGrid
   const actualData = activityRecords.map((rec) => {
-    const d = new Date(rec.date);
+    const cell = cellOf(weekStartOf(rec.date));
     return {
       loteId: rec.loteId,
       activityId: rec.activityId,
-      month: getAgriculturalMonth(d),
-      week: getWeekInMonth(d),
+      month: cell.agMonth,
+      week: cell.week,
       actualJornales: Number(rec.quantity),
+    };
+  });
+
+  // Plan cells carry a date; the grid draws a month × week matrix. Translate
+  // once, here, so geometry stays a rendering concern.
+  const planCells = planEntries.map((e) => {
+    const cell = cellOf(e.weekStart);
+    return {
+      activityId: e.activityId,
+      loteId: e.loteId,
+      month: cell.agMonth,
+      week: cell.week,
+      plannedJornales: Number(e.plannedJornales),
     };
   });
 
@@ -107,9 +125,9 @@ export default async function PlanPage({ searchParams }: Props) {
   const planByActivity: Record<string, number> = {};
   const actualByActivity: Record<string, number> = {};
 
-  for (const e of planEntries) {
+  for (const e of planCells) {
     planByActivity[e.activityId] =
-      (planByActivity[e.activityId] ?? 0) + Number(e.plannedJornales);
+      (planByActivity[e.activityId] ?? 0) + e.plannedJornales;
   }
   for (const e of actualData) {
     actualByActivity[e.activityId] =
@@ -122,26 +140,26 @@ export default async function PlanPage({ searchParams }: Props) {
   // ---------------------------------------------------------------------------
   // YTD calculations for KPI cards
   // Plan YTD: only planned jornales for weeks that have already started.
-  // - Past year: all weeks have elapsed → planYtd = full year total
-  // - Current year: filter by today's agricultural month/week position
-  // - Future year: no weeks have started → planYtd = 0
+  // - Past cosecha: all weeks have elapsed → planYtd = full year total
+  // - Current cosecha: filter by today's agricultural month/week position
+  // - Future cosecha: no weeks have started → planYtd = 0
   // Actual YTD: all recorded jornales (records can only be past dates)
   // ---------------------------------------------------------------------------
   let planYtd: number;
 
-  if (selectedYear < currentYear) {
-    planYtd = planEntries.reduce((sum, e) => sum + Number(e.plannedJornales), 0);
-  } else if (selectedYear > currentYear) {
+  if (agriculturalYear < currentYear) {
+    planYtd = planCells.reduce((sum, e) => sum + e.plannedJornales, 0);
+  } else if (agriculturalYear > currentYear) {
     planYtd = 0;
   } else {
-    const today = new Date();
-    const todayAgMonth = getAgriculturalMonth(today);
-    const todayWeek = getWeekInMonth(today);
-    planYtd = planEntries.reduce((sum, e) => {
+    const todayCell = cellOf(weekStartOf(new Date()));
+    const todayAgMonth = todayCell.agMonth;
+    const todayWeek = todayCell.week;
+    planYtd = planCells.reduce((sum, e) => {
       const elapsed =
         e.month < todayAgMonth ||
         (e.month === todayAgMonth && e.week <= todayWeek);
-      return elapsed ? sum + Number(e.plannedJornales) : sum;
+      return elapsed ? sum + e.plannedJornales : sum;
     }, 0);
   }
 
@@ -150,7 +168,7 @@ export default async function PlanPage({ searchParams }: Props) {
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
-  const months = getAgriculturalMonths(selectedYear);
+  const months = getAgriculturalMonths(agriculturalYear);
   const canEdit = WRITE_ROLES.includes(user.role);
   const loteIds = lotes.map((l) => l.id);
   const selectedLote = selectedLoteId
@@ -164,26 +182,23 @@ export default async function PlanPage({ searchParams }: Props) {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold text-finca-900">
             <CalendarRange className="h-6 w-6 text-earth-600" />
-            Plan Anual de Actividades
+            Plan Anual de Actividades{" "}
+            {formatAgriculturalYearShort(agriculturalYear)}
           </h1>
           <p className="mt-1 text-sm text-finca-600">
-            Planificación de jornales por actividad, lote y semana.
-            Comparativa plan vs. ejecutado.
+            Cosecha {formatAgriculturalYear(agriculturalYear)} · 1 de octubre al
+            30 de septiembre. Planificación de jornales por actividad, lote y
+            semana. Comparativa plan vs. ejecutado.
           </p>
         </div>
       </div>
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap items-end gap-4">
-        <YearSelector
-          availableYears={availableYears}
-          selectedYear={selectedYear}
-          preserveParams={selectedLoteId ? { loteId: selectedLoteId } : undefined}
-        />
         <LoteSelector
           lotes={lotes.map((l) => ({ id: l.id, name: l.name }))}
           selectedLoteId={selectedLoteId}
-          selectedYear={selectedYear}
+          basePath={basePath}
         />
       </div>
 
@@ -209,7 +224,7 @@ export default async function PlanPage({ searchParams }: Props) {
           {lotes.map((l) => (
             <Link
               key={l.id}
-              href={`/plan/${l.slug}?year=${selectedYear}` as never}
+              href={`${basePath}/${l.slug}` as Route}
               className="inline-flex items-center gap-1 rounded-md border border-finca-200 bg-white px-3 py-1.5 text-xs font-medium text-finca-700 transition-colors hover:border-earth-400 hover:bg-earth-50 hover:text-earth-700"
             >
               {l.name}
@@ -225,7 +240,7 @@ export default async function PlanPage({ searchParams }: Props) {
           <p className="text-sm text-gray-500">
             No hay actividades configuradas. Configure actividades en{" "}
             <Link
-              href={"/admin/actividades" as never}
+              href={"/admin/actividades" as Route}
               className="font-medium text-earth-600 underline hover:text-earth-700"
             >
               Administración &rarr; Actividades
@@ -241,8 +256,8 @@ export default async function PlanPage({ searchParams }: Props) {
             </h2>
           )}
           <PlanGrid
-            key={`${selectedYear}_${selectedLoteId ?? "general"}`}
-            agriculturalYear={selectedYear}
+            key={`${agriculturalYear}_${selectedLoteId ?? "general"}`}
+            agriculturalYear={agriculturalYear}
             loteId={selectedLoteId}
             loteIds={loteIds}
             activities={activities.map((a) => ({
@@ -254,13 +269,7 @@ export default async function PlanPage({ searchParams }: Props) {
               agMonth: m.agMonth,
               label: m.label,
             }))}
-            initialPlan={planEntries.map((e) => ({
-              activityId: e.activityId,
-              loteId: e.loteId,
-              month: e.month,
-              week: e.week,
-              plannedJornales: Number(e.plannedJornales),
-            }))}
+            initialPlan={planCells}
             initialActual={actualData}
             canEdit={canEdit}
           />

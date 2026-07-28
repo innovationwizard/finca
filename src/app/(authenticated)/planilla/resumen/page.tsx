@@ -12,6 +12,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
+import { periodCosecha } from "@/lib/payroll/period-cosecha";
+import { formatAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { formatGTQ } from "@/lib/utils/format";
 import Link from "next/link";
 
@@ -119,9 +121,12 @@ export default async function ResumenPage() {
           Resumen de Pago
         </h1>
         <p className="mt-1 text-sm text-finca-500">
-          {/* The period's OWN year — it may differ from today's at the
-              Feb/Mar boundary, since the year comes from the start date. */}
-          Semana {currentPeriod.periodNumber} · Año {currentPeriod.agriculturalYear} ·{" "}
+          {/* The period's OWN cosecha, derived from its start date — it may
+              differ from today's at the Sep/Oct boundary. Derived rather than
+              read from `agriculturalYear`, which still holds what the old
+              March→February rule stamped; see lib/payroll/period-cosecha.ts. */}
+          Semana {currentPeriod.periodNumber} · Cosecha{" "}
+          {formatAgriculturalYear(periodCosecha(currentPeriod))} ·{" "}
           {currentPeriod.startDate.toLocaleDateString("es-GT")} —{" "}
           {currentPeriod.endDate.toLocaleDateString("es-GT")}
         </p>

@@ -1,13 +1,18 @@
 "use client";
 
 // =============================================================================
-// src/app/(authenticated)/plan/plan-grid.tsx — Editable plan grid
+// src/components/plan/plan-grid.tsx — Editable plan grid
 // Inline editing with save-on-blur and semáforo (plan vs actual) indicators.
 // Each cell shows planned value (top) and actual/executed value (bottom).
+//
+// The (month, week) pair here is grid geometry — which box to draw where — and
+// nothing else. What identifies a cell to the server is its weekStart date,
+// resolved from the cosecha this grid is pinned to; see lib/plan/plan-week.ts.
 // =============================================================================
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { weekStartOfCell, weekStartIso } from "@/lib/plan/plan-week";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -110,16 +115,6 @@ export function PlanGrid({
     return map;
   });
 
-  // Track per-lote plan entries for saving (keyed by loteId_activityId_month_week)
-  const perLotePlanRef = useRef<Record<string, number>>({});
-  useEffect(() => {
-    const map: Record<string, number> = {};
-    for (const e of initialPlan) {
-      map[`${e.loteId}_${e.activityId}_${e.month}_${e.week}`] = e.plannedJornales;
-    }
-    perLotePlanRef.current = map;
-  }, [initialPlan]);
-
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -142,11 +137,11 @@ export function PlanGrid({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            agriculturalYear,
             loteId: targetLoteId,
             activityId,
-            month,
-            week,
+            weekStart: weekStartIso(
+              weekStartOfCell(agriculturalYear, month, week),
+            ),
             plannedJornales: value,
           }),
         });
@@ -157,7 +152,6 @@ export function PlanGrid({
         }
 
         setPlanMap((prev) => ({ ...prev, [k]: value }));
-        perLotePlanRef.current[`${targetLoteId}_${activityId}_${month}_${week}`] = value;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al guardar");
       } finally {

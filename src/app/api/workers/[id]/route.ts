@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, READ_ALL_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
 import { workerUpdateSchema, deriveFullName } from "@/lib/validators/worker";
+import { periodCosecha } from "@/lib/payroll/period-cosecha";
 
 export async function GET(
   request: NextRequest,
@@ -45,7 +46,6 @@ export async function GET(
           payPeriod: {
             select: {
               periodNumber: true,
-              agriculturalYear: true,
               startDate: true,
               endDate: true,
             },
@@ -101,7 +101,9 @@ export async function GET(
       deductions: Number(p.deductions),
       isPaid: p.isPaid,
       periodNumber: p.payPeriod.periodNumber,
-      agriculturalYear: p.payPeriod.agriculturalYear,
+      // Derived from the period's start date, not read from its stored stamp —
+      // see lib/payroll/period-cosecha.ts.
+      agriculturalYear: periodCosecha(p.payPeriod),
       startDate: p.payPeriod.startDate.toISOString().split("T")[0],
       endDate: p.payPeriod.endDate.toISOString().split("T")[0],
     })),

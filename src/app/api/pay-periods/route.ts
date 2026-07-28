@@ -25,9 +25,11 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, READ_ALL_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
-import { getAgriculturalYear, getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
+import { getAgriculturalYear } from "@/lib/utils/agricultural-year";
+import { periodsOfCosecha } from "@/lib/payroll/period-cosecha";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 86_400_000;
@@ -38,16 +40,21 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const currentOnly = searchParams.get("current") === "true";
-  const year = searchParams.get("year") ?? getCurrentAgriculturalYear();
+  const year = searchParams.get("year");
 
-  const where: Record<string, unknown> = { agriculturalYear: year };
+  // Scoped to a cosecha by DATE only when one is explicitly asked for. It used to
+  // default to the current agricultural year, which broke ?current=true — the
+  // offline sync engine's only way to learn the open period — every time the
+  // open period had started in the previous cosecha. Periods tile across that
+  // boundary by design; see lib/payroll/current-period.ts.
+  const where: Prisma.PayPeriodWhereInput = year ? periodsOfCosecha(year) : {};
   if (currentOnly) {
     where.isClosed = false;
   }
 
   const periods = await prisma.payPeriod.findMany({
     where,
-    orderBy: { periodNumber: "desc" },
+    orderBy: { startDate: "desc" },
   });
 
   return NextResponse.json(
@@ -134,9 +141,13 @@ export async function POST(request: NextRequest) {
   // Derive agricultural year from the period's start date, not from "today"
   const year = getAgriculturalYear(new Date(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
 
-  // Get next period number
+  // Next period number — the max across ALL periods, not within the year.
+  // Per-year numbering restarted the count at every cosecha boundary, which is
+  // how periods 1, 2 and 3 come to exist twice in this table. Numbering globally
+  // keeps it strictly increasing forever: the number is what the farm calls the
+  // period out loud and what lands in the export filename, so it must never go
+  // backwards (a per-year count would follow #10 with #4).
   const maxPeriod = await prisma.payPeriod.aggregate({
-    where: { agriculturalYear: year },
     _max: { periodNumber: true },
   });
   const nextNumber = (maxPeriod._max.periodNumber ?? 0) + 1;

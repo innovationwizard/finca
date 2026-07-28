@@ -11,7 +11,6 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, CAPTURA_WRITE_ROLES, READ_ALL_ROLES, PERIOD_DATES_ROLES } from "@/lib/auth/guards";
 import { toPriceSchedule } from "@/lib/pricing/activity-prices";
 import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
-import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { CapturaGrid } from "./grid-client";
 import { EditPeriodModal } from "../edit-period-modal";
 
@@ -35,11 +34,15 @@ export default async function CapturaPage() {
       orderBy: [{ code: "asc" }, { name: "asc" }],
     }),
     prisma.lote.findMany({ where: { isActive: true }, select: { id: true, name: true }, orderBy: { sortOrder: "asc" } }),
-    // ALL periods (open + closed) for the current ag year: the grid needs to
-    // know closed-period days too, so they show as historical/locked instead of
-    // looking "uncovered" (which previously let an extend swallow them).
+    // ALL periods (open + closed): the grid needs to know closed-period days
+    // too, so they show as historical/locked instead of looking "uncovered"
+    // (which previously let an extend swallow them).
+    // Deliberately unscoped. This was filtered by current agricultural year and
+    // that is the bug lib/payroll/current-period.ts was written about: periods
+    // tile ACROSS the year boundary, so a year-scoped fetch drops the period on
+    // either side of it — including, at the boundary, the open one. The table
+    // grows by ~13 rows a year; there is nothing to save by narrowing it.
     prisma.payPeriod.findMany({
-      where: { agriculturalYear: getCurrentAgriculturalYear() },
       select: { id: true, periodNumber: true, startDate: true, endDate: true, isClosed: true },
       orderBy: { startDate: "asc" },
     }),
@@ -47,7 +50,7 @@ export default async function CapturaPage() {
     // saved instead of looking empty (it was write-only before). One record per
     // (worker, day) — matches the grid's cell model.
     prisma.activityRecord.findMany({
-      where: { payPeriod: { agriculturalYear: getCurrentAgriculturalYear(), isClosed: false } },
+      where: { payPeriod: { isClosed: false } },
       select: { workerId: true, date: true, loteId: true, activityId: true, quantity: true },
     }),
   ]);
@@ -58,10 +61,9 @@ export default async function CapturaPage() {
   const openPeriod = await getCurrentPayPeriod();
 
   // A successor's start is derived from its predecessor's end, so it isn't
-  // editable. Queried unscoped: the predecessor can sit in the PREVIOUS
-  // agricultural year (they tile across the year boundary), which `periods` —
-  // scoped to the current year — would miss. Same for the successor, whose dates
-  // the modal previews as the cascade warning.
+  // editable. Looked up by adjoining date rather than by position in `periods`,
+  // so it stays correct however that list is ordered. Same for the successor,
+  // whose dates the modal previews as the cascade warning.
   const DAY_MS = 86_400_000;
   const [predecessor, successor] = openPeriod
     ? await Promise.all([

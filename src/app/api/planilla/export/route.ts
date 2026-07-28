@@ -13,7 +13,6 @@ import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
-import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { formatDecimal, unitAbbr } from "@/lib/utils/format";
 import {
   DAY_LABELS,
@@ -252,11 +251,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Falta el parámetro 'periodo'" }, { status: 400 });
   }
 
-  // Closed periods of the current agricultural year only — exactly what the page
-  // exposes. Guards against exporting the open period or a stale year via a
-  // hand-crafted URL.
+  // Closed periods only — exactly what the page exposes, and the guard that
+  // matters: the open period must not be exportable via a hand-crafted URL.
+  // NOT scoped by agricultural year. It was, and that silently made every period
+  // of an earlier cosecha un-exportable — the whole point of Planillas Anteriores
+  // is reaching them. The id already identifies one period; the year added no
+  // authorization, only an expiry date on history.
   const period = await prisma.payPeriod.findFirst({
-    where: { id: periodId, agriculturalYear: getCurrentAgriculturalYear(), isClosed: true },
+    where: { id: periodId, isClosed: true },
     select: { id: true, periodNumber: true, startDate: true, endDate: true },
   });
   if (!period) {

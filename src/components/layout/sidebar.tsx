@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
+import { PLAN_ROUTES } from "@/lib/plan/plan-routes";
 import { SyncIndicator } from "./sync-indicator";
 import { LogoutButton } from "./logout-button";
 
@@ -48,7 +49,14 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/planilla/ajustes", label: "Descuentos, Anticipos y Adicionales", icon: Calculator, roles: ["MASTER", "MANAGER", "ADMIN", "CFO"] },
   { href: "/planilla/autorizacion", label: "Revisión y Autorización", icon: ShieldCheck, roles: ["MASTER", "ADMIN", "CFO", "MANAGER"] },
   { href: "/ingreso-cafe", label: "Ingreso Café", icon: Coffee },
-  { href: "/plan", label: "Plan Anual", icon: CalendarRange },
+  // One entry per cosecha — each route is pinned to its own season. Rendered
+  // from lib/plan/plan-routes.ts, the single list the landing redirect reads
+  // too, so a new cosecha cannot appear in one place and not the other.
+  ...PLAN_ROUTES.map((r) => ({
+    href: r.path,
+    label: r.label,
+    icon: CalendarRange,
+  })),
   { href: "/resumenes", label: "Resúmenes", icon: FileBarChart },
   { href: "/estimaciones", label: "Estimaciones", icon: BarChart3 },
   { href: "/trabajadores", label: "Trabajadores", icon: Users },
@@ -76,8 +84,9 @@ export function Sidebar({ user }: { user: User }) {
     : [];
 
   // Active = the single most specific matching href. A plain startsWith would
-  // mark "/plan" active while on "/planilla" (substring), and light up a parent
-  // on a child route. So match on exact OR "/"-boundary, longest match wins.
+  // mark "/planilla" active while on "/planilla/captura" (parent lighting up on
+  // a child route) and any prefix pair would collide the same way. So match on
+  // exact OR "/"-boundary, longest match wins.
   const activeHref =
     [...visibleNav, ...visibleAdmin]
       .map((i) => i.href)

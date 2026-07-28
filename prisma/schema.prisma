@@ -1,8 +1,13 @@
 // =============================================================================
 // Finca Danilandia y Anexos, S.A. — Database Schema
 // Part of Holding Grupo Orión
-// Agricultural Year: March → February
+// Agricultural Year (cosecha): October 1 → September 30
 // Currency: Quetzales (GTQ)
+//
+// DATES: every point in time is stored as a real calendar date (@db.Date) or a
+// timestamp (DateTime). Never as a position — no (year, month index, week index)
+// triplets. The cosecha and the month of a row are DERIVED from its date when
+// read, so moving the cosecha window migrates zero rows.
 // =============================================================================
 
 generator client {
@@ -447,22 +452,30 @@ model CoffeeIntake {
 // MODULE 3: ACTIVITY PLANNING
 // =============================================================================
 
+/// One planned cell of the Plan Anual: jornales for an activity, on a lote,
+/// during one week.
+///
+/// `weekStart` is that week's real first day — the 1st, 8th, 15th or 22nd of a
+/// calendar month (week 4 runs to month end). It replaced an
+/// (agriculturalYear, month 1-12, week 1-4) triplet on 2026-07-27: those were
+/// positions in a window, so when the cosecha moved from March→February to
+/// October→September every stored row silently changed meaning — `month = 9`
+/// went from November to June. A date cannot do that. The cosecha and month a
+/// cell belongs to are derived on read (lib/plan/plan-week.ts), never stored.
 model PlanEntry {
-  id               String   @id @default(uuid(7)) @db.Uuid
-  agriculturalYear String   @map("agricultural_year")
-  loteId           String   @map("lote_id") @db.Uuid
-  activityId       String   @map("activity_id") @db.Uuid
-  month            Int
-  week             Int
-  plannedJornales  Decimal  @map("planned_jornales") @db.Decimal(8, 2)
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid(7)) @db.Uuid
+  loteId          String   @map("lote_id") @db.Uuid
+  activityId      String   @map("activity_id") @db.Uuid
+  weekStart       DateTime @map("week_start") @db.Date
+  plannedJornales Decimal  @map("planned_jornales") @db.Decimal(8, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   lote     Lote     @relation(fields: [loteId], references: [id])
   activity Activity @relation(fields: [activityId], references: [id])
 
-  @@unique([agriculturalYear, loteId, activityId, month, week])
-  @@index([agriculturalYear])
+  @@unique([loteId, activityId, weekStart])
+  @@index([weekStart])
   @@map("plan_entries")
 }
 

@@ -79,7 +79,10 @@ export async function POST(
     if (overlap) return { closed, created: null as null | typeof closed };
 
     const year = getAgriculturalYear(new Date(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
-    const maxPeriod = await tx.payPeriod.aggregate({ where: { agriculturalYear: year }, _max: { periodNumber: true } });
+    // Max across ALL periods, not within the year — see POST /api/pay-periods:
+    // per-year numbering restarts at the cosecha boundary and would follow #10
+    // with #4, on a number the farm says out loud and the export filename carries.
+    const maxPeriod = await tx.payPeriod.aggregate({ _max: { periodNumber: true } });
     const created = await tx.payPeriod.create({
       data: {
         type: defaultType,

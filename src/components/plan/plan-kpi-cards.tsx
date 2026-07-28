@@ -1,5 +1,5 @@
 // =============================================================================
-// src/app/(authenticated)/plan/plan-kpi-cards.tsx — KPI summary cards
+// src/components/plan/plan-kpi-cards.tsx — KPI summary cards
 // Shows Plan YTD, Ejecutado, % Cumplimiento, and Δ Jornales.
 // planYtd = sum of planned jornales for weeks already elapsed this year.
 // actualYtd = sum of all recorded jornales in the selected year.

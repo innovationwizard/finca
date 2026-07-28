@@ -14,6 +14,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
+import { periodsOfCosecha } from "@/lib/payroll/period-cosecha";
 import { formatGTQ } from "@/lib/utils/format";
 import Link from "next/link";
 import type { Route } from "next";
@@ -43,9 +44,14 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   const year = getCurrentAgriculturalYear();
 
   // Closed periods only — the open period lives on Captura Semanal.
+  // Scoped to the cosecha by DATE, not by the stored `agriculturalYear` stamp:
+  // ten historical rows still carry the year the old March→February rule
+  // derived, so the stamp would hide nine real closed periods. Ordered by date
+  // because period numbers restarted mid-2026 under that same old rule and are
+  // therefore not monotonic across the whole table.
   const periods = await prisma.payPeriod.findMany({
-    where: { agriculturalYear: year, isClosed: true },
-    orderBy: { periodNumber: "desc" },
+    where: { ...periodsOfCosecha(year), isClosed: true },
+    orderBy: { startDate: "desc" },
     select: { id: true, periodNumber: true, startDate: true, endDate: true },
   });
 

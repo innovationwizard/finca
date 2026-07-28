@@ -6,6 +6,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentAgriculturalYear, formatAgriculturalYear } from "@/lib/utils/agricultural-year";
+import { periodsOfCosecha } from "@/lib/payroll/period-cosecha";
 import { ResumenesClient } from "./resumenes-client";
 
 export const metadata = { title: "Resúmenes" };
@@ -15,9 +16,12 @@ export default async function ResumenesPage() {
 
   const agYear = getCurrentAgriculturalYear();
 
+  // Scoped to the cosecha by DATE, not by the stored `agriculturalYear` stamp —
+  // see lib/payroll/period-cosecha.ts for why that column cannot be trusted.
+  // Ordered by date because period numbers are not monotonic across the table.
   const periods = await prisma.payPeriod.findMany({
-    where: { agriculturalYear: agYear },
-    orderBy: { periodNumber: "asc" },
+    where: periodsOfCosecha(agYear),
+    orderBy: { startDate: "asc" },
   });
 
   if (periods.length === 0) {

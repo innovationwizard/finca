@@ -1,5 +1,9 @@
 // =============================================================================
 // src/app/api/plan/route.ts — Plan Anual CRUD (GET list + POST upsert)
+//
+// A plan cell is addressed by (lote, activity, weekStart) — a real date, not a
+// (year, month index, week index) position. GET still accepts a cosecha code for
+// convenience and turns it into the date range that cosecha covers.
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,24 +13,44 @@ import {
   READ_ALL_ROLES,
   WRITE_ROLES,
 } from "@/lib/auth/guards";
-import { planEntrySchema } from "@/lib/validators/plan-entry";
+import {
+  planEntrySchema,
+  planEntryQuerySchema,
+} from "@/lib/validators/plan-entry";
+import {
+  getAgriculturalYearStart,
+  getAgriculturalYearEnd,
+} from "@/lib/utils/agricultural-year";
+import { cellOf, weekStartIso, parseWeekStartIso } from "@/lib/plan/plan-week";
 
 export async function GET(request: NextRequest) {
   const auth = await apiRequireRole(...READ_ALL_ROLES);
   if (auth instanceof NextResponse) return auth;
 
   const { searchParams } = new URL(request.url);
-  const agriculturalYear = searchParams.get("year");
-  const loteId = searchParams.get("loteId");
+  const parsedQuery = planEntryQuerySchema.safeParse({
+    agriculturalYear: searchParams.get("year") ?? undefined,
+    loteId: searchParams.get("loteId") ?? undefined,
+  });
 
-  if (!agriculturalYear) {
+  if (!parsedQuery.success) {
     return NextResponse.json(
-      { error: "Parámetro 'year' requerido" },
+      {
+        error: "Parámetros inválidos",
+        details: parsedQuery.error.flatten().fieldErrors,
+      },
       { status: 400 },
     );
   }
 
-  const where: Record<string, unknown> = { agriculturalYear };
+  const { agriculturalYear, loteId } = parsedQuery.data;
+
+  const where: Record<string, unknown> = {
+    weekStart: {
+      gte: getAgriculturalYearStart(agriculturalYear),
+      lte: getAgriculturalYearEnd(agriculturalYear),
+    },
+  };
   if (loteId) where.loteId = loteId;
 
   const entries = await prisma.planEntry.findMany({
@@ -35,25 +59,26 @@ export async function GET(request: NextRequest) {
       activity: { select: { id: true, name: true, unit: true, sortOrder: true } },
       lote: { select: { id: true, name: true, slug: true } },
     },
-    orderBy: [
-      { activity: { sortOrder: "asc" } },
-      { month: "asc" },
-      { week: "asc" },
-    ],
+    orderBy: [{ activity: { sortOrder: "asc" } }, { weekStart: "asc" }],
   });
 
   return NextResponse.json(
-    entries.map((e) => ({
-      id: e.id,
-      agriculturalYear: e.agriculturalYear,
-      loteId: e.loteId,
-      activityId: e.activityId,
-      month: e.month,
-      week: e.week,
-      plannedJornales: Number(e.plannedJornales),
-      activity: e.activity,
-      lote: e.lote,
-    })),
+    entries.map((e) => {
+      const cell = cellOf(e.weekStart);
+      return {
+        id: e.id,
+        weekStart: weekStartIso(e.weekStart),
+        // Derived for the grid that renders them. Never persisted.
+        agriculturalYear: cell.agriculturalYear,
+        month: cell.agMonth,
+        week: cell.week,
+        loteId: e.loteId,
+        activityId: e.activityId,
+        plannedJornales: Number(e.plannedJornales),
+        activity: e.activity,
+        lote: e.lote,
+      };
+    }),
   );
 }
 
@@ -72,14 +97,12 @@ export async function POST(request: NextRequest) {
   }
 
   const data = parsed.data;
+  const weekStart = parseWeekStartIso(data.weekStart);
 
   // Verify lote exists
   const lote = await prisma.lote.findUnique({ where: { id: data.loteId } });
   if (!lote) {
-    return NextResponse.json(
-      { error: "Lote no encontrado" },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "Lote no encontrado" }, { status: 404 });
   }
 
   // Verify activity exists
@@ -93,26 +116,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Upsert: create or update based on unique constraint
+  // Upsert: create or update based on the unique (lote, activity, week) key
   const entry = await prisma.planEntry.upsert({
     where: {
-      agriculturalYear_loteId_activityId_month_week: {
-        agriculturalYear: data.agriculturalYear,
+      loteId_activityId_weekStart: {
         loteId: data.loteId,
         activityId: data.activityId,
-        month: data.month,
-        week: data.week,
+        weekStart,
       },
     },
     update: {
       plannedJornales: data.plannedJornales,
     },
     create: {
-      agriculturalYear: data.agriculturalYear,
       loteId: data.loteId,
       activityId: data.activityId,
-      month: data.month,
-      week: data.week,
+      weekStart,
       plannedJornales: data.plannedJornales,
     },
     include: {
@@ -121,14 +140,17 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  const cell = cellOf(entry.weekStart);
+
   return NextResponse.json(
     {
       id: entry.id,
-      agriculturalYear: entry.agriculturalYear,
+      weekStart: weekStartIso(entry.weekStart),
+      agriculturalYear: cell.agriculturalYear,
+      month: cell.agMonth,
+      week: cell.week,
       loteId: entry.loteId,
       activityId: entry.activityId,
-      month: entry.month,
-      week: entry.week,
       plannedJornales: Number(entry.plannedJornales),
       activity: entry.activity,
       lote: entry.lote,

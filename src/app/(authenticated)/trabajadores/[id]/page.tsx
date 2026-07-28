@@ -4,6 +4,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole, READ_ALL_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
+import { periodCosecha } from "@/lib/payroll/period-cosecha";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { WorkerProfile } from "./worker-profile";
@@ -56,7 +57,6 @@ export default async function WorkerDetailPage({ params }: PageProps) {
           payPeriod: {
             select: {
               periodNumber: true,
-              agriculturalYear: true,
               startDate: true,
               endDate: true,
             },
@@ -108,7 +108,9 @@ export default async function WorkerDetailPage({ params }: PageProps) {
       deductions: Number(p.deductions),
       isPaid: p.isPaid,
       periodNumber: p.payPeriod.periodNumber,
-      agriculturalYear: p.payPeriod.agriculturalYear,
+      // Derived from the period's start date, not read from its stored stamp —
+      // see lib/payroll/period-cosecha.ts.
+      agriculturalYear: periodCosecha(p.payPeriod),
       startDate: p.payPeriod.startDate.toISOString().split("T")[0],
       endDate: p.payPeriod.endDate.toISOString().split("T")[0],
     })),

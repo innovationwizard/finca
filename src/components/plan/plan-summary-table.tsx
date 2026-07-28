@@ -1,6 +1,7 @@
 // =============================================================================
-// src/app/(authenticated)/plan/plan-summary-table.tsx — Plan vs Ejecutado
-// Shared server component. Used in /plan (GENERAL) and /plan/[loteSlug].
+// src/components/plan/plan-summary-table.tsx — Plan vs Ejecutado
+// Shared server component. Used by the GENERAL and per-lote views of every
+// cosecha's plan page (/plan2526, /plan2627, ...).
 // Columns: Actividad | Plan | Ejecutado | Δ Jornales | % Cumpl. | Estado
 // Over-execution (actual >= planned) is treated as positive (green).
 // =============================================================================

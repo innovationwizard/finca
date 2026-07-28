@@ -1,6 +1,8 @@
 // =============================================================================
 // src/app/api/plan/actual/route.ts — Aggregate actual ActivityRecord data
-// Groups by loteId, activityId, agricultural month, and week for comparison
+// Groups executed jornales into the same week buckets the plan uses, so the two
+// line up cell for cell. The bucket is the week's real first day (weekStart);
+// the cosecha and month index come with it, derived, for rendering only.
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,9 +11,8 @@ import { apiRequireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import {
   getAgriculturalYearStart,
   getAgriculturalYearEnd,
-  getAgriculturalMonth,
-  getWeekInMonth,
 } from "@/lib/utils/agricultural-year";
+import { cellOf, weekStartOf, weekStartIso } from "@/lib/plan/plan-week";
 
 export async function GET(request: NextRequest) {
   const auth = await apiRequireRole(...READ_ALL_ROLES);
@@ -46,24 +47,32 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  // Aggregate by loteId + activityId + month + week
+  // Aggregate by loteId + activityId + week
   const aggregated: Record<
     string,
-    { loteId: string | null; activityId: string; month: number; week: number; actualJornales: number }
+    {
+      loteId: string | null;
+      activityId: string;
+      weekStart: string;
+      month: number;
+      week: number;
+      actualJornales: number;
+    }
   > = {};
 
   for (const rec of records) {
-    const d = new Date(rec.date);
-    const month = getAgriculturalMonth(d);
-    const week = getWeekInMonth(d);
-    const key = `${rec.loteId ?? "null"}_${rec.activityId}_${month}_${week}`;
+    const weekStart = weekStartOf(rec.date);
+    const iso = weekStartIso(weekStart);
+    const key = `${rec.loteId ?? "null"}_${rec.activityId}_${iso}`;
 
     if (!aggregated[key]) {
+      const cell = cellOf(weekStart);
       aggregated[key] = {
         loteId: rec.loteId,
         activityId: rec.activityId,
-        month,
-        week,
+        weekStart: iso,
+        month: cell.agMonth,
+        week: cell.week,
         actualJornales: 0,
       };
     }
