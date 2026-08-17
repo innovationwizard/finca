@@ -12,6 +12,24 @@ import {
 } from "@/lib/validators/settings";
 import { todayISOGuatemala } from "@/lib/pricing/activity-prices";
 
+// A null abreviatura never collides (Postgres allows many NULLs under a unique
+// index). `excludeId` lets an edit keep its own value.
+async function findShortNameConflict(
+  shortName: string | null,
+  excludeId?: string,
+): Promise<NextResponse | null> {
+  if (!shortName) return null;
+  const holder = await prisma.activity.findUnique({
+    where: { shortName },
+    select: { id: true, name: true },
+  });
+  if (!holder || holder.id === excludeId) return null;
+  return NextResponse.json(
+    { error: `La abreviatura "${shortName}" ya pertenece a "${holder.name}"` },
+    { status: 409 },
+  );
+}
+
 export async function GET() {
   const auth = await apiRequireRole(...SETTINGS_ROLES);
   if (auth instanceof NextResponse) return auth;
@@ -47,6 +65,11 @@ export async function POST(request: NextRequest) {
       { status: 409 },
     );
   }
+
+  // `shortName` is uniquely indexed, so a collision would otherwise surface as a
+  // raw P2002. Report it in Spanish, naming the activity that already holds it.
+  const shortNameConflict = await findShortNameConflict(parsed.data.shortName ?? null);
+  if (shortNameConflict) return shortNameConflict;
 
   const maxSort = await prisma.activity.aggregate({ _max: { sortOrder: true } });
   const nextSort = (maxSort._max.sortOrder ?? 0) + 1;
@@ -119,6 +142,13 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
+  // Undefined = the client did not send the field, so leave the abreviatura as
+  // it is. An explicit null clears it.
+  if (data.shortName !== undefined && data.shortName !== existing.shortName) {
+    const shortNameConflict = await findShortNameConflict(data.shortName, id);
+    if (shortNameConflict) return shortNameConflict;
+  }
+
   await prisma.auditLog.create({
     data: {
       userId: auth.id,
@@ -127,6 +157,7 @@ export async function PATCH(request: NextRequest) {
       recordId: id,
       oldValues: {
         name: existing.name,
+        shortName: existing.shortName,
         unit: existing.unit,
         defaultPrice: existing.defaultPrice?.toString() ?? null,
         isActive: existing.isActive,
@@ -197,7 +228,7 @@ export async function DELETE(request: NextRequest) {
         action: "DELETE",
         tableName: "activities",
         recordId: id,
-        oldValues: { name: existing.name, code: existing.code, unit: existing.unit, defaultPrice: existing.defaultPrice?.toString() ?? null },
+        oldValues: { name: existing.name, shortName: existing.shortName, unit: existing.unit, defaultPrice: existing.defaultPrice?.toString() ?? null },
       },
     });
     await tx.activity.delete({ where: { id } }); // activity_prices cascade

@@ -96,7 +96,7 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
       quantity: true,
       unitPrice: true,
       totalEarned: true,
-      activity: { select: { name: true, code: true, unit: true } },
+      activity: { select: { name: true, shortName: true, unit: true } },
       lote: { select: { name: true } },
     },
   });

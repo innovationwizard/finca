@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     activities.map((a) => ({
       id: a.id,
       name: a.name,
-      code: a.code,
+      shortName: a.shortName,
       unit: a.unit,
       defaultPrice: Number(a.defaultPrice),
       isHarvest: a.isHarvest,

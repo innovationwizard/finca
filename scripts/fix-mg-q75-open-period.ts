@@ -8,7 +8,7 @@
 //
 // Scope guard (deliberate): touches ONLY periods with isClosed=false. CLOSED/paid
 // periods (e.g. #7) are left intact for a separate retroactive decision. Selects
-// by content (MG by code; open periods; rows where unitPrice != 75), so it is
+// by content (MG by abreviatura; open periods; rows where unitPrice != 75), so it is
 // idempotent and re-runnable. Dry-run by default, --commit persists.
 //   npx dotenv -e .env.local -- npx tsx scripts/fix-mg-q75-open-period.ts [--commit]
 // =============================================================================
@@ -20,7 +20,7 @@ import { recomputePayroll } from "../src/lib/payroll/recalc";
 class RollbackSignal extends Error {}
 const prisma = new PrismaClient();
 const COMMIT = process.argv.slice(2).includes("--commit");
-const MG_CODE = "MG";
+const MG_SHORT_NAME = "MG";
 const MG_PRICE = 75.0;
 const r2 = (x: number) => Math.round(x * 100) / 100;
 
@@ -29,8 +29,8 @@ const r2 = (x: number) => Math.round(x * 100) / 100;
 
   try {
     await prisma.$transaction(async (tx) => {
-      const mg = await tx.activity.findUnique({ where: { code: MG_CODE }, select: { id: true, name: true } });
-      if (!mg) throw new Error(`No existe actividad con code="${MG_CODE}".`);
+      const mg = await tx.activity.findUnique({ where: { shortName: MG_SHORT_NAME }, select: { id: true, name: true } });
+      if (!mg) throw new Error(`No existe actividad con shortName="${MG_SHORT_NAME}".`);
 
       // MG records in OPEN periods that are not already Q75.
       const recs = await tx.activityRecord.findMany({

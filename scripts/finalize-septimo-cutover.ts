@@ -23,14 +23,14 @@ const k = (d: Date) => d.toISOString().slice(0, 10);
   try {
     await prisma.$transaction(async (tx) => {
       // (a) deactivate SP
-      const sp = await tx.activity.findFirst({ where: { OR: [{ code: "SP" }, { name: { equals: "Septimo" } }] } });
+      const sp = await tx.activity.findFirst({ where: { OR: [{ shortName: "SP" }, { name: { equals: "Septimo" } }] } });
       if (!sp) {
         console.log("(a) SP activity: none found — nothing to deactivate.");
       } else if (!sp.isActive) {
-        console.log(`(a) SP activity "${sp.name}" (${sp.code}) already inactive.`);
+        console.log(`(a) SP activity "${sp.name}" (${sp.shortName}) already inactive.`);
       } else {
         await tx.activity.update({ where: { id: sp.id }, data: { isActive: false } });
-        console.log(`(a) SP activity "${sp.name}" (${sp.code}) → isActive=false.`);
+        console.log(`(a) SP activity "${sp.name}" (${sp.shortName}) → isActive=false.`);
       }
 
       // (b) close all open periods

@@ -235,7 +235,10 @@ enum ActivityUnit {
 model Activity {
   id           String       @id @default(uuid(7)) @db.Uuid
   name         String       @unique
-  code         String?      @unique // farm shorthand (CP, BE, MG, RP…) from ACTIVIDADES
+  // "Abreviatura" in the UI — the finquero's own shorthand (CP, BE, MG, RP…)
+  // from the ACTIVIDADES sheet. Human canon, never derived from `name`.
+  // Still stored in the `code` column; only the Prisma field was renamed.
+  shortName    String?      @unique @map("code")
   unit         ActivityUnit
   defaultPrice Decimal?     @map("default_price") @db.Decimal(10, 2)
   isHarvest    Boolean      @default(false) @map("is_harvest")

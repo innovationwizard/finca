@@ -32,6 +32,7 @@ const UNIT_ABBR: Record<string, string> = {
 type ActivityRow = {
   id: string;
   name: string;
+  shortName: string | null;
   unit: string;
   defaultPrice: number;
   isHarvest: boolean;
@@ -46,6 +47,7 @@ type ActivityRow = {
 type EditState = {
   id: string; // "NEW" for create
   name: string;
+  shortName: string;
   unit: string;
   defaultPrice: string;
   isHarvest: boolean;
@@ -98,6 +100,7 @@ export function ActivitiesManager({
     setEditing({
       id: a.id,
       name: a.name,
+      shortName: a.shortName ?? "",
       unit: a.unit,
       defaultPrice: a.defaultPrice.toString(),
       isHarvest: a.isHarvest,
@@ -114,6 +117,7 @@ export function ActivitiesManager({
     setEditing({
       id: "NEW",
       name: "",
+      shortName: "",
       unit: "DIA",
       defaultPrice: "100",
       isHarvest: false,
@@ -145,6 +149,8 @@ export function ActivitiesManager({
     const payload = {
       ...(editing.id !== "NEW" && { id: editing.id }),
       name: editing.name.trim(),
+      // Blank = no abreviatura yet; the server normalizes casing and rejects duplicates.
+      shortName: editing.shortName.trim() || null,
       unit: editing.unit,
       defaultPrice: price,
       isHarvest: editing.isHarvest,
@@ -206,7 +212,8 @@ export function ActivitiesManager({
           <thead>
             <tr className="border-b border-stone-100 bg-stone-50">
               <th className="px-4 py-3 font-medium text-stone-600">Actividad</th>
-              <th className="px-4 py-3 font-medium text-stone-600">Unidad</th>
+              <th className="px-4 py-3 font-medium text-stone-600">Abreviatura</th>
+              <th className="px-4 py-3 font-medium text-stone-600" title="Unidad de Medida">UdM</th>
               <th className="px-4 py-3 font-medium text-stone-600 text-right">
                 Precio (Q)
               </th>
@@ -261,6 +268,15 @@ export function ActivitiesManager({
                 >
                   <td className="px-4 py-3 font-medium text-stone-900">
                     {activity.name}
+                  </td>
+                  <td className="px-4 py-3">
+                    {activity.shortName ? (
+                      <span className="font-mono text-xs font-medium text-stone-700">{activity.shortName}</span>
+                    ) : (
+                      <span className="text-xs text-stone-400" title="Sin abreviatura — edite la actividad para asignarla">
+                        Sin asignar
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-700">
@@ -348,7 +364,7 @@ export function ActivitiesManager({
                 </tr>
                 {pricesFor === activity.id && (
                   <tr>
-                    <td colSpan={9} className="bg-stone-50 px-4 py-4">
+                    <td colSpan={10} className="bg-stone-50 px-4 py-4">
                       <PricePanel
                         activityId={activity.id}
                         schedule={activity.priceSchedule}
@@ -400,6 +416,17 @@ function EditRow({
           placeholder="Nombre de actividad"
           className="w-full rounded-md border border-stone-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
           autoFocus={editing.id === "NEW"}
+        />
+      </td>
+      <td className="px-4 py-2">
+        <input
+          type="text"
+          value={editing.shortName}
+          onChange={(e) => setEditing({ ...editing, shortName: e.target.value.toUpperCase() })}
+          placeholder="Opcional"
+          maxLength={12}
+          title="Abreviatura del finquero (ej. AH, MG, FERIADO). 2 a 12 letras."
+          className="w-24 rounded-md border border-stone-300 px-2 py-1 font-mono text-sm uppercase focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
         />
       </td>
       <td className="px-4 py-2">

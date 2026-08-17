@@ -29,8 +29,8 @@ const r2 = (x: number) => Math.round(x * 100) / 100;
 
   try {
     await prisma.$transaction(async (tx) => {
-      const mg = await tx.activity.findUnique({ where: { code: "MG" }, select: { id: true } });
-      if (!mg) throw new Error('No existe actividad code="MG".');
+      const mg = await tx.activity.findUnique({ where: { shortName: "MG" }, select: { id: true } });
+      if (!mg) throw new Error('No existe actividad shortName="MG".');
 
       const bad = await tx.activityRecord.findMany({
         where: { activityId: mg.id, unitPrice: { not: MG_PRICE }, payPeriod: { isClosed: true } },

@@ -35,9 +35,25 @@ export const ACTIVITY_UNITS = [
   { value: "DIA", label: "Día", abbr: "día" },
 ] as const;
 
+// "Abreviatura" — the finquero's own shorthand (AH, MG, FERIADO…). Optional:
+// activities may exist without one, and Manuel fills them in from the catalog
+// page. Blank input normalizes to null; anything present is upper-cased so the
+// unique index can't be defeated by casing alone.
+export const activityShortNameSchema = z.preprocess(
+  (v) => (typeof v === "string" ? (v.trim() === "" ? null : v.trim().toUpperCase()) : v),
+  z
+    .string()
+    .regex(
+      /^[A-Z]{2,12}$/,
+      "La abreviatura debe tener de 2 a 12 letras, sin espacios, números ni acentos (ej. AH, MG, FERIADO)",
+    )
+    .nullable(),
+);
+
 export const activityUpdateSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, "El nombre es requerido").max(100),
+  shortName: activityShortNameSchema.optional(),
   unit: z.enum(["QUINTAL", "MANZANA", "HECTAREA", "DIA"]),
   defaultPrice: z
     .number()

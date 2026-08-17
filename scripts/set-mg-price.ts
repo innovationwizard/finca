@@ -14,7 +14,7 @@
 // workday (see docs/glosario.md), so Q75 < Q119.21/día is intentional.
 //
 // Already-saved activity_records keep their snapshotted unitPrice — unchanged.
-// Selects by content (code = "MG"), dry-run by default, --commit persists.
+// Selects by content (shortName = "MG"), dry-run by default, --commit persists.
 //   npx dotenv -e .env.local -- npx tsx scripts/set-mg-price.ts [--commit]
 // =============================================================================
 
@@ -24,24 +24,24 @@ class RollbackSignal extends Error {}
 const prisma = new PrismaClient();
 const COMMIT = process.argv.slice(2).includes("--commit");
 
-const MG_CODE = "MG";
+const MG_SHORT_NAME = "MG";
 const MG_PRICE = 75.0;
 const EFFECTIVE_FROM = "2026-03-01";
 const EFF_DATE = new Date(`${EFFECTIVE_FROM}T00:00:00.000Z`);
 const d = (x: Date) => x.toISOString().slice(0, 10);
 
 (async () => {
-  console.log(`\n=== ${MG_CODE} → Q${MG_PRICE.toFixed(2)} desde ${EFFECTIVE_FROM} (todo el año) — ${COMMIT ? "COMMIT" : "DRY-RUN (rollback)"} ===\n`);
+  console.log(`\n=== ${MG_SHORT_NAME} → Q${MG_PRICE.toFixed(2)} desde ${EFFECTIVE_FROM} (todo el año) — ${COMMIT ? "COMMIT" : "DRY-RUN (rollback)"} ===\n`);
 
   try {
     await prisma.$transaction(async (tx) => {
       const mg = await tx.activity.findUnique({
-        where: { code: MG_CODE },
+        where: { shortName: MG_SHORT_NAME },
         include: { prices: { orderBy: { effectiveFrom: "asc" } } },
       });
-      if (!mg) throw new Error(`No existe actividad con code="${MG_CODE}". Verificar el catálogo (no se asume).`);
+      if (!mg) throw new Error(`No existe actividad con shortName="${MG_SHORT_NAME}". Verificar el catálogo (no se asume).`);
       if (mg.unit !== "DIA") {
-        console.warn(`⚠ unidad de ${MG_CODE} es ${mg.unit}, no DIA — un jornal corresponde a Día. Revisar en /admin/actividades.`);
+        console.warn(`⚠ unidad de ${MG_SHORT_NAME} es ${mg.unit}, no DIA — un jornal corresponde a Día. Revisar en /admin/actividades.`);
       }
 
       console.log("vigencias actuales:");

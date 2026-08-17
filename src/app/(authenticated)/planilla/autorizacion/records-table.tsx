@@ -16,7 +16,7 @@ export type RecordRow = {
   date: string; // ISO yyyy-mm-dd
   worker: string;
   lote: string;
-  code: string;
+  shortName: string;
   activity: string;
   quantity: number;
   unit: string; // ActivityUnit enum value — rendered as its abbreviation (qq, mz…)
@@ -24,7 +24,7 @@ export type RecordRow = {
   total: number;
 };
 
-type ColKey = "date" | "worker" | "lote" | "code" | "activity" | "quantity" | "unit" | "unitPrice" | "total";
+type ColKey = "date" | "worker" | "lote" | "shortName" | "activity" | "quantity" | "unit" | "unitPrice" | "total";
 
 const fmtDate = (iso: string) => { const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; };
 const qty = (q: number) => q.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -35,8 +35,8 @@ const COLUMNS: Col[] = [
   { key: "date", label: "Fecha", text: (r) => fmtDate(r.date), sortVal: (r) => r.date },
   { key: "worker", label: "Trabajador", text: (r) => r.worker, sortVal: (r) => r.worker },
   { key: "lote", label: "Lote", text: (r) => r.lote || "—", sortVal: (r) => r.lote || "" },
-  { key: "code", label: "Actividad", text: (r) => r.code || "—", sortVal: (r) => r.code || "" },
-  { key: "activity", label: "Nombre Actividad", text: (r) => r.activity, sortVal: (r) => r.activity },
+  { key: "shortName", label: "Abreviatura", text: (r) => r.shortName || "—", sortVal: (r) => r.shortName || "" },
+  { key: "activity", label: "Actividad", text: (r) => r.activity, sortVal: (r) => r.activity },
   { key: "quantity", label: "Cantidad", numeric: true, text: (r) => qty(r.quantity), sortVal: (r) => r.quantity },
   { key: "unit", label: "UdM", tooltip: "Unidad de Medida", text: (r) => unitAbbr(r.unit), sortVal: (r) => unitAbbr(r.unit) },
   { key: "unitPrice", label: "Costo/Unidad", numeric: true, text: (r) => formatGTQ(r.unitPrice), sortVal: (r) => r.unitPrice },
@@ -159,7 +159,7 @@ export function RecordsTable({ records }: { records: RecordRow[] }) {
                 <td className="whitespace-nowrap border border-finca-100 px-2 py-1.5 tabular-nums text-finca-600">{fmtDate(r.date)}</td>
                 <td className="whitespace-nowrap border border-finca-100 px-2 py-1.5 font-medium text-finca-900">{r.worker}</td>
                 <td className="whitespace-nowrap border border-finca-100 px-2 py-1.5 text-finca-600">{r.lote || "—"}</td>
-                <td className="border border-finca-100 px-2 py-1.5 text-finca-600">{r.code || "—"}</td>
+                <td className="border border-finca-100 px-2 py-1.5 text-finca-600">{r.shortName || "—"}</td>
                 <td className="whitespace-nowrap border border-finca-100 px-2 py-1.5 text-finca-700">{r.activity}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{qty(r.quantity)}</td>
                 <td className="whitespace-nowrap border border-finca-100 px-2 py-1.5 text-finca-600">{unitAbbr(r.unit)}</td>

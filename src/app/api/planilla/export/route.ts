@@ -169,11 +169,11 @@ type LedgerRecord = {
   quantity: unknown; // Prisma Decimal
   unitPrice: unknown; // Prisma Decimal
   totalEarned: unknown; // Prisma Decimal
-  activity: { name: string; code: string | null; unit: string };
+  activity: { name: string; shortName: string | null; unit: string };
   lote: { name: string } | null;
 };
 
-const LEDGER_HEADER = ["#", "Fecha", "Trabajador", "Lote", "Actividad", "Unidades", "Unidad", "Costo unitario", "Costo"];
+const LEDGER_HEADER = ["#", "Fecha", "Trabajador", "Lote", "Actividad", "Unidades", "UdM", "Costo unitario", "Costo"];
 
 // Build one ledger worksheet from a set of records (already scoped to a week or
 // the whole period). Rows are ordered by date, then worker name, then activity.
@@ -184,7 +184,7 @@ function buildLedgerSheet(records: LedgerRecord[], workerName: Map<string, strin
     if (byDate) return byDate;
     const byWorker = (workerName.get(a.workerId) ?? "").localeCompare(workerName.get(b.workerId) ?? "", "es");
     if (byWorker) return byWorker;
-    return activityLabel(a.activity.code, a.activity.name).localeCompare(activityLabel(b.activity.code, b.activity.name), "es");
+    return activityLabel(a.activity.shortName, a.activity.name).localeCompare(activityLabel(b.activity.shortName, b.activity.name), "es");
   });
 
   const aoa: (string | number)[][] = [LEDGER_HEADER];
@@ -198,7 +198,7 @@ function buildLedgerSheet(records: LedgerRecord[], workerName: Map<string, strin
       dmy(isoOf(r.date)),
       workerName.get(r.workerId) ?? "",
       r.lote?.name ?? "—",
-      activityLabel(r.activity.code, r.activity.name),
+      activityLabel(r.activity.shortName, r.activity.name),
       Number(r.quantity),
       unitAbbr(r.activity.unit),
       Number(r.unitPrice),
@@ -280,7 +280,7 @@ export async function GET(request: NextRequest) {
       quantity: true,
       unitPrice: true,
       totalEarned: true,
-      activity: { select: { name: true, code: true, unit: true } },
+      activity: { select: { name: true, shortName: true, unit: true } },
       lote: { select: { name: true } },
     },
   });

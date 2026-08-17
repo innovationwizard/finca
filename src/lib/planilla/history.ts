@@ -55,7 +55,7 @@ export function periodWeeks(start: Date, end: Date): Week[] {
 // in a day; we never collapse them — every record is shown.
 //   unitPrice · units = total  (the "math behind" the day's cost — see the
 //   xlsx export, which breaks these out into Actividad / Costo unitario / Costo).
-export type Entry = { code: string | null; name: string; lote: string | null; units: number; unit: string; unitPrice: number; total: number };
+export type Entry = { shortName: string | null; name: string; lote: string | null; units: number; unit: string; unitPrice: number; total: number };
 
 // The minimum record shape the grid needs (a subset of ActivityRecord + joins).
 export type GridRecord = {
@@ -64,7 +64,7 @@ export type GridRecord = {
   quantity: unknown; // Prisma Decimal — coerced via Number()
   unitPrice: unknown; // Prisma Decimal — coerced via Number()
   totalEarned: unknown; // Prisma Decimal — coerced via Number()
-  activity: { name: string; code: string | null; unit: string };
+  activity: { name: string; shortName: string | null; unit: string };
   lote: { name: string } | null;
 };
 
@@ -82,7 +82,7 @@ export function buildGrid(records: GridRecord[]): Grid {
     const dayIso = r.date.toISOString().slice(0, 10);
     const k = `${r.workerId}|${dayIso}`;
     (cells.get(k) ?? cells.set(k, []).get(k)!).push({
-      code: r.activity.code,
+      shortName: r.activity.shortName,
       name: r.activity.name,
       lote: r.lote?.name ?? null,
       units: Number(r.quantity),
@@ -97,11 +97,12 @@ export function buildGrid(records: GridRecord[]): Grid {
 
 export const cellKey = (workerId: string, dayIso: string): string => `${workerId}|${dayIso}`;
 
-// The activity label: "CODE · Name", or just the name when there is no code.
-export const activityLabel = (code: string | null, name: string): string => (code ? `${code} · ${name}` : name);
+// The activity label: "AH · Ahoyado", or just the name when there is no
+// abreviatura (shortName is nullable — Manuel fills it in from the catalog).
+export const activityLabel = (shortName: string | null, name: string): string => (shortName ? `${shortName} · ${name}` : name);
 
 // The activity label shown on the grid's first cell line.
-export const entryActivityLabel = (e: Entry): string => activityLabel(e.code, e.name);
+export const entryActivityLabel = (e: Entry): string => activityLabel(e.shortName, e.name);
 
 // The detail line under it: "Lote · 3.50 qq" (or "—" when there is no lote).
 export const entryDetailLabel = (e: Entry): string => `${e.lote ?? "—"} · ${formatQuantity(e.units, e.unit)}`;

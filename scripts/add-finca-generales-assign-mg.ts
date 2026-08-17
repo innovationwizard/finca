@@ -7,7 +7,7 @@
 //      point to real plots, since MG is a farm-general expense.
 //
 // loteId does not affect pay, so no payroll recompute is needed. Selects by
-// content (MG by code; the open period). Dry-run by default, --commit persists.
+// content (MG by abreviatura; the open period). Dry-run by default, --commit persists.
 //   npx dotenv -e .env.local -- npx tsx scripts/add-finca-generales-assign-mg.ts [--commit]
 // =============================================================================
 
@@ -39,8 +39,8 @@ const LOTE_SLUG = "finca-generales";
       }
 
       // 2) Reassign all MG records in the open period.
-      const mg = await tx.activity.findUnique({ where: { code: "MG" }, select: { id: true, name: true } });
-      if (!mg) throw new Error('No existe actividad code="MG".');
+      const mg = await tx.activity.findUnique({ where: { shortName: "MG" }, select: { id: true, name: true } });
+      if (!mg) throw new Error('No existe actividad shortName="MG".');
       const open = await tx.payPeriod.findMany({ where: { isClosed: false }, select: { id: true, periodNumber: true } });
       if (open.length !== 1) throw new Error(`Se esperaba 1 período abierto, hay ${open.length}`);
       const period = open[0];

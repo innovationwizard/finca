@@ -4,7 +4,7 @@
 // are currently "—" (null) and HA appears in no other period, so this is a clean
 // fill (no plot overwrite, single period). loteId doesn't affect pay → no recalc.
 //
-// Selects by content (activity code HA; lote slug hacienda; the open period).
+// Selects by content (activity abreviatura HA; lote slug hacienda; the open period).
 // updateMany has NO loteId filter on purpose (a != filter would skip NULL rows).
 // Dry-run by default, --commit persists.
 //   npx dotenv -e .env.local -- npx tsx scripts/assign-ha-to-hacienda.ts [--commit]
@@ -21,8 +21,8 @@ const COMMIT = process.argv.slice(2).includes("--commit");
 
   try {
     await prisma.$transaction(async (tx) => {
-      const ha = await tx.activity.findUnique({ where: { code: "HA" }, select: { id: true, name: true } });
-      if (!ha) throw new Error('No existe actividad code="HA".');
+      const ha = await tx.activity.findUnique({ where: { shortName: "HA" }, select: { id: true, name: true } });
+      if (!ha) throw new Error('No existe actividad shortName="HA".');
       const lote = await tx.lote.findFirst({ where: { slug: "hacienda" }, select: { id: true, name: true } });
       if (!lote) throw new Error('No existe lote slug="hacienda".');
       const open = await tx.payPeriod.findMany({ where: { isClosed: false }, select: { id: true, periodNumber: true } });

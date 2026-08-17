@@ -30,8 +30,8 @@ export default async function CapturaPage() {
     prisma.worker.findMany({ where: { isActive: true }, select: { id: true, fullName: true }, orderBy: { fullName: "asc" } }),
     prisma.activity.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, code: true, unit: true, defaultPrice: true, prices: { select: { effectiveFrom: true, price: true }, orderBy: { effectiveFrom: "asc" } } },
-      orderBy: [{ code: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, shortName: true, unit: true, defaultPrice: true, prices: { select: { effectiveFrom: true, price: true }, orderBy: { effectiveFrom: "asc" } } },
+      orderBy: [{ shortName: "asc" }, { name: "asc" }],
     }),
     prisma.lote.findMany({ where: { isActive: true }, select: { id: true, name: true }, orderBy: { sortOrder: "asc" } }),
     // ALL periods (open + closed): the grid needs to know closed-period days
@@ -118,7 +118,7 @@ export default async function CapturaPage() {
         activities={activities.map((a) => ({
           id: a.id,
           name: a.name,
-          code: a.code,
+          shortName: a.shortName,
           unit: a.unit,
           defaultPrice: a.defaultPrice != null ? Number(a.defaultPrice) : 0,
           priceSchedule: toPriceSchedule(a.prices),

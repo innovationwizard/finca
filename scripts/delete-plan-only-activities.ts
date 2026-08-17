@@ -26,7 +26,7 @@ const TARGETS = ["oooooo", "desombre", "Monitoreo de Plagas y Enfermedades"];
   try {
     await prisma.$transaction(async (tx) => {
       for (const name of TARGETS) {
-        const a = await tx.activity.findUnique({ where: { name }, select: { id: true, name: true, code: true } });
+        const a = await tx.activity.findUnique({ where: { name }, select: { id: true, name: true, shortName: true } });
         if (!a) { console.log(`SKIP "${name}" — no existe`); continue; }
 
         const recordCount = await tx.activityRecord.count({ where: { activityId: a.id } });

@@ -11,9 +11,10 @@ import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, Loader2, ArrowRight, X, Plus, ChevronLeft, ChevronRight, CalendarPlus } from "lucide-react";
 import { resolveActivityPrice, type PriceVigencia } from "@/lib/pricing/resolve-price";
+import { activityLabel } from "@/lib/planilla/history";
 
 type Worker = { id: string; name: string };
-type Activity = { id: string; name: string; code: string | null; unit: string; defaultPrice: number; priceSchedule: PriceVigencia[] };
+type Activity = { id: string; name: string; shortName: string | null; unit: string; defaultPrice: number; priceSchedule: PriceVigencia[] };
 type Lote = { id: string; name: string };
 type Period = { id: string; periodNumber: number; startDate: string; endDate: string; isClosed: boolean };
 type Cell = { loteId: string; activityId: string; units: string };
@@ -344,7 +345,7 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
                         </select>
                         <select value={c.activityId} disabled={closed || !canWrite} onChange={(e) => setCell(w.id, d, { activityId: e.target.value, units: c.units || (e.target.value ? "1" : "") })} className="w-24 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
                           <option value=""></option>
-                          {activities.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ${a.name}` : a.name}</option>)}
+                          {activities.map((a) => <option key={a.id} value={a.id}>{activityLabel(a.shortName, a.name)}</option>)}
                         </select>
                         <input value={c.units} disabled={closed || !canWrite} onChange={(e) => setCell(w.id, d, { units: e.target.value })} inputMode="decimal" className="w-10 bg-transparent px-1 py-1 text-right text-xs tabular-nums focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300" placeholder="1" />
                       </div>
