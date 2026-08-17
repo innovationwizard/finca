@@ -150,7 +150,7 @@ export default async function AutorizacionPage() {
       unitPrice: true,
       totalEarned: true,
       worker: { select: { fullName: true } },
-      activity: { select: { code: true, name: true } },
+      activity: { select: { code: true, name: true, unit: true } },
       lote: { select: { name: true } },
     },
     orderBy: [{ date: "asc" }, { worker: { fullName: "asc" } }],
@@ -163,6 +163,7 @@ export default async function AutorizacionPage() {
     code: r.activity.code ?? "",
     activity: r.activity.name,
     quantity: Number(r.quantity),
+    unit: r.activity.unit,
     unitPrice: Number(r.unitPrice),
     total: Number(r.totalEarned),
   }));

@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Filter, ArrowUp, ArrowDown, X } from "lucide-react";
-import { formatGTQ } from "@/lib/utils/format";
+import { formatGTQ, unitAbbr } from "@/lib/utils/format";
 
 export type RecordRow = {
   id: string;
@@ -19,16 +19,17 @@ export type RecordRow = {
   code: string;
   activity: string;
   quantity: number;
+  unit: string; // ActivityUnit enum value — rendered as its abbreviation (qq, mz…)
   unitPrice: number;
   total: number;
 };
 
-type ColKey = "date" | "worker" | "lote" | "code" | "activity" | "quantity" | "unitPrice" | "total";
+type ColKey = "date" | "worker" | "lote" | "code" | "activity" | "quantity" | "unit" | "unitPrice" | "total";
 
 const fmtDate = (iso: string) => { const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; };
 const qty = (q: number) => q.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-type Col = { key: ColKey; label: string; numeric?: boolean; text: (r: RecordRow) => string; sortVal: (r: RecordRow) => string | number };
+type Col = { key: ColKey; label: string; tooltip?: string; numeric?: boolean; text: (r: RecordRow) => string; sortVal: (r: RecordRow) => string | number };
 
 const COLUMNS: Col[] = [
   { key: "date", label: "Fecha", text: (r) => fmtDate(r.date), sortVal: (r) => r.date },
@@ -37,11 +38,13 @@ const COLUMNS: Col[] = [
   { key: "code", label: "Actividad", text: (r) => r.code || "—", sortVal: (r) => r.code || "" },
   { key: "activity", label: "Nombre Actividad", text: (r) => r.activity, sortVal: (r) => r.activity },
   { key: "quantity", label: "Cantidad", numeric: true, text: (r) => qty(r.quantity), sortVal: (r) => r.quantity },
+  { key: "unit", label: "UdM", tooltip: "Unidad de Medida", text: (r) => unitAbbr(r.unit), sortVal: (r) => unitAbbr(r.unit) },
   { key: "unitPrice", label: "Costo/Unidad", numeric: true, text: (r) => formatGTQ(r.unitPrice), sortVal: (r) => r.unitPrice },
   { key: "total", label: "Costo Total", numeric: true, text: (r) => formatGTQ(r.total), sortVal: (r) => r.total },
 ];
 
 export function RecordsTable({ records }: { records: RecordRow[] }) {
+  const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Partial<Record<ColKey, Set<string>>>>({});
   const [sort, setSort] = useState<{ key: ColKey; dir: "asc" | "desc" }>({ key: "date", dir: "asc" });
   const [open, setOpen] = useState<{ key: ColKey; top: number; left: number } | null>(null);
@@ -64,7 +67,8 @@ export function RecordsTable({ records }: { records: RecordRow[] }) {
 
   const colOf = (k: ColKey) => COLUMNS.find((c) => c.key === k)!;
 
-  const isActive = (k: ColKey) => { const s = filters[k]; return !!s && s.size > 0 && s.size < distinct[k].length; };
+  // No entry = every value selected. An empty set = none selected (matches nothing).
+  const isActive = (k: ColKey) => { const s = filters[k]; return !!s && s.size < distinct[k].length; };
 
   const toggleValue = (k: ColKey, val: string) => {
     setFilters((prev) => {
@@ -76,12 +80,16 @@ export function RecordsTable({ records }: { records: RecordRow[] }) {
       return next;
     });
   };
-  const clearCol = (k: ColKey) => setFilters((prev) => { const n = { ...prev }; delete n[k]; return n; });
-  const clearAll = () => setFilters({});
-  const anyActive = COLUMNS.some((c) => isActive(c.key));
+  const selectAll = (k: ColKey) => setFilters((prev) => { const n = { ...prev }; delete n[k]; return n; });
+  const selectNone = (k: ColKey) => setFilters((prev) => ({ ...prev, [k]: new Set<string>() }));
+  const clearAll = () => { setFilters({}); setSearch(""); };
+  const anyActive = COLUMNS.some((c) => isActive(c.key)) || search.trim() !== "";
 
   const visible = useMemo(() => {
-    const rows = records.filter((r) => COLUMNS.every((c) => { const s = filters[c.key]; return !s || s.size === 0 || s.has(c.text(r)); }));
+    const q = search.trim().toLowerCase();
+    const rows = records.filter(
+      (r) => (!q || r.worker.toLowerCase().includes(q)) && COLUMNS.every((c) => { const s = filters[c.key]; return !s || s.has(c.text(r)); }),
+    );
     const c = colOf(sort.key);
     rows.sort((a, b) => {
       const av = c.sortVal(a), bv = c.sortVal(b);
@@ -89,7 +97,7 @@ export function RecordsTable({ records }: { records: RecordRow[] }) {
       return sort.dir === "asc" ? cmp : -cmp;
     });
     return rows;
-  }, [records, filters, sort]);
+  }, [records, filters, sort, search]);
 
   const totalCost = useMemo(() => visible.reduce((s, r) => s + r.total, 0), [visible]);
 
@@ -105,7 +113,14 @@ export function RecordsTable({ records }: { records: RecordRow[] }) {
 
   return (
     <div>
-      <div className="mb-2 flex items-center gap-3 text-sm text-finca-500">
+      <div className="mb-2 flex flex-wrap items-center gap-3 text-sm text-finca-500">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar trabajador…"
+          className="w-full rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-900 placeholder:text-finca-300 focus:border-earth-400 focus:outline-none sm:w-64"
+        />
         <span>{visible.length} de {records.length} registros</span>
         {anyActive && (
           <button onClick={clearAll} className="inline-flex items-center gap-1 rounded-md border border-finca-200 px-2 py-1 text-xs text-finca-600 hover:bg-finca-50">
@@ -122,7 +137,7 @@ export function RecordsTable({ records }: { records: RecordRow[] }) {
               {COLUMNS.map((c) => (
                 <th key={c.key} className={`sticky top-0 z-20 border border-finca-100 bg-finca-50 px-2 py-2 font-medium ${c.numeric ? "text-right" : ""}`}>
                   <div className={`flex items-center gap-1 ${c.numeric ? "justify-end" : ""}`}>
-                    <button onClick={() => toggleSort(c.key)} className="inline-flex items-center gap-0.5 hover:text-finca-900">
+                    <button onClick={() => toggleSort(c.key)} title={c.tooltip} className="inline-flex items-center gap-0.5 hover:text-finca-900">
                       {c.label}
                       {sort.key === c.key && (sort.dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
                     </button>
@@ -147,6 +162,7 @@ export function RecordsTable({ records }: { records: RecordRow[] }) {
                 <td className="border border-finca-100 px-2 py-1.5 text-finca-600">{r.code || "—"}</td>
                 <td className="whitespace-nowrap border border-finca-100 px-2 py-1.5 text-finca-700">{r.activity}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{qty(r.quantity)}</td>
+                <td className="whitespace-nowrap border border-finca-100 px-2 py-1.5 text-finca-600">{unitAbbr(r.unit)}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-600">{formatGTQ(r.unitPrice)}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums font-semibold text-finca-900">{formatGTQ(r.total)}</td>
               </tr>
@@ -177,9 +193,14 @@ export function RecordsTable({ records }: { records: RecordRow[] }) {
               placeholder="Buscar…"
               className="mb-2 w-full rounded border border-finca-200 px-2 py-1 text-xs focus:border-earth-400 focus:outline-none"
             />
-            <div className="mb-2 flex items-center justify-between text-xs">
-              <button onClick={() => clearCol(open.key)} className="text-earth-600 hover:underline">Seleccionar todo</button>
-              <span className="text-finca-400">{distinct[open.key].length} valores</span>
+            <div className="mb-2 border-b border-finca-100 pb-2 text-xs">
+              <div className="flex items-center gap-2">
+                <button onClick={() => selectAll(open.key)} className="rounded border border-finca-200 px-2 py-1 text-finca-700 hover:bg-finca-50">Seleccionar todos</button>
+                <button onClick={() => selectNone(open.key)} className="rounded border border-finca-200 px-2 py-1 text-finca-700 hover:bg-finca-50">Seleccionar ninguno</button>
+              </div>
+              <p className="mt-1.5 text-finca-400">
+                {filters[open.key]?.size ?? distinct[open.key].length} de {distinct[open.key].length} valores seleccionados
+              </p>
             </div>
             <div className="max-h-56 overflow-y-auto">
               {popValues.map((v) => {
