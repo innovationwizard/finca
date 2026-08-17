@@ -119,6 +119,26 @@ export const PAYROLL_REVIEW_ROLES: UserRole[] = ["MASTER", "ADMIN", "CFO", "MANA
 export const PERIOD_DATES_ROLES: UserRole[] = ["MASTER", "ADMIN", "MANAGER"];
 
 /**
+ * Who may file a bug report ("Reportar"): EVERY authenticated role, including the
+ * read-only ones. The mechanism exists precisely for the non-admin user who
+ * notices a wrong number and today reports it by WhatsApp, with no URL and no
+ * statement of what the number should have been. Leaving a role out of this list
+ * 403s exactly the person the mechanism is for.
+ *
+ * Reading the reports is a different matter — /admin/reportes uses SETTINGS_ROLES,
+ * because a report carries a screenshot of whatever the reporter was looking at.
+ */
+export const BUG_REPORT_ROLES: UserRole[] = [
+  "MASTER",
+  "ADMIN",
+  "MANAGER",
+  "FIELD",
+  "CEO",
+  "CFO",
+  "CONSULTANT",
+];
+
+/**
  * Where a user lands after login. The current cosecha's Plan Anual for everyone
  * who can view it — resolved from lib/plan/plan-routes.ts so it follows the
  * season instead of pointing at a hardcoded year; FIELD (caporal, data entry

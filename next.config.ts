@@ -22,6 +22,14 @@ const nextConfig = {
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      // Signed (private) objects — bug-report screenshots on /admin/reportes.
+      // Rendered with `unoptimized` so the image never lands in the CDN cache:
+      // these captures contain payroll data and their URLs expire in an hour.
+      {
+        protocol: "https" as const,
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/sign/**",
+      },
     ],
   },
 };

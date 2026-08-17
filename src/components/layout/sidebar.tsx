@@ -23,6 +23,7 @@ import {
   Table2,
   Calculator,
   ShieldCheck,
+  MessageSquareWarning,
   type LucideIcon,
 } from "lucide-react";
 import { PLAN_ROUTES } from "@/lib/plan/plan-routes";
@@ -69,6 +70,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { href: "/admin/lotes", label: "Config. Lotes", icon: Settings },
   { href: "/admin/actividades", label: "Config. Actividades", icon: Wrench },
   { href: "/admin/usuarios", label: "Usuarios", icon: KeyRound, roles: ["MASTER"] },
+  { href: "/admin/reportes", label: "Reportes de usuarios", icon: MessageSquareWarning },
 ];
 
 export function Sidebar({ user }: { user: User }) {

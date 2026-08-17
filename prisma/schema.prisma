@@ -44,7 +44,8 @@ model User {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  auditLogs AuditLog[]
+  auditLogs  AuditLog[]
+  bugReports BugReport[]
 
   @@map("users")
 }
@@ -537,4 +538,65 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// =============================================================================
+// BUG REPORTS ("Reportar")
+//
+// In-app reports filed by end users: either a value the app shows wrong, or
+// something missing. Two shapes, one table, enforced as a real discriminated
+// union at rest by the bug_reports_kind_fields CHECK in the migration — Prisma
+// cannot express a multi-column CHECK, so it lives in SQL. DO NOT DROP IT.
+//
+// The row is what makes a report "received": it is written BEFORE the screenshot
+// upload and BEFORE the notification email, so neither a Storage outage nor a
+// mail outage can lose a report. See docs/bug-report-mechanism-plan.md.
+// =============================================================================
+
+enum BugReportKind {
+  DATO_INCORRECTO // "Aquí hay un dato incorrecto" — donde + appDice + appDeberiaDecir
+  FALTA_ALGO // "Aquí hace falta algo"          — queFalta
+}
+
+enum BugReportEmailStatus {
+  PENDING // row written, send not yet attempted
+  SENT // provider accepted it
+  FAILED // provider rejected it — the error is in emailError
+  NOT_CONFIGURED // no RESEND_API_KEY / recipients: a valid state, not an error
+}
+
+model BugReport {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Reporter — resolved server-side from the session, NEVER from the request body.
+  userId String   @map("user_id") @db.Uuid
+  // 500, not 120: sized for a sentence, because this column may one day carry
+  // machine-written provenance and not just a person's display name.
+  autor  String   @db.VarChar(500)
+  email  String   @db.VarChar(255)
+  role   UserRole
+
+  kind            BugReportKind
+  donde           String?       @db.VarChar(200)
+  appDice         String?       @map("app_dice") @db.VarChar(200)
+  appDeberiaDecir String?       @map("app_deberia_decir") @db.VarChar(200)
+  queFalta        String?       @map("que_falta")
+
+  url             String
+  meta            Json    @default("{}")
+  // Object path inside the private "bug-report-screenshots" bucket. NULL means
+  // there is no screenshot, and screenshotError says why.
+  screenshotPath  String? @map("screenshot_path")
+  screenshotError String? @map("screenshot_error")
+
+  emailStatus BugReportEmailStatus @default(PENDING) @map("email_status")
+  resendId    String?              @map("resend_id")
+  emailError  String?              @map("email_error")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([createdAt(sort: Desc)])
+  @@index([emailStatus])
+  @@map("bug_reports")
 }

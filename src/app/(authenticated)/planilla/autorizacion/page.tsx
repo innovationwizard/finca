@@ -149,6 +149,7 @@ export default async function AutorizacionPage() {
       quantity: true,
       unitPrice: true,
       totalEarned: true,
+      workerId: true,
       worker: { select: { fullName: true } },
       activity: { select: { shortName: true, name: true, unit: true } },
       lote: { select: { name: true } },
@@ -167,6 +168,75 @@ export default async function AutorizacionPage() {
     unitPrice: Number(r.unitPrice),
     total: Number(r.totalEarned),
   }));
+
+  // ── Acumulados por trabajador ───────────────────────────────────────────────
+  // Running totals for the OPEN period only, built from the activity records
+  // already fetched above (no extra query).
+  //
+  //   Acumulado a la fecha      = Σ ActivityRecord.totalEarned  (devengado: what
+  //     the registered work earned — NOT net pay. Séptimo, adicionales,
+  //     descuentos and anticipos are deliberately excluded, because they are not
+  //     earned per day worked and would distort the daily average: a large
+  //     anticipo could even make it negative.)
+  //   Promedio diario a la fecha = acumulado ÷ distinct dates with a record.
+  //
+  // Only workers with at least one activity record appear, so the denominator is
+  // never zero and the table carries no all-zero rows.
+  //
+  // A worker may hold TWO payroll entries in one period (VOLUNTARIO + FIJO —
+  // see the @@unique on PayrollEntry), so category and audit flags are folded per
+  // worker here rather than per entry: the row matches a category filter if ANY
+  // of that worker's entries carries it.
+  const perWorkerPayroll = new Map<
+    string,
+    { categories: Set<string>; hasExceptions: boolean; hasAdjustments: boolean }
+  >();
+  for (const r of rows) {
+    const acc = perWorkerPayroll.get(r.workerId) ?? {
+      categories: new Set<string>(),
+      hasExceptions: false,
+      hasAdjustments: false,
+    };
+    acc.categories.add(r.category);
+    acc.hasExceptions ||= Object.values(r.flags).some(Boolean);
+    acc.hasAdjustments ||= r.adicionales !== 0 || r.descuentos !== 0 || r.anticipos !== 0;
+    perWorkerPayroll.set(r.workerId, acc);
+  }
+
+  const perWorkerActivity = new Map<
+    string,
+    { name: string; acumulado: number; dates: Set<string> }
+  >();
+  for (const r of recordRows) {
+    const acc = perWorkerActivity.get(r.workerId) ?? {
+      name: r.worker.fullName,
+      acumulado: 0,
+      dates: new Set<string>(),
+    };
+    acc.acumulado += Number(r.totalEarned);
+    acc.dates.add(r.date.toISOString().split("T")[0]);
+    perWorkerActivity.set(r.workerId, acc);
+  }
+
+  const acumulados = [...perWorkerActivity.entries()]
+    .map(([workerId, a]) => {
+      const payroll = perWorkerPayroll.get(workerId);
+      const dias = a.dates.size;
+      return {
+        workerId,
+        name: a.name,
+        acumulado: a.acumulado,
+        dias,
+        promedioDiario: a.acumulado / dias,
+        // No payroll entry yet (records captured before a recalc) → no category
+        // and no flags. Never guessed: an empty list simply matches no category
+        // filter, instead of silently defaulting the worker into one.
+        categories: payroll ? [...payroll.categories] : [],
+        hasExceptions: payroll?.hasExceptions ?? false,
+        hasAdjustments: payroll?.hasAdjustments ?? false,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // Composition by category (≤ few categories, per research).
   const composition = (["VOLUNTARIO", "FIJO"] as const).map((cat) => {
@@ -192,6 +262,7 @@ export default async function AutorizacionPage() {
       histogram={histogram}
       composition={composition}
       records={records}
+      acumulados={acumulados}
       prevPeriodNumber={prev?.periodNumber ?? null}
     />
   );

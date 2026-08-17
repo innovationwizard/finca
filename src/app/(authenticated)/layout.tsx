@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth/guards";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { SyncProvider } from "@/components/providers/sync-provider";
+import { BugReportWidget } from "@/components/feedback/bug-report-widget";
 
 export default async function AuthenticatedLayout({
   children,
@@ -32,6 +33,11 @@ export default async function AuthenticatedLayout({
 
         {/* Mobile bottom nav */}
         <MobileNav user={user} />
+
+        {/* "Reportar" — mounted here, inside the authenticated shell, and not at
+            the global root: /login and /recuperar have no session to attribute a
+            report to, and an anonymous report is not actionable. */}
+        <BugReportWidget />
       </div>
     </SyncProvider>
   );

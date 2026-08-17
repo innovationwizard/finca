@@ -13,6 +13,7 @@ import { Loader2, ShieldCheck, X, AlertTriangle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { formatGTQ } from "@/lib/utils/format";
 import { RecordsTable, type RecordRow } from "./records-table";
+import { AcumuladosTable, type AcumuladoRow } from "./acumulados-table";
 
 type FlagKey = "sinCuenta" | "cuentaCompartida" | "pagoSinTrabajo" | "inactivoConPago" | "ajusteSinNota" | "variacion";
 type Row = {
@@ -54,6 +55,7 @@ export function AutorizacionClient({
   histogram,
   composition,
   records,
+  acumulados,
   prevPeriodNumber,
 }: {
   period: Period;
@@ -63,10 +65,11 @@ export function AutorizacionClient({
   histogram: { label: string; count: number }[];
   composition: { category: string; total: number; count: number }[];
   records: RecordRow[];
+  acumulados: AcumuladoRow[];
   prevPeriodNumber: number | null;
 }) {
   const router = useRouter();
-  const [view, setView] = useState<"resumen" | "detalle">("resumen");
+  const [view, setView] = useState<"resumen" | "detalle" | "acumulados">("resumen");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<"" | "VOLUNTARIO" | "FIJO">("");
   const [onlyExceptions, setOnlyExceptions] = useState(false);
@@ -208,7 +211,7 @@ export function AutorizacionClient({
 
       {/* View toggle: aggregate per-worker vs granular records */}
       <div className="mt-5 flex w-fit gap-1 rounded-lg bg-finca-100 p-1">
-        {([["resumen", "Resumen por trabajador"], ["detalle", "Detalle de registros"]] as const).map(([k, label]) => (
+        {([["resumen", "Resumen por trabajador"], ["detalle", "Detalle de registros"], ["acumulados", "Acumulados por trabajador"]] as const).map(([k, label]) => (
           <button
             key={k}
             onClick={() => setView(k)}
@@ -220,6 +223,8 @@ export function AutorizacionClient({
       </div>
 
       {view === "detalle" && <div className="mt-4"><RecordsTable records={records} /></div>}
+
+      {view === "acumulados" && <AcumuladosTable rows={acumulados} />}
 
       {view === "resumen" && (
       <>
