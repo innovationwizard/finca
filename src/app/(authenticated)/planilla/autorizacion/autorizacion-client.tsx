@@ -14,6 +14,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { formatGTQ } from "@/lib/utils/format";
 import { RecordsTable, type RecordRow } from "./records-table";
 import { AcumuladosTable, type AcumuladoRow } from "./acumulados-table";
+import { AcumuladosGrupoTable, type GrupoRow } from "./acumulados-grupo-table";
 
 type FlagKey = "sinCuenta" | "cuentaCompartida" | "pagoSinTrabajo" | "inactivoConPago" | "ajusteSinNota" | "variacion";
 type Row = {
@@ -56,6 +57,8 @@ export function AutorizacionClient({
   composition,
   records,
   acumulados,
+  acumuladosActividad,
+  acumuladosLote,
   prevPeriodNumber,
 }: {
   period: Period;
@@ -66,10 +69,14 @@ export function AutorizacionClient({
   composition: { category: string; total: number; count: number }[];
   records: RecordRow[];
   acumulados: AcumuladoRow[];
+  acumuladosActividad: GrupoRow[];
+  acumuladosLote: GrupoRow[];
   prevPeriodNumber: number | null;
 }) {
   const router = useRouter();
-  const [view, setView] = useState<"resumen" | "detalle" | "acumulados">("resumen");
+  const [view, setView] = useState<
+    "resumen" | "detalle" | "acumulados" | "acumuladosActividad" | "acumuladosLote"
+  >("resumen");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<"" | "VOLUNTARIO" | "FIJO">("");
   const [onlyExceptions, setOnlyExceptions] = useState(false);
@@ -211,7 +218,13 @@ export function AutorizacionClient({
 
       {/* View toggle: aggregate per-worker vs granular records */}
       <div className="mt-5 flex w-fit gap-1 rounded-lg bg-finca-100 p-1">
-        {([["resumen", "Resumen por trabajador"], ["detalle", "Detalle de registros"], ["acumulados", "Acumulados por trabajador"]] as const).map(([k, label]) => (
+        {([
+          ["resumen", "Resumen por trabajador"],
+          ["detalle", "Detalle de registros"],
+          ["acumulados", "Acumulados por trabajador"],
+          ["acumuladosActividad", "Acumulados por actividad"],
+          ["acumuladosLote", "Acumulados por lote"],
+        ] as const).map(([k, label]) => (
           <button
             key={k}
             onClick={() => setView(k)}
@@ -225,6 +238,14 @@ export function AutorizacionClient({
       {view === "detalle" && <div className="mt-4"><RecordsTable records={records} /></div>}
 
       {view === "acumulados" && <AcumuladosTable rows={acumulados} />}
+
+      {view === "acumuladosActividad" && (
+        <AcumuladosGrupoTable rows={acumuladosActividad} groupLabel="Actividad" />
+      )}
+
+      {view === "acumuladosLote" && (
+        <AcumuladosGrupoTable rows={acumuladosLote} groupLabel="Lote" showManzanas />
+      )}
 
       {view === "resumen" && (
       <>

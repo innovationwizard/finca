@@ -150,9 +150,11 @@ export default async function AutorizacionPage() {
       unitPrice: true,
       totalEarned: true,
       workerId: true,
+      activityId: true,
+      loteId: true,
       worker: { select: { fullName: true } },
       activity: { select: { shortName: true, name: true, unit: true } },
-      lote: { select: { name: true } },
+      lote: { select: { name: true, areaManzanas: true } },
     },
     orderBy: [{ date: "asc" }, { worker: { fullName: "asc" } }],
   });
@@ -238,6 +240,78 @@ export default async function AutorizacionPage() {
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // ── Acumulados por actividad / por lote ─────────────────────────────────────
+  // Same money as "por trabajador" (devengado from the activity records of the
+  // OPEN period), regrouped. Two daily averages, because for a group the two
+  // readings answer different questions and differ by an order of magnitude:
+  //
+  //   por día-trabajador = acumulado ÷ distinct (worker × date) pairs
+  //                        → the average day's wage the activity/lote paid.
+  //   por día calendario = acumulado ÷ distinct dates with a record
+  //                        → what the farm spent per day while work was running.
+  //
+  // Records with no lote are kept under a "(Sin lote)" row rather than dropped:
+  // the column is nullable, and money that was really paid must never vanish
+  // from a total just because its lote was left blank.
+  const groupBy = <T,>(
+    keyOf: (r: (typeof recordRows)[number]) => string | null,
+    nameOf: (r: (typeof recordRows)[number]) => string,
+    extra: (r: (typeof recordRows)[number]) => T,
+  ) => {
+    const acc = new Map<
+      string,
+      { name: string; acumulado: number; dates: Set<string>; workerDates: Set<string>; extra: T }
+    >();
+    for (const r of recordRows) {
+      const key = keyOf(r) ?? "__sin__";
+      const date = r.date.toISOString().split("T")[0];
+      const cur = acc.get(key) ?? {
+        name: nameOf(r),
+        acumulado: 0,
+        dates: new Set<string>(),
+        workerDates: new Set<string>(),
+        extra: extra(r),
+      };
+      cur.acumulado += Number(r.totalEarned);
+      cur.dates.add(date);
+      cur.workerDates.add(`${r.workerId}|${date}`);
+      acc.set(key, cur);
+    }
+    return [...acc.entries()]
+      .map(([key, g]) => ({
+        key,
+        name: g.name,
+        acumulado: g.acumulado,
+        dias: g.dates.size,
+        diasTrabajador: g.workerDates.size,
+        promedioDiaTrabajador: g.acumulado / g.workerDates.size,
+        promedioDiaCalendario: g.acumulado / g.dates.size,
+        extra: g.extra,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  // Activities are labelled by full name: most of them carry no abreviatura, so
+  // the short name would leave the column mostly empty.
+  const acumuladosActividad = groupBy(
+    (r) => r.activityId,
+    (r) => r.activity.name,
+    () => null,
+  ).map(({ extra: _extra, ...g }) => ({ ...g, manzanas: null, qPorManzana: null }));
+
+  const acumuladosLote = groupBy(
+    (r) => r.loteId,
+    (r) => r.lote?.name ?? "(Sin lote)",
+    (r) => (r.lote?.areaManzanas != null ? Number(r.lote.areaManzanas) : null),
+  ).map(({ extra: manzanas, ...g }) => ({
+    ...g,
+    manzanas,
+    // Beneficio, Finca Generales and Hacienda are cost centres, not planted
+    // land: they have no area, so Q/manzana is UNDEFINED there, not zero. Null
+    // renders as "—" and is left out of the average rather than counted as 0.
+    qPorManzana: manzanas && manzanas > 0 ? g.acumulado / manzanas : null,
+  }));
+
   // Composition by category (≤ few categories, per research).
   const composition = (["VOLUNTARIO", "FIJO"] as const).map((cat) => {
     const rs = rows.filter((r) => r.category === cat);
@@ -263,6 +337,8 @@ export default async function AutorizacionPage() {
       composition={composition}
       records={records}
       acumulados={acumulados}
+      acumuladosActividad={acumuladosActividad}
+      acumuladosLote={acumuladosLote}
       prevPeriodNumber={prev?.periodNumber ?? null}
     />
   );
