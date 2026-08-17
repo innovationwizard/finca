@@ -14,7 +14,7 @@ import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
 import { CapturaGrid } from "./grid-client";
 import { EditPeriodModal } from "../edit-period-modal";
 
-export const metadata = { title: "Captura Semanal — Finca Danilandia" };
+export const metadata = { title: "Captura Semanal — Finca Nueva Esperanza" };
 
 // View access = anyone who can write OR can read all data (auditors included).
 const VIEW_ROLES = [...new Set([...READ_ALL_ROLES, ...CAPTURA_WRITE_ROLES])];

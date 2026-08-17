@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, SETTINGS_ROLES } from "@/lib/auth/guards";
 import { LotesManager } from "./lotes-manager";
 
-export const metadata = { title: "Gestión de Lotes — Finca Danilandia" };
+export const metadata = { title: "Gestión de Lotes — Finca Nueva Esperanza" };
 
 export default async function LotesAdminPage() {
   await requireRole(...SETTINGS_ROLES);

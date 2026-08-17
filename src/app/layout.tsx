@@ -10,10 +10,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
-    default: "Finca Danilandia",
-    template: "%s — Finca Danilandia",
+    default: "Finca Nueva Esperanza",
+    template: "%s — Finca Nueva Esperanza",
   },
-  description: "Sistema de gestión agrícola para Finca Danilandia y Anexos, S.A.",
+  description: "Sistema de gestión agrícola para Finca Nueva Esperanza y Anexos, S.A.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -23,18 +23,18 @@ export const metadata: Metadata = {
     apple: "/apple-icon.png",
   },
   openGraph: {
-    title: "Finca Danilandia",
+    title: "Finca Nueva Esperanza",
     description: "Sistema de gestión agrícola — Grupo Orión",
     url: "/",
-    siteName: "Finca Danilandia",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Finca Danilandia — Sistema de Gestión Agrícola" }],
+    siteName: "Finca Nueva Esperanza",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Finca Nueva Esperanza — Sistema de Gestión Agrícola" }],
     locale: "es_GT",
     type: "website",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Finca Danilandia",
+    title: "Finca Nueva Esperanza",
   },
 };
 

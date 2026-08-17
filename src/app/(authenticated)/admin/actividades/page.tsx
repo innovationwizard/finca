@@ -10,7 +10,7 @@ import { ActivitiesManager } from "./activities-manager";
 import { PayCycleSettings } from "./pay-cycle-settings";
 import { SeptimoHolidaysSettings } from "./septimo-holidays-settings";
 
-export const metadata = { title: "Actividades y Configuración — Finca Danilandia" };
+export const metadata = { title: "Actividades y Configuración — Finca Nueva Esperanza" };
 
 export default async function ActivitiesAdminPage() {
   await requireRole(...SETTINGS_ROLES);

@@ -62,7 +62,7 @@ export default function LoginPage() {
             <Sprout className="h-10 w-10 text-finca-100" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white">
-            Finca Danilandia
+            Finca Nueva Esperanza
           </h1>
           <p className="mt-2 text-finca-300">
             Sistema de Gestión Agrícola

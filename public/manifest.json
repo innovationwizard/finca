@@ -1,7 +1,7 @@
 {
-  "name": "Finca Danilandia — Sistema de Gestión",
+  "name": "Finca Nueva Esperanza — Sistema de Gestión",
   "short_name": "Finca",
-  "description": "Sistema de gestión agrícola para Finca Danilandia y Anexos, S.A.",
+  "description": "Sistema de gestión agrícola para Finca Nueva Esperanza y Anexos, S.A.",
   "start_url": "/planilla",
   "display": "standalone",
   "orientation": "any",

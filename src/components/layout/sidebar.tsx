@@ -103,7 +103,7 @@ export function Sidebar({ user }: { user: User }) {
           <Sprout className="h-5 w-5 text-finca-100" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-finca-900">Finca Danilandia</p>
+          <p className="text-sm font-semibold text-finca-900">Finca Nueva Esperanza</p>
           <p className="text-xs text-finca-400">Grupo Orión</p>
         </div>
       </div>
