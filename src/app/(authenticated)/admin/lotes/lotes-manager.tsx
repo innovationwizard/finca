@@ -7,6 +7,7 @@
 
 import { useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 
 type LoteRow = {
   id: string;
@@ -22,8 +23,13 @@ type LoteRow = {
   updatedAt: string;
 };
 
+// `id` is "NEW" while creating a lote. The name is only editable then —
+// renaming an existing lote would break its slug and every URL that uses it.
+const NEW = "NEW";
+
 type EditingState = {
   id: string;
+  name: string;
   areaManzanas: string;
   plantCount: string;
   density: string;
@@ -43,11 +49,28 @@ export function LotesManager({ initialData }: { initialData: LoteRow[] }) {
     setSuccess(null);
     setEditing({
       id: lote.id,
+      name: lote.name,
       areaManzanas: lote.areaManzanas?.toString() ?? "",
       plantCount: lote.plantCount?.toString() ?? "",
       density: lote.density ?? "",
       variety: lote.variety ?? "",
       isActive: lote.isActive,
+    });
+  }, []);
+
+  // A new lote may be saved with only its name — area and plants are often
+  // measured after it is opened, and cost centers never have them.
+  const startCreate = useCallback(() => {
+    setError(null);
+    setSuccess(null);
+    setEditing({
+      id: NEW,
+      name: "",
+      areaManzanas: "",
+      plantCount: "",
+      density: "",
+      variety: "",
+      isActive: true,
     });
   }, []);
 
@@ -59,12 +82,18 @@ export function LotesManager({ initialData }: { initialData: LoteRow[] }) {
   const saveEdit = useCallback(async () => {
     if (!editing) return;
 
+    const isCreate = editing.id === NEW;
+
     const areaManzanas = parseFloat(editing.areaManzanas);
     const plantCount = parseInt(editing.plantCount, 10);
 
     const areaMzValue = editing.areaManzanas ? areaManzanas : null;
     const plantCountValue = editing.plantCount ? plantCount : null;
 
+    if (isCreate && !editing.name.trim()) {
+      setError("El nombre del lote es requerido");
+      return;
+    }
     if (areaMzValue !== null && (isNaN(areaManzanas) || areaManzanas <= 0)) {
       setError("El área debe ser un número positivo");
       return;
@@ -76,10 +105,10 @@ export function LotesManager({ initialData }: { initialData: LoteRow[] }) {
 
     try {
       const res = await fetch("/api/admin/lotes", {
-        method: "PATCH",
+        method: isCreate ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: editing.id,
+          ...(isCreate ? { name: editing.name.trim() } : { id: editing.id }),
           areaManzanas: areaMzValue,
           plantCount: plantCountValue,
           density: editing.density || null,
@@ -94,7 +123,7 @@ export function LotesManager({ initialData }: { initialData: LoteRow[] }) {
         return;
       }
 
-      setSuccess("Lote actualizado");
+      setSuccess(isCreate ? "Lote creado" : "Lote actualizado");
       setEditing(null);
       startTransition(() => router.refresh());
 
@@ -117,6 +146,17 @@ export function LotesManager({ initialData }: { initialData: LoteRow[] }) {
           {success}
         </div>
       )}
+
+      {/* Add button */}
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={startCreate}
+          disabled={editing !== null}
+          className="inline-flex items-center gap-1 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-40"
+        >
+          <Plus className="h-4 w-4" /> Agregar lote
+        </button>
+      </div>
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
@@ -141,6 +181,17 @@ export function LotesManager({ initialData }: { initialData: LoteRow[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
+            {/* New lote row (if creating) */}
+            {editing?.id === NEW && (
+              <CreateRow
+                editing={editing}
+                setEditing={setEditing}
+                onSave={saveEdit}
+                onCancel={cancelEdit}
+                isPending={isPending}
+              />
+            )}
+
             {initialData.map((lote) => {
               const isEditing = editing?.id === lote.id;
 
@@ -285,7 +336,8 @@ export function LotesManager({ initialData }: { initialData: LoteRow[] }) {
                     ) : (
                       <button
                         onClick={() => startEdit(lote)}
-                        className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50"
+                        disabled={editing !== null}
+                        className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 disabled:opacity-40"
                       >
                         Editar
                       </button>
@@ -304,5 +356,112 @@ export function LotesManager({ initialData }: { initialData: LoteRow[] }) {
         Actualizar con datos reales de la finca.
       </p>
     </div>
+  );
+}
+
+// ── New lote row ─────────────────────────────────────────────────────────────
+// Same columns as the table, with the name editable (only possible at creation).
+
+function CreateRow({
+  editing,
+  setEditing,
+  onSave,
+  onCancel,
+  isPending,
+}: {
+  editing: EditingState;
+  setEditing: (s: EditingState) => void;
+  onSave: () => Promise<void>;
+  onCancel: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <tr className="bg-amber-50">
+      <td className="px-4 py-2">
+        <input
+          type="text"
+          value={editing.name}
+          onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+          placeholder="Nombre del lote"
+          maxLength={60}
+          autoFocus
+          className="w-full rounded-md border border-stone-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+        />
+      </td>
+      <td className="px-4 py-2 text-right">
+        <input
+          type="number"
+          step="0.01"
+          min="0.01"
+          value={editing.areaManzanas}
+          onChange={(e) => setEditing({ ...editing, areaManzanas: e.target.value })}
+          placeholder="—"
+          className="w-24 rounded-md border border-stone-300 px-2 py-1 text-right text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+        />
+      </td>
+      <td className="px-4 py-2 text-right">
+        <input
+          type="number"
+          step="1"
+          min="0"
+          value={editing.plantCount}
+          onChange={(e) => setEditing({ ...editing, plantCount: e.target.value })}
+          placeholder="—"
+          className="w-28 rounded-md border border-stone-300 px-2 py-1 text-right text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+        />
+      </td>
+      <td className="px-4 py-2">
+        <input
+          type="text"
+          value={editing.density}
+          onChange={(e) => setEditing({ ...editing, density: e.target.value })}
+          placeholder="ej. 3500 pl/mz"
+          maxLength={40}
+          className="w-32 rounded-md border border-stone-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+        />
+      </td>
+      <td className="px-4 py-2">
+        <input
+          type="text"
+          value={editing.variety}
+          onChange={(e) => setEditing({ ...editing, variety: e.target.value })}
+          placeholder="ej. Bourbon"
+          maxLength={120}
+          className="w-28 rounded-md border border-stone-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+        />
+      </td>
+      <td className="px-4 py-2 text-center">
+        <button
+          type="button"
+          onClick={() => setEditing({ ...editing, isActive: !editing.isActive })}
+          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors ${
+            editing.isActive ? "bg-emerald-500" : "bg-stone-300"
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-4 w-4 translate-y-0.5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
+              editing.isActive ? "translate-x-4" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </td>
+      <td className="px-4 py-2 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={onSave}
+            disabled={isPending}
+            className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {isPending ? "..." : "Guardar"}
+          </button>
+          <button
+            onClick={onCancel}
+            className="rounded-md border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50"
+          >
+            Cancelar
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }

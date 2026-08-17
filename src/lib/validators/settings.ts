@@ -26,6 +26,25 @@ export const loteUpdateSchema = z.object({
 
 export type LoteUpdateInput = z.infer<typeof loteUpdateSchema>;
 
+// A lote may be created with nothing but its name: cost centers like
+// "Beneficio" or "Hacienda" carry no area, plants or variety, and a new lote's
+// real numbers often arrive after it is opened. The `slug` is derived
+// server-side from the name — it is never sent by the client.
+export const loteCreateSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "El nombre es requerido")
+    .max(60, "El nombre no puede superar 60 caracteres"),
+  areaManzanas: loteUpdateSchema.shape.areaManzanas,
+  plantCount: loteUpdateSchema.shape.plantCount,
+  density: z.string().trim().max(40).nullable().optional(),
+  variety: z.string().trim().max(120).nullable().optional(),
+  isActive: z.boolean(),
+});
+
+export type LoteCreateInput = z.infer<typeof loteCreateSchema>;
+
 // ── Activity ──────────────────────────────────────────────────────────────────
 
 export const ACTIVITY_UNITS = [
