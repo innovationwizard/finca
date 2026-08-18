@@ -21,6 +21,7 @@ export function unitAbbr(unit: string): string {
     MANZANA: "mz",
     HECTAREA: "ha",
     DIA: "día",
+    TAREA: "tarea",
   };
   return abbr[unit] ?? unit;
 }

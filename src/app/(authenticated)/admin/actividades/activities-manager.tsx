@@ -20,6 +20,7 @@ const UNIT_OPTIONS = [
   { value: "MANZANA", label: "Manzana (mz)" },
   { value: "HECTAREA", label: "Hectárea (ha)" },
   { value: "DIA", label: "Día" },
+  { value: "TAREA", label: "Tarea" },
 ] as const;
 
 const UNIT_ABBR: Record<string, string> = {
@@ -27,6 +28,7 @@ const UNIT_ABBR: Record<string, string> = {
   MANZANA: "mz",
   HECTAREA: "ha",
   DIA: "día",
+  TAREA: "tarea",
 };
 
 type ActivityRow = {

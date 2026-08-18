@@ -231,6 +231,7 @@ enum ActivityUnit {
   MANZANA // mz
   HECTAREA // ha
   DIA // día trabajado
+  TAREA // tarea
 }
 
 model Activity {
