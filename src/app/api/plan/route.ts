@@ -1,5 +1,5 @@
 // =============================================================================
-// src/app/api/plan/route.ts — Plan Anual CRUD (GET list + POST upsert)
+// src/app/api/plan/route.ts — Plan Anual CRUD (GET list + POST upsert + DELETE)
 //
 // A plan cell is addressed by (lote, activity, weekStart) — a real date, not a
 // (year, month index, week index) position. GET still accepts a cosecha code for
@@ -15,6 +15,7 @@ import {
 } from "@/lib/auth/guards";
 import {
   planEntrySchema,
+  planEntryKeySchema,
   planEntryQuerySchema,
 } from "@/lib/validators/plan-entry";
 import {
@@ -157,4 +158,43 @@ export async function POST(request: NextRequest) {
     },
     { status: 200 },
   );
+}
+
+/**
+ * Clear a cell — remove the plan row for (lote, activity, weekStart).
+ *
+ * Separate from POST rather than "upsert 0" on purpose. The grid renders a 0 as
+ * "–", identical to a week with no row, so a stored 0 is a value the UI can
+ * produce but not show. Absence is the only honest way to say "nothing planned
+ * that week", and it keeps the semáforo from reading a deliberate blank as a
+ * plan of zero.
+ */
+export async function DELETE(request: NextRequest) {
+  const auth = await apiRequireRole(...WRITE_ROLES);
+  if (auth instanceof NextResponse) return auth;
+
+  const body = await request.json();
+  const parsed = planEntryKeySchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Datos inválidos", details: parsed.error.flatten().fieldErrors },
+      { status: 400 },
+    );
+  }
+
+  const data = parsed.data;
+
+  // deleteMany, not delete: clearing a cell that has no row is a no-op, not a
+  // 404. The button behind this can be pressed twice, and two tabs can clear the
+  // same cell — neither is an error worth showing the user.
+  const { count } = await prisma.planEntry.deleteMany({
+    where: {
+      loteId: data.loteId,
+      activityId: data.activityId,
+      weekStart: parseWeekStartIso(data.weekStart),
+    },
+  });
+
+  return NextResponse.json({ deleted: count }, { status: 200 });
 }

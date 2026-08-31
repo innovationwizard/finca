@@ -11,7 +11,8 @@
 // =============================================================================
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, X } from "lucide-react";
 import { weekStartOfCell, weekStartIso } from "@/lib/plan/plan-week";
 
 // ---------------------------------------------------------------------------
@@ -70,6 +71,36 @@ function fmtJ(n: number): string {
   return parseFloat(n.toFixed(2)).toString();
 }
 
+/**
+ * Read what the user typed. `null` means "this is not a number" — including an
+ * empty field — and a null NEVER writes.
+ *
+ * The cell used to be an <input type="number"> read with `parseFloat(v) || 0`.
+ * A number input reports its value as "" whenever the browser considers the text
+ * bad input, and a comma is bad input: on a Spanish-locale keyboard — and on the
+ * es-GT numeric keypad this PWA gets on a phone or tablet — "1,5" arrives here
+ * as "". `|| 0` turned that into a 0, and since 0 differed from the cell's
+ * value it was saved, silently overwriting the week. That is how half of the
+ * 26/27 plan (251 of 500 cells) became zeros in a single evening's data entry.
+ *
+ * So: plain text input, parsed here, comma accepted as the decimal separator the
+ * farm actually types. Anything unparseable leaves the cell alone.
+ */
+function parseJornales(raw: string): number | null {
+  const s = raw.trim().replace(",", ".");
+  if (s === "" || s === ".") return null;
+  if (!/^\d*\.?\d*$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+// The summary table and KPI cards above this grid are server-rendered from the
+// same rows the grid edits, and nothing re-reads them when a cell saves — they
+// sat stale for the whole session, still totalling the plan as it was on load.
+// Refresh on a trailing debounce so a fast run of entries costs one round-trip
+// instead of one per cell.
+const REFRESH_DEBOUNCE_MS = 900;
+
 // Over-execution (actual >= planned) is good (green).
 // Under-execution uses deficit ratio for RAG coloring.
 function semaforoClass(planned: number, actual: number): string {
@@ -118,9 +149,34 @@ export function PlanGrid({
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Save a single cell
-  const saveCell = useCallback(
-    async (activityId: string, month: number, week: number, value: number) => {
+  const router = useRouter();
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(
+      () => router.refresh(),
+      REFRESH_DEBOUNCE_MS,
+    );
+  }, [router]);
+
+  useEffect(
+    () => () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    },
+    [],
+  );
+
+  // Both writers below post to the same cell address. `planMap` is seeded once
+  // from props and owned by this component from then on, so a router.refresh()
+  // updating the totals above never fights the values on screen.
+  const writeCell = useCallback(
+    async (
+      activityId: string,
+      month: number,
+      week: number,
+      body: { plannedJornales: number } | null, // null = clear the cell
+    ) => {
       const k = cellKey(activityId, month, week);
       setSaving(k);
       setError(null);
@@ -134,7 +190,7 @@ export function PlanGrid({
 
       try {
         const res = await fetch("/api/plan", {
-          method: "POST",
+          method: body ? "POST" : "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             loteId: targetLoteId,
@@ -142,23 +198,47 @@ export function PlanGrid({
             weekStart: weekStartIso(
               weekStartOfCell(agriculturalYear, month, week),
             ),
-            plannedJornales: value,
+            ...(body ?? {}),
           }),
         });
 
         if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error ?? "Error al guardar");
+          // A dead session used to arrive here as HTML from /login, and .json()
+          // threw a parse error on top of the real one. Middleware now answers
+          // /api/* with a 401 JSON body, but stay defensive: never let the
+          // error path swallow the fact that the write failed.
+          const data = await res.json().catch(() => ({}));
+          throw new Error(
+            data.error ?? `Error al guardar (HTTP ${res.status})`,
+          );
         }
 
-        setPlanMap((prev) => ({ ...prev, [k]: value }));
+        setPlanMap((prev) => {
+          if (body) return { ...prev, [k]: body.plannedJornales };
+          const next = { ...prev };
+          delete next[k];
+          return next;
+        });
+        scheduleRefresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al guardar");
       } finally {
         setSaving(null);
       }
     },
-    [agriculturalYear, loteId, loteIds],
+    [agriculturalYear, loteId, loteIds, scheduleRefresh],
+  );
+
+  const saveCell = useCallback(
+    (activityId: string, month: number, week: number, value: number) =>
+      writeCell(activityId, month, week, { plannedJornales: value }),
+    [writeCell],
+  );
+
+  const clearCell = useCallback(
+    (activityId: string, month: number, week: number) =>
+      writeCell(activityId, month, week, null),
+    [writeCell],
   );
 
   const weeks = [1, 2, 3, 4] as const;
@@ -250,6 +330,7 @@ export function PlanGrid({
                             onSave={(val) =>
                               saveCell(act.id, m.agMonth, w, val)
                             }
+                            onClear={() => clearCell(act.id, m.agMonth, w)}
                           />
                         ) : (
                           <div className="flex flex-col items-center gap-px py-0.5 leading-none">
@@ -321,11 +402,13 @@ function EditableCell({
   actualValue,
   isSaving,
   onSave,
+  onClear,
 }: {
   value: number;
   actualValue: number;
   isSaving: boolean;
   onSave: (val: number) => void;
+  onClear: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ? fmtJ(value) : "");
@@ -342,12 +425,31 @@ function EditableCell({
     }
   }, [editing]);
 
+  const parsed = parseJornales(draft);
+  const invalid = draft.trim() !== "" && parsed === null;
+
   const commit = () => {
     setEditing(false);
-    const num = parseFloat(draft) || 0;
-    if (num !== value) {
-      onSave(Math.max(0, num));
+
+    // No number, no write. An empty or unreadable field means the user typed
+    // something this cell cannot store — a comma the browser rejected, a stray
+    // keystroke, a field they blanked and then thought better of — and the one
+    // thing it must never mean is "set this week to zero". Emptying a cell that
+    // holds a value is done deliberately, with the × button.
+    if (parsed === null) {
+      setDraft(value ? fmtJ(value) : "");
+      return;
     }
+
+    // A typed 0 means "nothing planned that week" — which is absence, not a row
+    // holding zero. The grid draws the two identically, so storing 0 is what
+    // made 251 wiped cells look untouched instead of wrong; keep it impossible.
+    if (parsed === 0) {
+      if (value > 0) onClear();
+      return;
+    }
+
+    if (parsed !== value) onSave(parsed);
   };
 
   if (isSaving) {
@@ -361,24 +463,55 @@ function EditableCell({
   if (editing) {
     return (
       <div className="flex flex-col items-center gap-px py-0.5">
-        <input
-          ref={inputRef}
-          type="number"
-          min={0}
-          step={0.5}
-          className="w-full min-w-[2.5rem] rounded border border-finca-300 px-1 py-0.5 text-center text-xs tabular-nums focus:border-earth-500 focus:outline-none focus:ring-1 focus:ring-earth-500"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") {
-              setDraft(String(value || ""));
-              setEditing(false);
-            }
-          }}
-        />
-        {actualValue > 0 && (
+        <div className="flex w-full items-center gap-0.5">
+          <input
+            ref={inputRef}
+            // Deliberately text, not number: a number input hides bad input
+            // behind an empty string, which is what made "1,5" save as 0.
+            // inputMode="decimal" still raises the numeric keypad on mobile.
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            className={`w-full min-w-[2.5rem] rounded border px-1 py-0.5 text-center text-xs tabular-nums focus:outline-none focus:ring-1 ${
+              invalid
+                ? "border-red-400 focus:border-red-500 focus:ring-red-500"
+                : "border-finca-300 focus:border-earth-500 focus:ring-earth-500"
+            }`}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") {
+                setDraft(value ? fmtJ(value) : "");
+                setEditing(false);
+              }
+            }}
+          />
+          {value > 0 && (
+            <button
+              type="button"
+              tabIndex={-1}
+              // preventDefault keeps focus in the input, so the blur/commit
+              // path does not race the clear.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setEditing(false);
+                onClear();
+              }}
+              className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-red-100 hover:text-red-600"
+              title="Borrar el valor de esta semana"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        {invalid && (
+          <span className="text-[10px] leading-none text-red-600">
+            Solo números
+          </span>
+        )}
+        {!invalid && actualValue > 0 && (
           <span className="text-[10px] tabular-nums leading-none text-gray-400">
             R:{fmtJ(actualValue)}
           </span>

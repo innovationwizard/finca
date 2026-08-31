@@ -33,6 +33,20 @@ export const planEntrySchema = z.object({
 
 export type PlanEntryInput = z.infer<typeof planEntrySchema>;
 
+/**
+ * The address of a cell, with no value attached — what DELETE takes to clear one.
+ *
+ * Clearing is its own operation rather than an upsert of 0 because the grid
+ * cannot draw the difference: a 0 renders as "–", exactly like a week with no
+ * row. Storing 0 to mean "nothing planned" is what let 251 wiped cells of the
+ * 26/27 plan look untouched instead of wrong.
+ */
+export const planEntryKeySchema = planEntrySchema.omit({
+  plannedJornales: true,
+});
+
+export type PlanEntryKey = z.infer<typeof planEntryKeySchema>;
+
 export const planEntryQuerySchema = z.object({
   agriculturalYear: z
     .string()

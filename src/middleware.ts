@@ -98,6 +98,16 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    // An API call must never be answered with a redirect. fetch() follows it by
+    // default, /login replies 200 with HTML, and the caller sees res.ok === true
+    // — so a write that never reached the database reports success. The Plan
+    // Anual grid did exactly that: it marked the cell saved and cleared its
+    // spinner, and the value was gone on the next reload. Answer /api/* with the
+    // same 401 shape the route guards use (lib/auth/guards.ts) so the caller can
+    // tell a dead session from a successful write.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
