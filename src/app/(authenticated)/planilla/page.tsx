@@ -124,14 +124,15 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   const weekHref = (i: number) => `/planilla?periodo=${period.id}&semana=${i}` as Route;
   const completoHref = `/planilla?periodo=${period.id}&semana=all` as Route;
 
-  // xlsx download of every view of THIS period (one sheet per week + Período
-  // completo), honoring the active worker filter. Always all weeks — the week
-  // selection above only chooses what's on screen, not what's downloaded.
-  //   · exportHref       → grid: one row per worker, days across columns.
-  //   · exportDiarioHref → ledger: one row per activity record.
+  // xlsx downloads of THIS period, honoring the active worker filter. Always
+  // the whole period — the week selection above only chooses what's on screen,
+  // not what's downloaded.
+  //   · exportDiarioHref   → ledger: one row per activity record, per week.
+  //   · exportSeptimosHref → séptimos: per week, actividades + séptimo + total,
+  //     reconciled against the séptimo stored on the planilla.
   const exportQuery = `periodo=${period.id}${selectedWorker ? `&trabajador=${selectedWorker}` : ""}`;
-  const exportHref = `/api/planilla/export?${exportQuery}`;
-  const exportDiarioHref = `/api/planilla/export?${exportQuery}&formato=diario`;
+  const exportDiarioHref = `/api/planilla/export?${exportQuery}`;
+  const exportSeptimosHref = `/api/planilla/septimos?${exportQuery}`;
 
   return (
     <div className="mx-auto max-w-full px-4 py-8 sm:px-6 lg:px-8">
@@ -201,16 +202,6 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
         />
         <div className="flex flex-wrap items-center gap-2">
           <a
-            href={exportHref}
-            className="inline-flex h-9 items-center gap-2 rounded-lg border border-finca-200 bg-white px-4 text-sm font-medium text-finca-700 transition-colors hover:bg-finca-50"
-            title={`Descargar el período ${period.periodNumber} en Excel: una hoja por semana más el período completo, una fila por trabajador${
-              selectedWorker ? " (solo el trabajador filtrado)" : ""
-            }`}
-          >
-            <Download className="h-4 w-4" />
-            Descargar Excel
-          </a>
-          <a
             href={exportDiarioHref}
             className="inline-flex h-9 items-center gap-2 rounded-lg border border-finca-200 bg-white px-4 text-sm font-medium text-finca-700 transition-colors hover:bg-finca-50"
             title={`Descargar el período ${period.periodNumber} en Excel diario: una fila por registro (Fecha, Trabajador, Lote, Actividad, Costo unitario, Costo)${
@@ -219,6 +210,16 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
           >
             <Download className="h-4 w-4" />
             Descargar Excel Diario
+          </a>
+          <a
+            href={exportSeptimosHref}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-finca-200 bg-white px-4 text-sm font-medium text-finca-700 transition-colors hover:bg-finca-50"
+            title={`Descargar los séptimos del período ${period.periodNumber} en Excel: por semana, lo pagado por actividades y por séptimos, con el séptimo calculado comparado contra el de la planilla${
+              selectedWorker ? " (solo el trabajador filtrado)" : ""
+            }`}
+          >
+            <Download className="h-4 w-4" />
+            Descargar Excel Séptimos
           </a>
         </div>
       </div>
