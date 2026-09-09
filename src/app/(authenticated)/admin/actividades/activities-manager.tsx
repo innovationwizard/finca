@@ -453,6 +453,7 @@ function EditRow({
           onChange={(e) =>
             setEditing({ ...editing, defaultPrice: e.target.value })
           }
+          title="El precio nuevo rige desde el inicio del período abierto, así que aplica a la semana que se está capturando. Para otra fecha de vigencia use el historial de precios (📋)."
           className="w-24 rounded-md border border-stone-300 px-2 py-1 text-right text-sm tabular-nums focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
         />
       </td>
@@ -675,7 +676,9 @@ function PricePanel({
       </div>
       <p className="text-xs text-stone-400">
         Un precio nuevo solo aplica a partir de su fecha de vigencia. Las semanas
-        anteriores conservan su precio; puede programar un precio futuro.
+        anteriores conservan su precio; puede programar un precio futuro. Al
+        cambiar el precio desde «Editar», la vigencia empieza el primer día del
+        período abierto para que cubra la semana que se está capturando.
       </p>
     </div>
   );

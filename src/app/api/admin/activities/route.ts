@@ -10,7 +10,11 @@ import {
   activityUpdateSchema,
   activityCreateSchema,
 } from "@/lib/validators/settings";
-import { todayISOGuatemala } from "@/lib/pricing/activity-prices";
+import {
+  todayISOGuatemala,
+  inlinePriceEffectiveFrom,
+  resyncDefaultPrice,
+} from "@/lib/pricing/activity-prices";
 
 // A null abreviatura never collides (Postgres allows many NULLs under a unique
 // index). `excludeId` lets an edit keep its own value.
@@ -168,26 +172,34 @@ export async function PATCH(request: NextRequest) {
 
   const updated = await prisma.activity.update({ where: { id }, data });
 
-  // An inline price edit is recorded as a vigencia effective TODAY (so it never
-  // rewrites past records). Explicit start dates / future prices use the price
-  // history panel (POST /api/admin/activities/[id]/prices).
+  // An inline price edit is recorded as a vigencia effective from the START OF
+  // THE OPEN PERIOD, so the correction actually covers the week being captured
+  // (see inlinePriceEffectiveFrom — stamping it "today" made every mid-period
+  // reprice a silent no-op in Captura). Closed periods are still never rewritten.
+  // Explicit start dates / future prices use the price history panel
+  // (POST /api/admin/activities/[id]/prices).
   const oldPrice = existing.defaultPrice != null ? Number(existing.defaultPrice) : null;
   if (data.defaultPrice != null && data.defaultPrice !== oldPrice) {
-    const effectiveFrom = new Date(todayISOGuatemala());
+    const effectiveFrom = await inlinePriceEffectiveFrom();
+    const iso = effectiveFrom.toISOString().split("T")[0];
     await prisma.activityPrice.upsert({
       where: { activityId_effectiveFrom: { activityId: id, effectiveFrom } },
       create: {
         activityId: id,
         price: data.defaultPrice,
         effectiveFrom,
-        note: "Cambio de precio (hoy)",
+        note: `Cambio de precio (desde ${iso})`,
         createdBy: auth.id,
       },
       update: { price: data.defaultPrice },
     });
+    // The typed price is NOT necessarily the price in force today: backdating
+    // can leave a later vigencia winning. Derive `defaultPrice` from the
+    // schedule instead of trusting the `update` above.
+    await resyncDefaultPrice(id);
   }
 
-  return NextResponse.json(updated);
+  return NextResponse.json(await prisma.activity.findUnique({ where: { id } }) ?? updated);
 }
 
 // Hard-delete an activity — ONLY when it has no work records and no plan entries

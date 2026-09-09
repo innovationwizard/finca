@@ -11,24 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, SETTINGS_ROLES } from "@/lib/auth/guards";
 import { activityPriceCreateSchema } from "@/lib/validators/settings";
-import { toPriceSchedule, todayISOGuatemala } from "@/lib/pricing/activity-prices";
-import { currentPrice } from "@/lib/pricing/resolve-price";
-
-// Recompute Activity.defaultPrice = price effective today, after any change.
-async function resyncDefaultPrice(activityId: string) {
-  const prices = await prisma.activityPrice.findMany({
-    where: { activityId },
-    orderBy: { effectiveFrom: "asc" },
-  });
-  const activity = await prisma.activity.findUnique({
-    where: { id: activityId },
-    select: { defaultPrice: true },
-  });
-  const fallback = activity?.defaultPrice != null ? Number(activity.defaultPrice) : null;
-  const today = todayISOGuatemala();
-  const current = currentPrice(toPriceSchedule(prices), fallback, today);
-  await prisma.activity.update({ where: { id: activityId }, data: { defaultPrice: current } });
-}
+import { toPriceSchedule, resyncDefaultPrice } from "@/lib/pricing/activity-prices";
 
 export async function GET(
   _request: NextRequest,
