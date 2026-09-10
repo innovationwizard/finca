@@ -15,6 +15,7 @@ import { formatGTQ } from "@/lib/utils/format";
 import { RecordsTable, type RecordRow } from "./records-table";
 import { AcumuladosTable, type AcumuladoRow } from "./acumulados-table";
 import { AcumuladosGrupoTable, type GrupoRow } from "./acumulados-grupo-table";
+import { SeptimoDrawer, type SeptimoWeekMeta, type SeptimoDetail } from "./septimo-drawer";
 
 type FlagKey = "sinCuenta" | "cuentaCompartida" | "pagoSinTrabajo" | "inactivoConPago" | "ajusteSinNota" | "variacion";
 type Row = {
@@ -60,6 +61,9 @@ export function AutorizacionClient({
   acumuladosActividad,
   acumuladosLote,
   prevPeriodNumber,
+  septimoAmount,
+  septimoWeeks,
+  septimoDetail,
 }: {
   period: Period;
   canAuthorize: boolean;
@@ -72,6 +76,9 @@ export function AutorizacionClient({
   acumuladosActividad: GrupoRow[];
   acumuladosLote: GrupoRow[];
   prevPeriodNumber: number | null;
+  septimoAmount: number;
+  septimoWeeks: SeptimoWeekMeta[];
+  septimoDetail: Record<string, SeptimoDetail>;
 }) {
   const router = useRouter();
   const [view, setView] = useState<
@@ -86,6 +93,8 @@ export function AutorizacionClient({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [authorizing, setAuthorizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Séptimo drill-down: the worker whose derivation is open, or null.
+  const [septimoWorker, setSeptimoWorker] = useState<{ id: string; name: string } | null>(null);
 
   // Count per flag for the exception panel.
   const flagCounts = useMemo(() => {
@@ -304,7 +313,16 @@ export function AutorizacionClient({
                 <td className="sticky left-0 z-10 whitespace-nowrap border border-finca-100 bg-white px-3 py-1.5 font-medium text-finca-900">{r.name}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-finca-500">{r.category === "VOLUNTARIO" ? "Vol." : "Fijo"}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{formatGTQ(r.devengado)}</td>
-                <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{formatGTQ(r.septimo)}</td>
+                <td className="border border-finca-100 p-0 text-right tabular-nums text-finca-700">
+                  <button
+                    type="button"
+                    onClick={() => setSeptimoWorker({ id: r.workerId, name: r.name })}
+                    title="Ver de dónde viene el séptimo"
+                    className="w-full cursor-pointer px-2 py-1.5 text-right underline decoration-dotted decoration-finca-300 underline-offset-2 hover:bg-finca-100 hover:text-finca-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-finca-400"
+                  >
+                    {formatGTQ(r.septimo)}
+                  </button>
+                </td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{r.adicionales ? formatGTQ(r.adicionales) : "—"}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{r.descuentos ? formatGTQ(r.descuentos) : "—"}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{r.anticipos ? formatGTQ(r.anticipos) : "—"}</td>
@@ -333,6 +351,16 @@ export function AutorizacionClient({
 
       {!canAuthorize && (
         <p className="mt-3 text-xs text-finca-400">Vista de auditoría (solo lectura). La autorización la realiza un administrador.</p>
+      )}
+
+      {septimoWorker && (
+        <SeptimoDrawer
+          workerName={septimoWorker.name}
+          amount={septimoAmount}
+          weeks={septimoWeeks}
+          detail={septimoDetail[septimoWorker.id] ?? null}
+          onClose={() => setSeptimoWorker(null)}
+        />
       )}
 
       {/* Authorize confirm */}

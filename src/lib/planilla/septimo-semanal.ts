@@ -36,7 +36,15 @@ export type SeptimoWeek = {
   label: string; // "Semana del 16/07 al 19/07"
 };
 
-export type SeptimoCell = { actividades: number; septimo: number | null; total: number };
+export type SeptimoCell = {
+  actividades: number;
+  septimo: number | null;
+  total: number;
+  /** Required days of the week with ≥1 activity record (the séptimo's numerator). */
+  attendedRequired: number;
+  /** Required days with NO record — the evidence a reviewer asks for first. */
+  missingDays: string[];
+};
 
 export type SeptimoRow = {
   workerId: string;
@@ -183,12 +191,19 @@ export async function buildSeptimoReport(
       const to = Date.parse(`${w.clipTo}T00:00:00.000Z`);
       for (let t = from; t <= to; t += DAY_MS) actividades += byDay.get(isoUTC(t)) ?? 0;
       actividades = money(actividades);
+      const missingDays = w.requiredDays.filter((d) => !days.has(d));
       const septimo = !w.ownsSeptimo
         ? null
-        : w.requiredDays.length > 0 && w.requiredDays.every((d) => days.has(d))
+        : w.requiredDays.length > 0 && missingDays.length === 0
           ? amount
           : 0;
-      return { actividades, septimo, total: money(actividades + (septimo ?? 0)) };
+      return {
+        actividades,
+        septimo,
+        total: money(actividades + (septimo ?? 0)),
+        attendedRequired: w.requiredDays.length - missingDays.length,
+        missingDays,
+      };
     });
     const s = stored.get(id);
     const septimoCalculado = money(cells.reduce((a, c) => a + (c.septimo ?? 0), 0));

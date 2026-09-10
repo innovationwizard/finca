@@ -11,6 +11,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, PAYROLL_REVIEW_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
 import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
+import { buildSeptimoReport } from "@/lib/planilla/septimo-semanal";
 import { AutorizacionClient } from "./autorizacion-client";
 
 export const metadata = { title: "Revisión y Autorización" };
@@ -312,6 +313,48 @@ export default async function AutorizacionPage() {
     qPorManzana: manzanas && manzanas > 0 ? g.acumulado / manzanas : null,
   }));
 
+  // ── Séptimo drill-down ──────────────────────────────────────────────────────
+  // The séptimo is DERIVED, not captured: it produces no ActivityRecord, so it
+  // appears nowhere in "Detalle de registros" and is deliberately excluded from
+  // "Acumulados". Without this the authorizer approves a figure with no on-screen
+  // path to its evidence. Built from the SAME module as the Excel Séptimos export
+  // (@/lib/planilla/septimo-semanal), so the screen and the download cannot drift.
+  //
+  // Note this runs for the OPEN period: buildSeptimoReport has no isClosed
+  // dependency — that restriction lives only in the export route, where a
+  // reconciliation against a settled figure is the point.
+  const septimoReport = await buildSeptimoReport(prisma, period);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const septimoWeeks = septimoReport.weeks.map((w) => ({
+    label: w.label,
+    monday: w.monday,
+    saturday: w.saturday,
+    requiredDays: w.requiredDays.length,
+    ownsSeptimo: w.ownsSeptimo,
+    // A week whose Saturday has not arrived is UNDECIDED, not lost — rendering
+    // it as "no ganado" would invent an exception every week.
+    inProgress: w.saturday > todayIso,
+  }));
+  const septimoDetail: Record<string, {
+    cells: { attendedRequired: number; missingDays: string[]; septimo: number | null; actividades: number }[];
+    calculado: number;
+    planilla: number;
+    diferencia: number;
+  }> = {};
+  for (const r of septimoReport.rows) {
+    septimoDetail[r.workerId] = {
+      cells: r.cells.map((c) => ({
+        attendedRequired: c.attendedRequired,
+        missingDays: c.missingDays,
+        septimo: c.septimo,
+        actividades: c.actividades,
+      })),
+      calculado: r.septimoCalculado,
+      planilla: r.septimoPlanilla,
+      diferencia: r.diferencia,
+    };
+  }
+
   // Composition by category (≤ few categories, per research).
   const composition = (["VOLUNTARIO", "FIJO"] as const).map((cat) => {
     const rs = rows.filter((r) => r.category === cat);
@@ -340,6 +383,9 @@ export default async function AutorizacionPage() {
       acumuladosActividad={acumuladosActividad}
       acumuladosLote={acumuladosLote}
       prevPeriodNumber={prev?.periodNumber ?? null}
+      septimoAmount={septimoReport.amount}
+      septimoWeeks={septimoWeeks}
+      septimoDetail={septimoDetail}
     />
   );
 }
