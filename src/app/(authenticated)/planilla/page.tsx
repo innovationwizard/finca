@@ -11,7 +11,10 @@
 // JS. Closed periods are immutable, so the grid is strictly read-only.
 // =============================================================================
 
+import { Fragment } from "react";
 import { prisma } from "@/lib/prisma";
+import { buildSeptimoReport } from "@/lib/planilla/septimo-semanal";
+import { SeptimoCell } from "@/components/planilla/septimo-cell";
 import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
 import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { periodsOfCosecha } from "@/lib/payroll/period-cosecha";
@@ -117,6 +120,51 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   // in a day; entries are never collapsed — every record is shown.
   const { cells, workerTotals } = buildGrid(records);
   const grandTotal = displayWorkers.reduce((s, w) => s + (workerTotals.get(w.id) ?? 0), 0);
+
+  // ── Séptimo per week ────────────────────────────────────────────────────────
+  // The grid above is the evidence — six captured day columns per week. The
+  // séptimo is the VERDICT those days produce, and until now it existed on this
+  // page only inside the Excel download. Figures come from the same module as
+  // that download (@/lib/planilla/septimo-semanal), so screen and file agree.
+  //
+  // TWO LENSES, JOINED BY MONDAY, NEVER FORCED TO AGREE: this page's weeks come
+  // from periodWeeks (the capture lens — full Mon–Sat bands covering the grid),
+  // the séptimo's from septimoWeeks (the money lens — which period OWNS the
+  // week). They coincide today, but a grid week with no séptimo counterpart
+  // renders "·" rather than being made up.
+  const septimoReport = await buildSeptimoReport(prisma, period);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const septimoWeeks = septimoReport.weeks.map((w) => ({
+    label: w.label,
+    monday: w.monday,
+    saturday: w.saturday,
+    requiredDays: w.requiredDays.length,
+    ownsSeptimo: w.ownsSeptimo,
+    inProgress: w.saturday > todayIso,
+  }));
+  const septimoWeekIndexByMonday = new Map(septimoWeeks.map((w, i) => [w.monday, i]));
+  const septimoByWorker = new Map(
+    septimoReport.rows.map((r) => [
+      r.workerId,
+      {
+        cells: r.cells.map((c) => ({
+          attendedRequired: c.attendedRequired,
+          missingDays: c.missingDays,
+          septimo: c.septimo,
+          actividades: c.actividades,
+        })),
+        calculado: r.septimoCalculado,
+        planilla: r.septimoPlanilla,
+        diferencia: r.diferencia,
+      },
+    ]),
+  );
+  /** Séptimo actually earned in one visible week, across the shown workers. */
+  const septimoWeekTotal = (monday: string): number => {
+    const i = septimoWeekIndexByMonday.get(monday);
+    if (i === undefined) return 0;
+    return displayWorkers.reduce((sum, w) => sum + (septimoByWorker.get(w.id)?.cells[i]?.septimo ?? 0), 0);
+  };
 
   // Cast to Route: typedRoutes can't infer literal routes from dynamic query
   // strings, so these built-at-runtime hrefs come out as `string`.
@@ -236,7 +284,7 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
                 {visibleWeeks.map((w) => (
                   <th
                     key={w.monday}
-                    colSpan={6}
+                    colSpan={7}
                     className="border border-finca-100 px-2 py-1 text-center text-[11px] font-semibold text-finca-600"
                   >
                     {weekLabel(w.monday, w.saturday)}
@@ -248,12 +296,19 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
             <tr className="bg-finca-50 text-finca-600">
               <th className="sticky left-0 z-20 w-8 border border-finca-100 bg-finca-50 px-2 py-1.5 text-left font-medium">#</th>
               <th className="sticky left-8 z-20 border border-finca-100 bg-finca-50 px-2 py-1.5 text-left font-medium">Trabajador</th>
-              {visibleDays.map((d, i) => (
-                <th key={d} className="min-w-[6.5rem] max-w-[9rem] border border-finca-100 px-2 py-1.5 text-center font-medium">
-                  {DAY_LABELS[i % 6]} {dm(d)}
-                </th>
+              {visibleWeeks.map((w) => (
+                <Fragment key={w.monday}>
+                  {w.days.map((d, i) => (
+                    <th key={d} className="min-w-[6.5rem] max-w-[9rem] border border-finca-100 px-2 py-1.5 text-center font-medium">
+                      {DAY_LABELS[i % 6]} {dm(d)}
+                    </th>
+                  ))}
+                  <th className="min-w-[4.5rem] border border-finca-100 bg-finca-100/60 px-2 py-1.5 text-center font-medium">
+                    Séptimo
+                  </th>
+                </Fragment>
               ))}
-              <th className="border border-finca-100 px-2 py-1.5 text-right font-medium">Total</th>
+              <th className="border border-finca-100 px-2 py-1.5 text-right font-medium" title="Solo actividades; el séptimo se totaliza en su propia columna">Total actividades</th>
             </tr>
           </thead>
           <tbody>
@@ -263,25 +318,38 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
                 <td className="sticky left-8 z-10 whitespace-nowrap border border-finca-100 bg-white px-2 py-1 font-medium text-finca-900">
                   {w.fullName}
                 </td>
-                {visibleDays.map((d) => {
-                  const entries = cells.get(cellKey(w.id, d));
-                  return (
-                    <td key={d} className="min-w-[6.5rem] max-w-[9rem] border border-finca-100 px-1.5 py-1 align-top">
-                      {entries
-                        ? entries.map((e, i) => (
-                            <div key={i} className={i > 0 ? "mt-1 border-t border-finca-50 pt-1" : ""}>
-                              <div className="truncate font-medium text-finca-700" title={entryActivityLabel(e)}>
-                                {entryActivityLabel(e)}
-                              </div>
-                              <div className="truncate text-finca-400" title={entryDetailLabel(e)}>
-                                {entryDetailLabel(e)}
-                              </div>
-                            </div>
-                          ))
-                        : <span className="text-finca-200">·</span>}
+                {visibleWeeks.map((vw) => (
+                  <Fragment key={vw.monday}>
+                    {vw.days.map((d) => {
+                      const entries = cells.get(cellKey(w.id, d));
+                      return (
+                        <td key={d} className="min-w-[6.5rem] max-w-[9rem] border border-finca-100 px-1.5 py-1 align-top">
+                          {entries
+                            ? entries.map((e, i) => (
+                                <div key={i} className={i > 0 ? "mt-1 border-t border-finca-50 pt-1" : ""}>
+                                  <div className="truncate font-medium text-finca-700" title={entryActivityLabel(e)}>
+                                    {entryActivityLabel(e)}
+                                  </div>
+                                  <div className="truncate text-finca-400" title={entryDetailLabel(e)}>
+                                    {entryDetailLabel(e)}
+                                  </div>
+                                </div>
+                              ))
+                            : <span className="text-finca-200">·</span>}
+                        </td>
+                      );
+                    })}
+                    <td className="min-w-[4.5rem] border border-finca-100 bg-finca-50/40 px-1 py-1 text-center align-middle">
+                      <SeptimoCell
+                        workerName={w.fullName}
+                        amount={septimoReport.amount}
+                        weeks={septimoWeeks}
+                        detail={septimoByWorker.get(w.id) ?? null}
+                        weekIndex={septimoWeekIndexByMonday.get(vw.monday) ?? null}
+                      />
                     </td>
-                  );
-                })}
+                  </Fragment>
+                ))}
                 <td className="whitespace-nowrap border border-finca-100 px-2 py-1 text-right font-medium tabular-nums text-finca-900">
                   {formatGTQ(workerTotals.get(w.id) ?? 0)}
                 </td>
@@ -294,7 +362,14 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
               <td className="sticky left-8 z-10 border border-finca-100 bg-finca-50/60 px-2 py-2 text-right text-xs font-semibold text-finca-600" colSpan={1}>
                 Total
               </td>
-              <td className="border border-finca-100" colSpan={visibleDays.length} />
+              {visibleWeeks.map((w) => (
+                <Fragment key={w.monday}>
+                  <td className="border border-finca-100" colSpan={w.days.length} />
+                  <td className="whitespace-nowrap border border-finca-100 bg-finca-50/60 px-1 py-2 text-center text-xs font-semibold tabular-nums text-finca-900">
+                    {formatGTQ(septimoWeekTotal(w.monday))}
+                  </td>
+                </Fragment>
+              ))}
               <td className="whitespace-nowrap border border-finca-100 px-2 py-2 text-right text-xs font-semibold tabular-nums text-finca-900">
                 {formatGTQ(grandTotal)}
               </td>

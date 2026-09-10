@@ -15,7 +15,7 @@ import { formatGTQ } from "@/lib/utils/format";
 import { RecordsTable, type RecordRow } from "./records-table";
 import { AcumuladosTable, type AcumuladoRow } from "./acumulados-table";
 import { AcumuladosGrupoTable, type GrupoRow } from "./acumulados-grupo-table";
-import { SeptimoDrawer, type SeptimoWeekMeta, type SeptimoDetail } from "./septimo-drawer";
+import { SeptimoDrawer, type SeptimoWeekMeta, type SeptimoDetail } from "@/components/planilla/septimo-drawer";
 
 type FlagKey = "sinCuenta" | "cuentaCompartida" | "pagoSinTrabajo" | "inactivoConPago" | "ajusteSinNota" | "variacion";
 type Row = {

@@ -1,9 +1,10 @@
 "use client";
 
 // =============================================================================
-// src/app/(authenticated)/planilla/autorizacion/septimo-drawer.tsx
-// Drill-down for the "Séptimo" cell of Revisión y Autorización: where one
-// worker's séptimo amount comes from, week by week.
+// src/components/planilla/septimo-drawer.tsx
+// Drill-down for a "Séptimo" cell: where one worker's séptimo amount comes
+// from, week by week. Shared by Revisión y Autorización (open period) and
+// Planillas anteriores (closed periods), so both explain it identically.
 //
 // The séptimo is the only figure on this screen that is DERIVED rather than
 // CAPTURED — it generates no ActivityRecord, so "Detalle de registros" cannot
