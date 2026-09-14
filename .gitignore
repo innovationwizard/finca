@@ -63,3 +63,7 @@ public/sw.js.map
 public/workbox-*.js
 public/workbox-*.js.map
 public/swe-worker-*.js
+
+# Local-only files
+docs/PlanillaCorregida.xlsx
+scripts/apply-bank-accounts-2026-09.ts

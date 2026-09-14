@@ -188,21 +188,6 @@ export default async function DashboardPage() {
   // Alerts
   // -------------------------------------------------------------------------
 
-  // Rendimiento outliers
-  const rendimientoOutliers = await prisma.coffeeIntake.findMany({
-    where: {
-      date: { gte: seasonStart, lte: seasonEnd },
-      rendimiento: { not: null },
-      OR: [
-        { rendimiento: { lt: 4.0 } },
-        { rendimiento: { gt: 7.0 } },
-      ],
-    },
-    select: { code: true, date: true, rendimiento: true },
-    orderBy: { date: "desc" },
-    take: 10,
-  });
-
   // Suspicious "Corte de Cafe" quantities > 5
   const suspiciousRecords = await prisma.activityRecord.findMany({
     where: {
@@ -230,15 +215,6 @@ export default async function DashboardPage() {
     alerts.push({
       type: "warning",
       message: "No hay periodo de pago abierto.",
-    });
-  }
-
-  for (const o of rendimientoOutliers) {
-    const rend = Number(o.rendimiento);
-    const dateStr = o.date.toISOString().split("T")[0];
-    alerts.push({
-      type: rend < 4.0 ? "critical" : "warning",
-      message: `Rendimiento atipico en ingreso ${o.code} (${dateStr}): ${rend.toFixed(2)}`,
     });
   }
 
