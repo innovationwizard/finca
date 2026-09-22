@@ -248,8 +248,11 @@ export function PagosView({
                           : "border-finca-200 bg-finca-50 text-finca-700 hover:bg-finca-100"
                       }`}
                     >
+                      {/* "Período", not the legacy "Sem": periodNumber counts
+                          PERIODS (each spanning several weeks), so labeling it
+                          "Sem" read as a week number and misled. */}
                       <span className="block text-sm font-semibold">
-                        Sem {p.periodNumber}
+                        Período {p.periodNumber}
                         {i === 0 ? " · más reciente" : ""}
                       </span>
                       <span

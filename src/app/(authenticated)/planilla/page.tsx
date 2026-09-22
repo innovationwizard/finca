@@ -72,6 +72,22 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
     );
   }
 
+  // The audit download is pinned to ONE period regardless of what is selected
+  // below: the most recent already-ended one, found with the same query the
+  // Pagos page runs for its "más reciente" chip (endDate < today, newest first,
+  // no agricultural-year scope, no isClosed filter). Matching that query is the
+  // requirement — the dates printed on the button must be the dates Jose reads
+  // off Pagos. The route re-runs it; this copy only labels the button.
+  const nowUtc = new Date();
+  const todayUtc = new Date(
+    Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDate()),
+  );
+  const auditPeriod = await prisma.payPeriod.findFirst({
+    where: { endDate: { lt: todayUtc } },
+    orderBy: { endDate: "desc" },
+    select: { periodNumber: true, startDate: true, endDate: true },
+  });
+
   // Selected period (default: most recent closed).
   const period = periods.find((p) => p.id === params.periodo) ?? periods[0];
   const weeks = periodWeeks(period.startDate, period.endDate);
@@ -182,6 +198,19 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   const exportDiarioHref = `/api/planilla/export?${exportQuery}`;
   const exportSeptimosHref = `/api/planilla/septimos?${exportQuery}`;
 
+  // Auditoría: always the most recent already-ended period (auditPeriod above),
+  // never the one selected in the chips — hence no `periodo` in its query.
+  const exportAuditoriaHref = `/api/planilla/auditoria${selectedWorker ? `?trabajador=${selectedWorker}` : ""}`;
+  // Same short form the Pagos chip prints ("12/8/2026" — no leading zeros), so
+  // the range on this button reads identically to the one on that page.
+  const short = (d: Date) => {
+    const [y, m, dd] = isoUTC(dayMsUTC(d)).split("-");
+    return `${Number(dd)}/${Number(m)}/${y}`;
+  };
+  const auditRange = auditPeriod
+    ? `${short(auditPeriod.startDate)} — ${short(auditPeriod.endDate)}`
+    : "";
+
   return (
     <div className="mx-auto max-w-full px-4 py-8 sm:px-6 lg:px-8">
       {/* ── Tier 1: period navigation ─────────────────────────────────────── */}
@@ -269,6 +298,21 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
             <Download className="h-4 w-4" />
             Descargar Excel Séptimos
           </a>
+          {auditPeriod && (
+            <a
+              href={exportAuditoriaHref}
+              className="inline-flex items-center gap-2 rounded-lg border border-finca-900 bg-finca-900 px-4 py-1.5 text-left text-sm font-semibold text-white transition-colors hover:bg-finca-800"
+              title={`Descargar la auditoría del período ${auditPeriod.periodNumber} (${auditRange}) en Excel: el detalle diario completo más los totales por trabajador — devengado, séptimos, adicionales, anticipos, descuentos y total a pagar, con sus notas${
+                selectedWorker ? " (solo el trabajador filtrado)" : ""
+              }`}
+            >
+              <Download className="h-4 w-4 shrink-0" />
+              <span className="leading-tight">
+                <span className="block">Descargar Excel Auditoría</span>
+                <span className="block text-xs font-normal tabular-nums text-finca-100">{auditRange}</span>
+              </span>
+            </a>
+          )}
         </div>
       </div>
 

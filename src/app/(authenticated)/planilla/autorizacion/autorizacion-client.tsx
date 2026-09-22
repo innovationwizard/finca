@@ -9,7 +9,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ShieldCheck, X, AlertTriangle } from "lucide-react";
+import { Loader2, ShieldCheck, X, AlertTriangle, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { formatGTQ } from "@/lib/utils/format";
 import { RecordsTable, type RecordRow } from "./records-table";
@@ -139,25 +139,53 @@ export function AutorizacionClient({
 
   const maxComposition = Math.max(1, ...composition.map((c) => c.total));
 
+  // Date range on the download button, in the same short form the Pagos chip
+  // and the Planillas Anteriores button print ("12/8/2026" — no leading zeros).
+  // Split from the ISO string rather than parsed as a Date: these are @db.Date
+  // values at UTC midnight, and a local-timezone parse shifts them a day.
+  const short = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    return `${Number(d)}/${Number(m)}/${y}`;
+  };
+  const auditRange = `${short(period.startDate)} — ${short(period.endDate)}`;
+
   return (
     <div className="mx-auto max-w-full px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Revisión y Autorización</h1>
+          {/* "Período", not the legacy "Semana": periodNumber counts PERIODS,
+              each spanning several weeks. */}
           <p className="mt-1 text-sm text-finca-500">
-            Semana {period.periodNumber} · {period.startDate} — {period.endDate} · Coteje contra el estado de cuenta BANRURAL antes de autorizar.
+            Período {period.periodNumber} · {auditRange} · Coteje contra el estado de cuenta BANRURAL antes de autorizar.
           </p>
         </div>
-        {canAuthorize && (
-          <button
-            onClick={() => { setError(null); setConfirmOpen(true); }}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800"
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {/* The same audit workbook Planillas Anteriores downloads, for the
+              period still open. Available to everyone who can open this page:
+              reviewing before authorizing is what the file is for. */}
+          <a
+            href="/api/planilla/auditoria/abierto"
+            className="inline-flex items-center gap-2 rounded-lg border border-finca-900 bg-finca-900 px-4 py-1.5 text-left text-sm font-semibold text-white transition-colors hover:bg-finca-800"
+            title={`Descargar la auditoría del período abierto ${period.periodNumber} (${auditRange}) en Excel: el detalle diario completo más los totales por trabajador — devengado, séptimos, adicionales, anticipos, descuentos y total a pagar, con sus notas. Cifras provisionales: el período aún no se ha autorizado.`}
           >
-            <ShieldCheck className="h-4 w-4" />
-            Autorizar pago
-          </button>
-        )}
+            <Download className="h-4 w-4 shrink-0" />
+            <span className="leading-tight">
+              <span className="block">Descargar Excel Auditoría</span>
+              <span className="block text-xs font-normal tabular-nums text-finca-100">{auditRange} · abierto</span>
+            </span>
+          </a>
+          {canAuthorize && (
+            <button
+              onClick={() => { setError(null); setConfirmOpen(true); }}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Autorizar pago
+            </button>
+          )}
+        </div>
       </div>
 
       {/* KPI cards */}
