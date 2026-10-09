@@ -53,6 +53,7 @@ export const ACTIVITY_UNITS = [
   { value: "HECTAREA", label: "Hectárea (ha)", abbr: "ha" },
   { value: "DIA", label: "Día", abbr: "día" },
   { value: "TAREA", label: "Tarea", abbr: "tarea" },
+  { value: "UNIDAD", label: "Unidad", abbr: "unidad" },
 ] as const;
 
 // "Abreviatura" — the finquero's own shorthand (AH, MG, FERIADO…). Optional:
@@ -74,7 +75,7 @@ export const activityUpdateSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, "El nombre es requerido").max(100),
   shortName: activityShortNameSchema.optional(),
-  unit: z.enum(["QUINTAL", "MANZANA", "HECTAREA", "DIA", "TAREA"]),
+  unit: z.enum(["QUINTAL", "MANZANA", "HECTAREA", "DIA", "TAREA", "UNIDAD"]),
   defaultPrice: z
     .number()
     .min(0, "El precio no puede ser negativo")

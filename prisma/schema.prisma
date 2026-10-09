@@ -232,6 +232,7 @@ enum ActivityUnit {
   HECTAREA // ha
   DIA // día trabajado
   TAREA // tarea
+  UNIDAD // unidad
 }
 
 model Activity {

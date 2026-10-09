@@ -21,6 +21,7 @@ const UNIT_OPTIONS = [
   { value: "HECTAREA", label: "Hectárea (ha)" },
   { value: "DIA", label: "Día" },
   { value: "TAREA", label: "Tarea" },
+  { value: "UNIDAD", label: "Unidad" },
 ] as const;
 
 const UNIT_ABBR: Record<string, string> = {
@@ -29,6 +30,7 @@ const UNIT_ABBR: Record<string, string> = {
   HECTAREA: "ha",
   DIA: "día",
   TAREA: "tarea",
+  UNIDAD: "unidad",
 };
 
 type ActivityRow = {
