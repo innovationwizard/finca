@@ -3,21 +3,24 @@
 // =============================================================================
 // Weekly capture grid — emulates DATA MANUEL FLORES from PLANILLAFINCA.xlsx.
 // Rows = workers, columns = days × (Lote, Actividad, Unidades). Dropdowns prevent
-// the dirty free-text codes the xlsx suffers from. Saves one ActivityRecord per
-// filled cell (price resolved by work date) via POST /api/planilla/captura.
+// the dirty free-text codes the xlsx suffers from. A worker may do more than one
+// activity in a day: each day cell holds one LINE per activity, and each line is
+// one ActivityRecord identified by its own id (UUIDv7, generated here for a new
+// line). Saves via POST /api/planilla/captura (price resolved by work date).
 // =============================================================================
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, Loader2, ArrowRight, X, Plus, ChevronLeft, ChevronRight, CalendarPlus } from "lucide-react";
 import { resolveActivityPrice, type PriceVigencia } from "@/lib/pricing/resolve-price";
 import { activityLabel } from "@/lib/planilla/history";
+import { uuidv7 } from "@/lib/utils/uuidv7";
 
 type Worker = { id: string; name: string };
 type Activity = { id: string; name: string; shortName: string | null; unit: string; defaultPrice: number; priceSchedule: PriceVigencia[] };
 type Lote = { id: string; name: string };
 type Period = { id: string; periodNumber: number; startDate: string; endDate: string; isClosed: boolean };
-type Cell = { loteId: string; activityId: string; units: string };
+type Line = { id: string; loteId: string; activityId: string; units: string };
 
 const ROSTER_KEY = "finca-captura-roster";
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -34,7 +37,9 @@ function mondayOf(iso: string): string {
 function mondayOfToday(): string { return mondayOf(isoOf(new Date())); }
 function dm(iso: string) { const [, m, d] = iso.split("-"); return `${d}/${m}`; }
 
-type ExistingRecord = { workerId: string; date: string; loteId: string; activityId: string; units: string };
+type ExistingRecord = { id: string; workerId: string; date: string; loteId: string; activityId: string; units: string };
+
+const NO_LINES: Line[] = [];
 
 export function CapturaGrid({ workers, activities, lotes, periods, canWrite, canManagePeriods, existing }: { workers: Worker[]; activities: Activity[]; lotes: Lote[]; periods: Period[]; canWrite: boolean; canManagePeriods: boolean; existing: ExistingRecord[] }) {
   const router = useRouter();
@@ -48,12 +53,19 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
     return mondayOfToday();
   });
   // Seed from already-saved records so the grid shows existing entries (it was
-  // write-only before, which made saved data look lost). Keyed worker|date.
-  const [cells, setCells] = useState<Record<string, Cell>>(() => {
-    const seed: Record<string, Cell> = {};
-    for (const e of existing) seed[`${e.workerId}|${e.date}`] = { loteId: e.loteId, activityId: e.activityId, units: e.units };
+  // write-only before, which made saved data look lost). Keyed worker|date; a
+  // day keeps EVERY record it has, one line each — none may be hidden, or it
+  // would still be paid without anyone seeing it.
+  const [cells, setCells] = useState<Record<string, Line[]>>(() => {
+    const seed: Record<string, Line[]> = {};
+    for (const e of existing) (seed[`${e.workerId}|${e.date}`] ??= []).push({ id: e.id, loteId: e.loteId, activityId: e.activityId, units: e.units });
     return seed;
   });
+  // Ids that exist in the database (loaded, or written by a save from here).
+  // Only these need a delete when their line is removed or emptied.
+  const [persisted, setPersisted] = useState<Set<string>>(() => new Set(existing.map((e) => e.id)));
+  // Lines the user removed with ×, or replaced via "Copiar lunes".
+  const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -101,21 +113,51 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
   const closedDays = useMemo(() => days.filter((d) => dayClosed(d)), [days, dayClosed]);
 
   const key = (workerId: string, iso: string) => `${workerId}|${iso}`;
-  const getCell = (workerId: string, iso: string): Cell => cells[key(workerId, iso)] ?? { loteId: "", activityId: "", units: "" };
-  const setCell = useCallback((workerId: string, iso: string, patch: Partial<Cell>) => {
-    setCells((prev) => ({ ...prev, [key(workerId, iso)]: { ...(prev[key(workerId, iso)] ?? { loteId: "", activityId: "", units: "" }), ...patch } }));
+  const getLines = (workerId: string, iso: string): Line[] => cells[key(workerId, iso)] ?? NO_LINES;
+  // An empty day shows one blank line. Its id is fixed per worker-day so the
+  // first keystroke turns it into a real line WITHOUT remounting the input
+  // (a new React key would drop focus mid-typing).
+  const placeholderIds = useRef(new Map<string, string>());
+  const placeholderId = (workerId: string, iso: string): string => {
+    const k = key(workerId, iso);
+    let id = placeholderIds.current.get(k);
+    if (!id) { id = uuidv7(); placeholderIds.current.set(k, id); }
+    return id;
+  };
+  // Editing an id the day does not hold yet (its placeholder, or a line just
+  // added) appends it as a new line.
+  const setLine = useCallback((workerId: string, iso: string, lineId: string, patch: Partial<Line>) => {
+    setCells((prev) => {
+      const k = key(workerId, iso);
+      const lines = prev[k] ?? NO_LINES;
+      if (!lines.some((l) => l.id === lineId)) return { ...prev, [k]: [...lines, { id: lineId, loteId: "", activityId: "", units: "", ...patch }] };
+      return { ...prev, [k]: lines.map((l) => (l.id === lineId ? { ...l, ...patch } : l)) };
+    });
+  }, []);
+  const addLine = useCallback((workerId: string, iso: string) => setLine(workerId, iso, uuidv7(), {}), [setLine]);
+  const removeLine = useCallback((workerId: string, iso: string, lineId: string) => {
+    setCells((prev) => ({ ...prev, [key(workerId, iso)]: (prev[key(workerId, iso)] ?? NO_LINES).filter((l) => l.id !== lineId) }));
+    setRemovedIds((prev) => [...prev, lineId]);
+    // A removed id must never come back as the day's next placeholder: it
+    // would be sent to save and to delete at once.
+    placeholderIds.current.delete(key(workerId, iso));
   }, []);
 
-  // Copy a worker's first-day entry across the rest of the week (the xlsx is repetitive).
+  // Copy a worker's first-day activities across the rest of the week (the xlsx
+  // is repetitive). Replaces what those days held; closed days are left alone.
   const fillAcross = useCallback((workerId: string) => {
-    setCells((prev) => {
-      const src = prev[key(workerId, days[0])];
-      if (!src?.activityId) return prev;
-      const next = { ...prev };
-      for (const d of days) next[key(workerId, d)] = { ...src };
-      return next;
-    });
-  }, [days]);
+    const src = (cells[key(workerId, days[0])] ?? NO_LINES).filter((l) => l.activityId);
+    if (src.length === 0) return;
+    const next = { ...cells };
+    const replaced: string[] = [];
+    for (const d of days.slice(1)) {
+      if (dayClosed(d)) continue;
+      replaced.push(...(cells[key(workerId, d)] ?? NO_LINES).map((l) => l.id));
+      next[key(workerId, d)] = src.map((l) => ({ ...l, id: uuidv7() }));
+    }
+    setCells(next);
+    setRemovedIds((prev) => [...prev, ...replaced]);
+  }, [cells, days, dayClosed]);
 
   const priceFor = useCallback((activityId: string, iso: string) => {
     const a = activityById.get(activityId);
@@ -126,15 +168,28 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
   const workerTotal = useCallback((workerId: string) => {
     let t = 0;
     for (const d of days) {
-      const c = getCell(workerId, d);
-      if (c.activityId) { const u = parseFloat(c.units) || 1; t += u * priceFor(c.activityId, d); }
+      for (const l of getLines(workerId, d)) {
+        if (l.activityId) { const u = parseFloat(l.units) || 1; t += u * priceFor(l.activityId, d); }
+      }
     }
     return t;
   }, [days, cells, priceFor]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Días of DIA-unit work in one worker-day. Above 1 is allowed (extra shift or
+  // hours) but flagged, so it is a decision and never a typo.
+  const diasOf = useCallback((lines: Line[]) => lines.reduce((s, l) => (l.activityId && activityById.get(l.activityId)?.unit === "DIA" ? s + (parseFloat(l.units) || 1) : s), 0), [activityById]);
+
   const grandTotal = useMemo(() => roster.reduce((s, w) => s + workerTotal(w.id), 0), [roster, workerTotal]);
 
-  const filledCount = useMemo(() => Object.values(cells).filter((c) => c.activityId).length, [cells]);
+  const filledCount = useMemo(() => Object.values(cells).reduce((s, lines) => s + lines.filter((l) => l.activityId).length, 0), [cells]);
+
+  // Saved records to delete: lines removed with ×, plus saved lines whose
+  // activity was cleared (an emptied line means "this record goes away").
+  const pendingDeleteIds = useMemo(() => {
+    const ids = new Set(removedIds.filter((id) => persisted.has(id)));
+    for (const lines of Object.values(cells)) for (const l of lines) if (!l.activityId && persisted.has(l.id)) ids.add(l.id);
+    return [...ids];
+  }, [cells, removedIds, persisted]);
 
   const handleSave = useCallback(async () => {
     // Block only when typed data sits on an uncovered day — the `if (!period)
@@ -142,39 +197,62 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
     // to lose, so it must not hold hostage the covered days of the same week
     // (a week straddling a period boundary is normal). The amber banner still
     // warns about every uncovered day regardless.
-    const blocked = uncovered.filter((d) => roster.some((w) => getCell(w.id, d).activityId));
+    const blocked = uncovered.filter((d) => roster.some((w) => getLines(w.id, d).some((l) => l.activityId)));
     if (blocked.length > 0) { setMsg({ kind: "err", text: `Hay datos capturados en días sin período de pago (${blocked.map(dm).join(", ")}). Resuélvalo en el aviso de arriba antes de guardar.` }); return; }
     const rows: Record<string, unknown>[] = [];
     for (const w of roster) {
       for (const d of days) {
-        const c = getCell(w.id, d);
-        if (!c.activityId) continue;
         const period = openPeriodFor(d);
         if (!period) continue; // closed day (inputs disabled) or uncovered day (`blocked` above proved it empty)
-        const units = parseFloat(c.units) || 1;
-        const price = priceFor(c.activityId, d);
-        rows.push({
-          workerId: w.id, activityId: c.activityId, loteId: c.loteId || null,
-          date: d, quantity: units, unitPrice: price,
-          totalEarned: Math.round(units * price * 100) / 100, payPeriodId: period.id,
-        });
+        for (const l of getLines(w.id, d)) {
+          if (!l.activityId) continue;
+          const units = parseFloat(l.units) || 1;
+          const price = priceFor(l.activityId, d);
+          rows.push({
+            id: l.id, workerId: w.id, activityId: l.activityId, loteId: l.loteId || null,
+            date: d, quantity: units, unitPrice: price,
+            totalEarned: Math.round(units * price * 100) / 100, payPeriodId: period.id,
+          });
+        }
       }
     }
-    if (rows.length === 0) { setMsg({ kind: "err", text: "No hay celdas llenas para guardar." }); return; }
+    // An id that is back on a filled line (e.g. a day's placeholder after
+    // "Copiar lunes" replaced that line) is an update, not a delete.
+    const rowIds = new Set(rows.map((r) => r.id as string));
+    const deleteIds = pendingDeleteIds.filter((id) => !rowIds.has(id));
+    if (rows.length === 0 && deleteIds.length === 0) { setMsg({ kind: "err", text: "No hay celdas llenas para guardar." }); return; }
     setSaving(true); setMsg(null);
     try {
       const res = await fetch("/api/planilla/captura", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows }),
+        body: JSON.stringify({ rows, deleteIds }),
       });
       const data = await res.json();
-      if (!res.ok) { setMsg({ kind: "err", text: data.error || "Error al guardar" }); setSaving(false); return; }
-      setMsg({ kind: "ok", text: `${data.count ?? rows.length} registro(s) guardado(s).` });
+      if (!res.ok) {
+        const details = Array.isArray(data.details) ? ` ${data.details.slice(0, 3).join(" · ")}` : "";
+        setMsg({ kind: "err", text: `${data.error || "Error al guardar"}${details}` });
+        return;
+      }
+      const deleted = new Set(deleteIds);
+      setPersisted((prev) => {
+        const n = new Set(prev);
+        for (const r of rows) n.add(r.id as string);
+        for (const id of deleted) n.delete(id);
+        return n;
+      });
+      setRemovedIds((prev) => prev.filter((id) => !deleted.has(id)));
+      setCells((prev) => {
+        const next: Record<string, Line[]> = {};
+        for (const [k, lines] of Object.entries(prev)) next[k] = lines.filter((l) => !deleted.has(l.id));
+        return next;
+      });
+      const deletedText = data.deleted ? `, ${data.deleted} eliminado(s)` : "";
+      setMsg({ kind: "ok", text: `${data.count ?? rows.length} registro(s) guardado(s)${deletedText}.` });
       router.refresh();
     } catch {
       setMsg({ kind: "err", text: "Error de conexión" });
     } finally { setSaving(false); }
-  }, [roster, days, cells, uncovered, priceFor, openPeriodFor, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [roster, days, cells, uncovered, priceFor, openPeriodFor, pendingDeleteIds, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const notInRoster = useMemo(() => {
     const set = new Set(rosterIds);
@@ -334,21 +412,39 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
                   </span>
                 </td>
                 {days.map((d) => {
-                  const c = getCell(w.id, d);
+                  const lines = getLines(w.id, d);
                   const closed = dayClosed(d);
+                  const editable = canWrite && !closed;
+                  const dias = diasOf(lines);
+                  // An empty day still shows one blank line to type into.
+                  const shown: (Line | null)[] = lines.length ? lines : [null];
+                  const blankId = lines.length ? "" : placeholderId(w.id, d);
                   return (
-                    <td key={d} colSpan={3} className={`border border-finca-100 p-0 ${closed ? "bg-finca-50/70" : ""}`}>
-                      <div className="flex">
-                        <select value={c.loteId} disabled={closed || !canWrite} onChange={(e) => setCell(w.id, d, { loteId: e.target.value })} className="w-20 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
-                          <option value="">—</option>
-                          {lotes.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-                        </select>
-                        <select value={c.activityId} disabled={closed || !canWrite} onChange={(e) => setCell(w.id, d, { activityId: e.target.value, units: c.units || (e.target.value ? "1" : "") })} className="w-24 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
-                          <option value=""></option>
-                          {activities.map((a) => <option key={a.id} value={a.id}>{activityLabel(a.shortName, a.name)}</option>)}
-                        </select>
-                        <input value={c.units} disabled={closed || !canWrite} onChange={(e) => setCell(w.id, d, { units: e.target.value })} inputMode="decimal" className="w-10 bg-transparent px-1 py-1 text-right text-xs tabular-nums focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300" placeholder="1" />
-                      </div>
+                    <td key={d} colSpan={3} className={`border border-finca-100 p-0 align-top ${closed ? "bg-finca-50/70" : dias > 1 ? "bg-amber-50" : ""}`}>
+                      {shown.map((l, li) => (
+                        <div key={l?.id ?? blankId} className={`flex ${li > 0 ? "border-t border-dashed border-finca-100" : ""}`}>
+                          <select value={l?.loteId ?? ""} disabled={!editable} onChange={(e) => setLine(w.id, d, l?.id ?? blankId, { loteId: e.target.value })} aria-label="Lote" className="w-20 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
+                            <option value="">—</option>
+                            {lotes.map((lo) => <option key={lo.id} value={lo.id}>{lo.name}</option>)}
+                          </select>
+                          <select value={l?.activityId ?? ""} disabled={!editable} onChange={(e) => setLine(w.id, d, l?.id ?? blankId, { activityId: e.target.value, units: l?.units || (e.target.value ? "1" : "") })} aria-label="Actividad" className="w-24 border-r border-finca-100 bg-transparent px-1 py-1 text-xs focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300">
+                            <option value=""></option>
+                            {activities.map((a) => <option key={a.id} value={a.id}>{activityLabel(a.shortName, a.name)}</option>)}
+                          </select>
+                          <input value={l?.units ?? ""} disabled={!editable} onChange={(e) => setLine(w.id, d, l?.id ?? blankId, { units: e.target.value })} inputMode="decimal" aria-label="Unidades" className="w-10 bg-transparent px-1 py-1 text-right text-xs tabular-nums focus:bg-amber-50 focus:outline-none disabled:cursor-not-allowed disabled:text-finca-300" placeholder="1" />
+                          {editable && (
+                            <span className="flex w-8 shrink-0 items-center justify-end gap-0.5 pr-0.5">
+                              {l && <button onClick={() => removeLine(w.id, d, l.id)} title="Quitar esta actividad" aria-label="Quitar esta actividad" className="text-finca-300 hover:text-red-500"><X className="h-3 w-3" /></button>}
+                              {li === shown.length - 1 && lines.length > 0 && <button onClick={() => addLine(w.id, d)} title="Agregar otra actividad este día" aria-label="Agregar otra actividad este día" className="text-finca-300 hover:text-finca-700"><Plus className="h-3 w-3" /></button>}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                      {dias > 1 && (
+                        <div className="border-t border-amber-200 px-1 text-right text-[10px] font-medium text-amber-700" title="Más de un día de trabajo en la misma fecha (turno u horas extra)">
+                          {dias.toLocaleString("es-GT", { maximumFractionDigits: 2 })} días
+                        </div>
+                      )}
                     </td>
                   );
                 })}
@@ -361,9 +457,9 @@ export function CapturaGrid({ workers, activities, lotes, periods, canWrite, can
 
       <div className="mt-4 flex items-center gap-3">
         {canWrite && (
-          <button onClick={handleSave} disabled={saving || filledCount === 0} className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-finca-800 disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving || (filledCount === 0 && pendingDeleteIds.length === 0)} className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-finca-800 disabled:opacity-50">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-            Guardar {filledCount} registro(s)
+            Guardar {filledCount} registro(s){pendingDeleteIds.length > 0 ? ` · eliminar ${pendingDeleteIds.length}` : ""}
           </button>
         )}
         <span className="text-sm text-finca-500">Total semana: <span className="font-semibold text-finca-900">Q{grandTotal.toLocaleString("es-GT", { minimumFractionDigits: 2 })}</span></span>

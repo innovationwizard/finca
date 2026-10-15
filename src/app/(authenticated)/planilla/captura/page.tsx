@@ -47,11 +47,13 @@ export default async function CapturaPage() {
       orderBy: { startDate: "asc" },
     }),
     // Existing records of the OPEN period(s) so the grid shows what's already
-    // saved instead of looking empty (it was write-only before). One record per
-    // (worker, day) — matches the grid's cell model.
+    // saved instead of looking empty (it was write-only before). A worker-day
+    // may hold several records; each becomes one line of that day's cell,
+    // identified by its id, in the order they were captured.
     prisma.activityRecord.findMany({
       where: { payPeriod: { isClosed: false } },
-      select: { workerId: true, date: true, loteId: true, activityId: true, quantity: true },
+      select: { id: true, workerId: true, date: true, loteId: true, activityId: true, quantity: true },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     }),
   ]);
 
@@ -127,7 +129,7 @@ export default async function CapturaPage() {
         periods={periods.map((p) => ({ id: p.id, periodNumber: p.periodNumber, startDate: p.startDate.toISOString().split("T")[0], endDate: p.endDate.toISOString().split("T")[0], isClosed: p.isClosed }))}
         canWrite={canWrite}
         canManagePeriods={canManagePeriods}
-        existing={existingRecords.map((r) => ({ workerId: r.workerId, date: r.date.toISOString().split("T")[0], loteId: r.loteId ?? "", activityId: r.activityId, units: String(Number(r.quantity)) }))}
+        existing={existingRecords.map((r) => ({ id: r.id, workerId: r.workerId, date: r.date.toISOString().split("T")[0], loteId: r.loteId ?? "", activityId: r.activityId, units: String(Number(r.quantity)) }))}
       />
     </div>
   );
