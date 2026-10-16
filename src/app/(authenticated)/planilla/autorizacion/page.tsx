@@ -11,6 +11,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, PAYROLL_REVIEW_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
 import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
+import { computeSeptimoForPeriod, getSeptimoAmount } from "@/lib/payroll/septimo";
+import { formatDmy, guatemalaDateISO, isoToUtcDate, payableEndISO } from "@/lib/payroll/authorization-date";
 import { buildSeptimoReport } from "@/lib/planilla/septimo-semanal";
 import { AutorizacionClient } from "./autorizacion-client";
 
@@ -121,6 +123,48 @@ export default async function AutorizacionPage() {
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Authorization closes the period on today's Guatemala date. The stored end
+  // may still be the plan (a future Saturday). The figures on this screen are
+  // the payment through that day, which is what the close will write.
+  const now = new Date();
+  const startISO = period.startDate.toISOString().split("T")[0];
+  const plannedEnd = period.endDate.toISOString().split("T")[0];
+  const closesOn = payableEndISO(startISO, plannedEnd, now);
+  const todayGt = guatemalaDateISO(now);
+  let closeBlocked: string | null = null;
+  if (!closesOn) {
+    closeBlocked =
+      `Este período empieza el ${formatDmy(startISO)}. ` +
+      `Autorizar cierra el período hoy (${formatDmy(todayGt)}), y ese día todavía no cae dentro de él.`;
+  } else if (closesOn < plannedEnd) {
+    const futureRecords = await prisma.activityRecord.count({
+      where: { payPeriodId: period.id, date: { gt: isoToUtcDate(closesOn) } },
+    });
+    if (futureRecords > 0) {
+      closeBlocked =
+        `Hay ${futureRecords} registro(s) de actividad después del ${formatDmy(closesOn)}. ` +
+        `Esos días ya tienen trabajo, así que este pago no se puede cerrar hoy.`;
+    } else {
+      const payableSeptimo = await computeSeptimoForPeriod(
+        prisma,
+        period.id,
+        await getSeptimoAmount(),
+        { endDate: isoToUtcDate(closesOn) },
+      );
+      for (const row of rows) {
+        const next = payableSeptimo.get(row.workerId) ?? 0;
+        const delta = Math.round((next - row.septimo) * 100) / 100;
+        if (delta === 0) continue;
+        row.septimo = next;
+        row.totalToPay = Math.round((row.totalToPay + delta) * 100) / 100;
+        row.flags.pagoSinTrabajo = row.totalToPay > 0 && row.devengado === 0 && row.septimo === 0;
+        row.flags.variacion =
+          row.prevTotal != null && row.prevTotal > 0 &&
+          Math.abs(row.totalToPay - row.prevTotal) / row.prevTotal > VARIANCE_THRESHOLD;
+      }
+    }
+  }
 
   // KPIs
   const totalToPay = rows.reduce((s, r) => s + r.totalToPay, 0);
@@ -323,8 +367,13 @@ export default async function AutorizacionPage() {
   // Note this runs for the OPEN period: buildSeptimoReport has no isClosed
   // dependency — that restriction lives only in the export route, where a
   // reconciliation against a settled figure is the point.
-  const septimoReport = await buildSeptimoReport(prisma, period);
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const reviewEnd = closesOn ? isoToUtcDate(closesOn) : period.endDate;
+  const septimoReport = await buildSeptimoReport(prisma, {
+    id: period.id,
+    startDate: period.startDate,
+    endDate: reviewEnd,
+  });
+  const todayIso = todayGt;
   const septimoWeeks = septimoReport.weeks.map((w) => ({
     label: w.label,
     monday: w.monday,
@@ -370,9 +419,11 @@ export default async function AutorizacionPage() {
       period={{
         id: period.id,
         periodNumber: period.periodNumber,
-        startDate: period.startDate.toISOString().split("T")[0],
-        endDate: period.endDate.toISOString().split("T")[0],
+        startDate: startISO,
+        endDate: plannedEnd,
       }}
+      closesOn={closesOn}
+      closeBlocked={closeBlocked}
       canAuthorize={canAuthorize}
       rows={rows}
       kpis={{ totalToPay, workerCount: rows.length, exceptionWorkerCount, sinCuentaCount }}

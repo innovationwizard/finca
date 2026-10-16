@@ -37,6 +37,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, PERIOD_DATES_ROLES } from "@/lib/auth/guards";
+import { formatDmy, guatemalaDateISO } from "@/lib/payroll/authorization-date";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 86_400_000;
@@ -75,6 +76,29 @@ export async function PATCH(
   const newEnd = endDate ? new Date(`${endDate}T00:00:00.000Z`) : existing.endDate;
   if (newEnd.getTime() < newStart.getTime()) {
     return NextResponse.json({ error: "La fecha de fin no puede ser anterior a la de inicio" }, { status: 400 });
+  }
+
+  // A closed period already ended on its authorization day. Moving the end
+  // later would put unknown days back inside a payment that was authorized.
+  // The DB check pay_periods_closed_end_on_authorization_day is the backstop.
+  if (existing.isClosed && iso(newEnd) !== iso(existing.endDate)) {
+    if (!existing.closedAt) {
+      return NextResponse.json(
+        { error: "El período está cerrado pero no tiene fecha de autorización, así que su fecha de fin no se puede mover." },
+        { status: 409 },
+      );
+    }
+    const authorizedOn = guatemalaDateISO(existing.closedAt);
+    if (iso(newEnd) > authorizedOn) {
+      return NextResponse.json(
+        {
+          error:
+            `El período se autorizó el ${formatDmy(authorizedOn)}. ` +
+            `Su fecha de fin no puede pasar de ese día: después de la autorización esas horas todavía no existían.`,
+        },
+        { status: 409 },
+      );
+    }
   }
 
   // A start that is DERIVED may not be set directly (see INVARIANT above). Only

@@ -316,6 +316,14 @@ model PayPeriod {
   // `pay_periods_single_open` — migration 20260716200000_single_open_pay_period.
   // Prisma cannot express a partial index, so it lives in raw SQL only: do NOT
   // let `migrate dev` drop it if it ever proposes to.
+  //
+  // INVARIANT: a closed period's inclusive end is on or before the Guatemala
+  // calendar day of closed_at. Authorization cuts a future planned end to that
+  // day (src/lib/payroll/authorization-date.ts). Enforced by the CHECK
+  // `pay_periods_closed_end_on_authorization_day` in migration
+  // 20261016163000 — also raw SQL, also not to be dropped. closed_at is
+  // timestamp without time zone storing the UTC clock; the check converts
+  // UTC → America/Guatemala before comparing.
 }
 
 model ActivityRecord {

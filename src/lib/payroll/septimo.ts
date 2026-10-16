@@ -56,7 +56,14 @@ const dateKey = (d: Date): string => d.toISOString().slice(0, 10);
  * who earn nothing are omitted. Going-forward only is enforced by the caller
  * (recalc refuses closed periods).
  */
-export async function computeSeptimoForPeriod(db: Db, payPeriodId: string, amount: number): Promise<Map<string, number>> {
+export async function computeSeptimoForPeriod(
+  db: Db,
+  payPeriodId: string,
+  amount: number,
+  // Authorization previews the payment through today while the stored end is
+  // still the plan. The override is that preview end; the stored row is unchanged.
+  bounds?: { endDate: Date },
+): Promise<Map<string, number>> {
   const earned = new Map<string, number>();
   if (!(amount > 0)) return earned; // disabled / non-positive → no séptimo
 
@@ -65,8 +72,9 @@ export async function computeSeptimoForPeriod(db: Db, payPeriodId: string, amoun
     select: { startDate: true, endDate: true },
   });
   if (!period) return earned;
+  const endDate = bounds?.endDate ?? period.endDate;
   const startMs = Date.UTC(period.startDate.getUTCFullYear(), period.startDate.getUTCMonth(), period.startDate.getUTCDate());
-  const endMs = Date.UTC(period.endDate.getUTCFullYear(), period.endDate.getUTCMonth(), period.endDate.getUTCDate());
+  const endMs = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate());
 
   // Holidays: exact dates always match; recurringAnnual matches by month-day.
   const holidays = await db.holiday.findMany({ select: { date: true, recurringAnnual: true } });

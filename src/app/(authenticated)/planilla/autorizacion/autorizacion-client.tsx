@@ -4,7 +4,9 @@
 // src/app/(authenticated)/planilla/autorizacion/autorizacion-client.tsx
 // Shared payroll review screen. KPI cards → exception catalog → charts → dense
 // sortable/filterable table (sticky header + sticky worker column). MASTER/ADMIN
-// see "Autorizar pago" (warn-only: always enabled), which closes the period.
+// see "Autorizar pago" (disabled when today falls before the period starts, or
+// when days after today already have activity). The confirm button names the
+// day the close will write and the amount.
 // =============================================================================
 
 import { useMemo, useState, useCallback } from "react";
@@ -12,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, X, AlertTriangle, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { formatGTQ } from "@/lib/utils/format";
+import { nextDateISO } from "@/lib/payroll/authorization-date";
 import { RecordsTable, type RecordRow } from "./records-table";
 import { AcumuladosTable, type AcumuladoRow } from "./acumulados-table";
 import { AcumuladosGrupoTable, type GrupoRow } from "./acumulados-grupo-table";
@@ -51,6 +54,8 @@ const sevClass = (s: "alta" | "media") =>
 
 export function AutorizacionClient({
   period,
+  closesOn,
+  closeBlocked,
   canAuthorize,
   rows,
   kpis,
@@ -66,6 +71,10 @@ export function AutorizacionClient({
   septimoDetail,
 }: {
   period: Period;
+  /** Day the authorization will write as the period's inclusive end. Null when today is before the period starts. */
+  closesOn: string | null;
+  /** Why authorization is refused, when the close cannot be done today. */
+  closeBlocked: string | null;
   canAuthorize: boolean;
   rows: Row[];
   kpis: { totalToPay: number; workerCount: number; exceptionWorkerCount: number; sinCuentaCount: number };
@@ -147,7 +156,12 @@ export function AutorizacionClient({
     const [y, m, d] = iso.split("-");
     return `${Number(d)}/${Number(m)}/${y}`;
   };
-  const auditRange = `${short(period.startDate)} — ${short(period.endDate)}`;
+  const paymentEnd = closesOn ?? period.endDate;
+  const auditRange = `${short(period.startDate)} — ${short(paymentEnd)}`;
+  const daysMove = closesOn != null && closesOn < period.endDate;
+  const authorizeLabel = closesOn
+    ? `Cerrar al ${short(closesOn)} y autorizar ${formatGTQ(kpis.totalToPay)}`
+    : "Autorizar pago";
 
   return (
     <div className="mx-auto max-w-full px-4 py-8 sm:px-6 lg:px-8">
@@ -160,6 +174,16 @@ export function AutorizacionClient({
           <p className="mt-1 text-sm text-finca-500">
             Período {period.periodNumber} · {auditRange} · Coteje contra el estado de cuenta BANRURAL antes de autorizar.
           </p>
+          {daysMove && closesOn && (
+            <p className="mt-2 max-w-2xl text-sm text-finca-700">
+              Al autorizar, el período se cierra el <b>{short(closesOn)}</b>. Del{" "}
+              <b>{short(nextDateISO(closesOn))}</b> al <b>{short(period.endDate)}</b> no hay horas que autorizar:
+              esas fechas pasan al período siguiente, que empieza el <b>{short(nextDateISO(closesOn))}</b>.
+            </p>
+          )}
+          {closeBlocked && (
+            <p className="mt-2 max-w-2xl text-sm text-amber-800">{closeBlocked}</p>
+          )}
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {/* The same audit workbook Planillas Anteriores downloads, for the
@@ -179,7 +203,8 @@ export function AutorizacionClient({
           {canAuthorize && (
             <button
               onClick={() => { setError(null); setConfirmOpen(true); }}
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800"
+              disabled={closeBlocked != null}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-finca-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-finca-800 disabled:opacity-50"
             >
               <ShieldCheck className="h-4 w-4" />
               Autorizar pago
@@ -403,6 +428,18 @@ export function AutorizacionClient({
               <p className="text-sm text-finca-700">
                 Vas a autorizar el pago de <b>{formatGTQ(kpis.totalToPay)}</b> a <b>{kpis.workerCount}</b> trabajador(es).
               </p>
+              {daysMove && closesOn && (
+                <p className="text-sm text-finca-700">
+                  El período se cierra el <b>{short(closesOn)}</b>, el día de esta autorización.
+                  Del <b>{short(nextDateISO(closesOn))}</b> al <b>{short(period.endDate)}</b> no hay horas que autorizar.
+                  Esas fechas pasan al período siguiente, que empieza el <b>{short(nextDateISO(closesOn))}</b>.
+                </p>
+              )}
+              {!daysMove && closesOn && (
+                <p className="text-sm text-finca-700">
+                  El período se cierra el <b>{short(closesOn)}</b>.
+                </p>
+              )}
               {kpis.exceptionWorkerCount > 0 && (
                 <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -415,9 +452,9 @@ export function AutorizacionClient({
               {error && <p className="text-sm text-red-600">{error}</p>}
               <div className="flex justify-end gap-2 pt-1">
                 <button onClick={() => setConfirmOpen(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-finca-600 hover:bg-finca-50">Cancelar</button>
-                <button onClick={authorize} disabled={authorizing} className="inline-flex items-center gap-2 rounded-lg bg-finca-900 px-4 py-2 text-sm font-medium text-white hover:bg-finca-800 disabled:opacity-50">
+                <button onClick={authorize} disabled={authorizing || closeBlocked != null} className="inline-flex max-w-full items-center gap-2 whitespace-normal rounded-lg bg-finca-900 px-4 py-2 text-left text-sm font-medium text-white hover:bg-finca-800 disabled:opacity-50">
                   {authorizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                  {authorizing ? "Autorizando…" : "Autorizar pago"}
+                  {authorizing ? "Autorizando…" : authorizeLabel}
                 </button>
               </div>
             </div>

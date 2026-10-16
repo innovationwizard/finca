@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiRequireRole, PAYROLL_REVIEW_ROLES } from "@/lib/auth/guards";
 import { getCurrentPayPeriod } from "@/lib/payroll/current-period";
+import { isoToUtcDate, payableEndISO } from "@/lib/payroll/authorization-date";
 import { buildAuditoriaWorkbook } from "@/lib/planilla/auditoria-xlsx";
 
 export const runtime = "nodejs"; // the xlsx writer needs Node APIs, not edge
@@ -40,13 +41,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "No hay un período de pago abierto" }, { status: 404 });
   }
 
+  const startISO = period.startDate.toISOString().split("T")[0];
+  const plannedEnd = period.endDate.toISOString().split("T")[0];
+  // The file studied before authorizing has to cover the same last day the
+  // close will write. A planned end still in the future is not part of this payment.
+  const closesOn = payableEndISO(startISO, plannedEnd, new Date());
   const { buffer, filename } = await buildAuditoriaWorkbook(
     prisma,
     {
       id: period.id,
       periodNumber: period.periodNumber,
       startDate: period.startDate,
-      endDate: period.endDate,
+      endDate: closesOn ? isoToUtcDate(closesOn) : period.endDate,
       isClosed: period.isClosed,
     },
     workerId ?? undefined,
