@@ -16,8 +16,6 @@ import { prisma } from "@/lib/prisma";
 import { buildSeptimoReport } from "@/lib/planilla/septimo-semanal";
 import { SeptimoCell } from "@/components/planilla/septimo-cell";
 import { requireRole, READ_ALL_ROLES } from "@/lib/auth/guards";
-import { getCurrentAgriculturalYear } from "@/lib/utils/agricultural-year";
-import { periodsOfCosecha } from "@/lib/payroll/period-cosecha";
 import { formatGTQ } from "@/lib/utils/format";
 import Link from "next/link";
 import type { Route } from "next";
@@ -44,16 +42,18 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
   // FIELD (caporal) reviews history alongside the read-all roles, as before.
   await requireRole(...READ_ALL_ROLES, "FIELD");
   const params = await searchParams;
-  const year = getCurrentAgriculturalYear();
 
   // Closed periods only — the open period lives on Captura Semanal.
-  // Scoped to the cosecha by DATE, not by the stored `agriculturalYear` stamp:
-  // ten historical rows still carry the year the old March→February rule
-  // derived, so the stamp would hide nine real closed periods. Ordered by date
-  // because period numbers restarted mid-2026 under that same old rule and are
-  // therefore not monotonic across the whole table.
+  // NOT scoped to the current cosecha. This page is the history of every
+  // planilla already paid, and the downloads below are how those files leave
+  // the app. Scoping the list to "today's" cosecha emptied it on 1 Oct 2026:
+  // cosecha 26/27 had not closed a period yet, so every earlier planilla
+  // disappeared with it. The stored `agriculturalYear` stamp is not a
+  // substitute filter either — ten rows still carry the year the old
+  // March→February rule derived (see period-cosecha.ts). Ordered by date
+  // because period numbers restarted mid-2026 and are not monotonic.
   const periods = await prisma.payPeriod.findMany({
-    where: { ...periodsOfCosecha(year), isClosed: true },
+    where: { isClosed: true },
     orderBy: { startDate: "desc" },
     select: { id: true, periodNumber: true, startDate: true, endDate: true },
   });
@@ -64,8 +64,7 @@ export default async function PlanillasAnterioresPage({ searchParams }: Props) {
         <h1 className="text-2xl font-semibold tracking-tight text-finca-900">Planillas anteriores</h1>
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-6 py-8 text-center">
           <p className="text-sm text-amber-800">
-            Aún no hay períodos cerrados en el año agrícola {year}. Al cerrar un período en{" "}
-            <b>Captura Semanal</b> aparecerá aquí.
+            Aún no hay períodos cerrados. Al cerrar un período en <b>Captura Semanal</b> aparecerá aquí.
           </p>
         </div>
       </div>

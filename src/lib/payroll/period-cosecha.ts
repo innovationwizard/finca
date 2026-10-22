@@ -39,7 +39,10 @@ export function periodCosecha(period: { startDate: Date }): string {
 /**
  * Where-clause selecting the periods of one cosecha by date rather than by the
  * stored stamp. Use for reports scoped to a season; do NOT use to find the open
- * period — that is `getCurrentPayPeriod()`, unscoped, always.
+ * period — that is `getCurrentPayPeriod()`, unscoped, always. Do NOT use it for
+ * Planillas anteriores either: that screen lists every closed period, across
+ * cosechas, because a new cosecha has none closed yet and the filter would
+ * hide the whole history.
  */
 export function periodsOfCosecha(yearCode: string): Prisma.PayPeriodWhereInput {
   return {
