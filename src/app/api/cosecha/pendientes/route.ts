@@ -13,7 +13,7 @@ export async function GET() {
     select: {
       clientId: true,
       chosenCategory: true,
-      cuadrilla: true,
+      cuadrilla: { select: { id: true, name: true } },
       documentType: true,
       nombres: true,
       apellidos: true,

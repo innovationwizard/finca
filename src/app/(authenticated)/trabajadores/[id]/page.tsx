@@ -65,6 +65,7 @@ export default async function WorkerDetailPage({ params }: PageProps) {
         orderBy: { payPeriod: { startDate: "desc" } },
         take: 20,
       },
+      cuadrilla: { select: { id: true, name: true } },
     },
   });
 
@@ -82,7 +83,8 @@ export default async function WorkerDetailPage({ params }: PageProps) {
     bankAccount: worker.bankAccount,
     phone: worker.phone,
     personPhotoUrl: worker.personPhotoUrl,
-    cuadrilla: worker.cuadrilla,
+    cuadrillaId: worker.cuadrillaId,
+    cuadrillaName: worker.cuadrilla?.name ?? null,
     category: worker.category,
     isMinor: worker.isMinor,
     isActive: worker.isActive,
@@ -118,6 +120,14 @@ export default async function WorkerDetailPage({ params }: PageProps) {
   };
 
   const canEdit = SETTINGS_ROLES.includes(user.role);
+  const cuadrillas = canEdit
+    ? (await prisma.cuadrilla.findMany({ orderBy: [{ name: "asc" }, { startDate: "asc" }] })).map((row) => ({
+        id: row.id,
+        name: row.name,
+        startDate: row.startDate.toISOString().slice(0, 10),
+        endDate: row.endDate ? row.endDate.toISOString().slice(0, 10) : null,
+      }))
+    : [];
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -129,7 +139,7 @@ export default async function WorkerDetailPage({ params }: PageProps) {
         ← Volver a Trabajadores
       </Link>
 
-      <WorkerProfile worker={serialized} canEdit={canEdit} />
+      <WorkerProfile worker={serialized} canEdit={canEdit} cuadrillas={cuadrillas} />
     </div>
   );
 }

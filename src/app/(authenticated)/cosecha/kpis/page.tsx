@@ -39,7 +39,7 @@ export default async function KpiPage() {
           madurez: true,
           workerId: true,
           lote: { select: { name: true } },
-          worker: { select: { cuadrilla: true } },
+          worker: { select: { cuadrilla: { select: { name: true } } } },
           activityRecord: { select: { totalEarned: true, payPeriodId: true } },
         },
       })
@@ -72,7 +72,7 @@ export default async function KpiPage() {
     byLote.set(lote, (byLote.get(lote) ?? 0) + libras);
     const madurez = row.madurez ?? "Sin madurez";
     byMadurez.set(madurez, (byMadurez.get(madurez) ?? 0) + libras);
-    const cuadrilla = row.worker?.cuadrilla?.trim() || "Sin cuadrilla";
+    const cuadrilla = row.worker?.cuadrilla?.name?.trim() || "Sin cuadrilla";
     byCuadrilla.set(cuadrilla, (byCuadrilla.get(cuadrilla) ?? 0) + libras);
   }
 

@@ -50,7 +50,14 @@ export interface CachedWorker {
   isActive: boolean;
   cui: string;
   category: string;
-  cuadrilla: string | null;
+  cuadrillaId: string | null;
+}
+
+export interface CachedCuadrilla {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string | null;
 }
 
 export interface CachedActivity {
@@ -144,6 +151,7 @@ class FincaOfflineDB extends Dexie {
   workerPhotos!: EntityTable<WorkerPhoto, "workerId">;
   modelFiles!: EntityTable<ModelFile, "name">;
   harvestMeta!: EntityTable<HarvestMeta, "key">;
+  cuadrillas!: EntityTable<CachedCuadrilla, "id">;
 
   constructor() {
     super("finca-danilandia");
@@ -171,6 +179,22 @@ class FincaOfflineDB extends Dexie {
       workerPhotos: "workerId",
       modelFiles: "name",
       harvestMeta: "key",
+    });
+
+    this.version(3).stores({
+      activityRecords: "clientId, date, workerId, payPeriodId, syncedAt",
+      coffeeIntakes: "clientId, date, code, syncedAt",
+      workers: "id, fullName, cui, category",
+      activities: "id, name",
+      lotes: "id, slug",
+      payPeriods: "id, agriculturalYear",
+      outbox: "++id, table, clientId, createdAt",
+      faceDescriptors: "id, workerId, source",
+      pendingBlobs: "++id, clientId, slot",
+      workerPhotos: "workerId",
+      modelFiles: "name",
+      harvestMeta: "key",
+      cuadrillas: "id, name, startDate",
     });
   }
 }

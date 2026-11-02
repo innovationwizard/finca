@@ -9,7 +9,7 @@ import type { SyncItemResult } from "./sync-weighing";
 
 export type EnrollmentPayload = {
   chosenCategory?: string;
-  cuadrilla?: string | null;
+  cuadrillaId?: string | null;
   documentType?: string;
   nombres?: string | null;
   apellidos?: string | null;
@@ -77,8 +77,11 @@ export async function syncEnrollment(
   }
   const captureTime = data.captureTime ? new Date(data.captureTime) : new Date();
   const person = completePerson(data);
-  const cuadrilla = data.cuadrilla?.trim() || null;
-  if (chosenCategory === "TEMPORAL" && !cuadrilla) {
+  const cuadrillaId = data.cuadrillaId?.trim() || null;
+  if (cuadrillaId && !/^[0-9a-f-]{36}$/i.test(cuadrillaId)) {
+    return { ok: false, error: "Cuadrilla inválida", retry: false };
+  }
+  if (chosenCategory === "TEMPORAL" && !cuadrillaId) {
     return { ok: false, error: "La cuadrilla es obligatoria para un temporal", retry: false };
   }
 
@@ -90,12 +93,17 @@ export async function syncEnrollment(
       });
       if (existing) return { ok: true };
 
+      if (cuadrillaId) {
+        const crew = await tx.cuadrilla.findUnique({ where: { id: cuadrillaId }, select: { id: true } });
+        if (!crew) return { ok: false, error: "La cuadrilla no existe", retry: false };
+      }
+
       if (!person) {
         await tx.enrollmentCapture.create({
           data: {
             clientId,
             chosenCategory,
-            cuadrilla,
+            cuadrillaId,
             documentType,
             nombres: data.nombres?.trim() || null,
             apellidos: data.apellidos?.trim() || null,
@@ -135,7 +143,7 @@ export async function syncEnrollment(
           fullName: deriveFullName(person.nombres, person.apellidos),
           fechaNacimiento: new Date(`${person.fechaNacimiento}T00:00:00.000Z`),
           category: chosenCategory,
-          cuadrilla,
+          cuadrillaId,
           personPhotoPath: data.facePhotoPath ?? null,
           isActive: true,
         },
@@ -185,7 +193,7 @@ export async function syncEnrollment(
         data: {
           clientId,
           chosenCategory,
-          cuadrilla,
+          cuadrillaId,
           documentType,
           nombres: person.nombres,
           apellidos: person.apellidos,

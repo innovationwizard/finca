@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       fullName: true,
       cui: true,
       category: true,
-      cuadrilla: true,
+      cuadrillaId: true,
       phone: true,
       isActive: true,
       isMinor: true,

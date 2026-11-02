@@ -11,6 +11,7 @@ import {
 const LINKS = [
   { href: "/cosecha/entrega", label: "Entrega", roles: HARVEST_ROLE_NAMES },
   { href: "/cosecha/registrar", label: "Registrar persona", roles: HARVEST_ROLE_NAMES },
+  { href: "/cosecha/cuadrillas", label: "Cuadrillas", roles: HARVEST_DESK_ROLE_NAMES },
   { href: "/cosecha/kpis", label: "KPIs", roles: HARVEST_DESK_ROLE_NAMES },
   { href: "/cosecha/contabilidad", label: "Contabilidad", roles: HARVEST_DESK_ROLE_NAMES },
 ];

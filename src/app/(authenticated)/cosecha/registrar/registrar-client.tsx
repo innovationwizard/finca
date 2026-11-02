@@ -8,6 +8,7 @@ import { LiveCamera } from "@/components/harvest/live-camera";
 import { OutboxNotice } from "@/components/harvest/outbox-notice";
 import { embeddingsFromVideo, stillFromVideo } from "@/lib/face/engine";
 import type { PhotoSlot } from "@/lib/harvest/constants";
+import { cuadrillaLabel } from "@/lib/harvest/cuadrilla-label";
 import { cuiMatchKey } from "@/lib/harvest/cui";
 import { queueEnrollment, queueFaceEnrollment } from "@/lib/harvest/queue";
 import { offlineDb } from "@/lib/offline/db";
@@ -36,7 +37,7 @@ export function RegistrarClient({ role, canLinkPending }: { role: string; canLin
     descriptionScore: null,
   });
   const [category, setCategory] = useState<WorkerCategoryValue>("TEMPORAL");
-  const [cuadrilla, setCuadrilla] = useState("");
+  const [cuadrillaId, setCuadrillaId] = useState("");
   const [documentType, setDocumentType] = useState<"DPI" | "BIRTH_CERTIFICATE">("DPI");
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
@@ -49,6 +50,7 @@ export function RegistrarClient({ role, canLinkPending }: { role: string; canLin
   const [busy, setBusy] = useState(false);
 
   const workers = useLiveQuery(() => offlineDb.workers.orderBy("fullName").toArray(), []);
+  const crews = useLiveQuery(() => offlineDb.cuadrillas.orderBy("name").toArray(), []);
 
   const previewsRef = useRef(previews);
   previewsRef.current = previews;
@@ -92,7 +94,7 @@ export function RegistrarClient({ role, canLinkPending }: { role: string; canLin
     setPreviews({});
     setDescriptors([]);
     setScores({ detectorScore: null, descriptionScore: null });
-    setCuadrilla("");
+    setCuadrillaId("");
     setNombres("");
     setApellidos("");
     setFechaNacimiento("");
@@ -104,7 +106,7 @@ export function RegistrarClient({ role, canLinkPending }: { role: string; canLin
 
   async function saveNew() {
     const required: PhotoSlot[] = documentType === "DPI" ? ["face", "dpiFront", "dpiBack"] : ["face", "partida"];
-    if (category === "TEMPORAL" && !cuadrilla.trim()) {
+    if (category === "TEMPORAL" && !cuadrillaId) {
       setNotice("La cuadrilla es obligatoria para un temporal");
       return;
     }
@@ -116,7 +118,7 @@ export function RegistrarClient({ role, canLinkPending }: { role: string; canLin
     try {
       await queueEnrollment({
         chosenCategory: category,
-        cuadrilla,
+        cuadrillaId: cuadrillaId || null,
         documentType,
         nombres,
         apellidos,
@@ -213,7 +215,12 @@ export function RegistrarClient({ role, canLinkPending }: { role: string; canLin
           </label>
           <label className="text-sm font-medium text-finca-700">
             Cuadrilla{category === "TEMPORAL" ? " (obligatoria)" : ""}
-            <input value={cuadrilla} onChange={(event) => setCuadrilla(event.target.value)} required={category === "TEMPORAL"} className="mt-1 w-full rounded-lg border border-finca-200 px-3 py-3 text-base" />
+            <select value={cuadrillaId} onChange={(event) => setCuadrillaId(event.target.value)} required={category === "TEMPORAL"} className="mt-1 w-full rounded-lg border border-finca-200 bg-white px-3 py-3 text-base">
+              <option value="">Elegir</option>
+              {(crews ?? []).map((crew) => (
+                <option key={crew.id} value={crew.id}>{cuadrillaLabel(crew)}</option>
+              ))}
+            </select>
           </label>
           <label className="text-sm font-medium text-finca-700">
             Documento
@@ -242,7 +249,7 @@ export function RegistrarClient({ role, canLinkPending }: { role: string; canLin
               <li key={person.id}>
                 <button type="button" onClick={() => setExistingId(person.id)} className={`w-full px-3 py-2 text-left text-sm ${existingId === person.id ? "bg-earth-50" : ""}`}>
                   {person.fullName}
-                  <span className="block text-finca-500">{person.cuadrilla || "Sin cuadrilla"}</span>
+                  <span className="block text-finca-500">{(crews ?? []).find((crew) => crew.id === person.cuadrillaId)?.name || "Sin cuadrilla"}</span>
                 </button>
               </li>
             ))}

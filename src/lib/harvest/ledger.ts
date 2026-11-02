@@ -50,7 +50,7 @@ export async function harvestLedger(): Promise<{
     where: { activityId: activity.id },
     orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     include: {
-      worker: { select: { fullName: true, cui: true, category: true, cuadrilla: true } },
+      worker: { select: { fullName: true, cui: true, category: true, cuadrilla: { select: { name: true } } } },
       lote: { select: { name: true } },
       coffeeIntake: {
         select: { code: true, pesoLibras: true, pesoNetoQq: true, madurez: true, sacos: true },
@@ -69,7 +69,7 @@ export async function harvestLedger(): Promise<{
       workerName: record.worker.fullName,
       cui: record.worker.cui,
       category: record.worker.category,
-      cuadrilla: record.worker.cuadrilla,
+      cuadrilla: record.worker.cuadrilla?.name ?? null,
       pante: record.lote?.name ?? "",
       libras,
       quintales,

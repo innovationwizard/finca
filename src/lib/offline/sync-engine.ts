@@ -271,18 +271,19 @@ async function bump(entry: OutboxEntry): Promise<void> {
 
 export async function refreshReferenceData(): Promise<void> {
   try {
-    const [workers, activities, lotes, payPeriods] = await Promise.all([
+    const [workers, activities, lotes, payPeriods, cuadrillas] = await Promise.all([
       fetch("/api/workers?active=true").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/activities?active=true").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/lotes?active=true").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/pay-periods?current=true").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/cuadrillas").then((r) => (r.ok ? r.json() : [])),
     ]);
 
     const localWorkers = await offlineDb.workers.filter((worker) => worker.id.startsWith("local:")).toArray();
 
     await offlineDb.transaction(
       "rw",
-      [offlineDb.workers, offlineDb.activities, offlineDb.lotes, offlineDb.payPeriods],
+      [offlineDb.workers, offlineDb.activities, offlineDb.lotes, offlineDb.payPeriods, offlineDb.cuadrillas],
       async () => {
         if (workers.length) {
           await offlineDb.workers.clear();
@@ -303,6 +304,10 @@ export async function refreshReferenceData(): Promise<void> {
           await offlineDb.payPeriods.clear();
           await offlineDb.payPeriods.bulkPut(payPeriods);
         }
+        if (cuadrillas.length) {
+          await offlineDb.cuadrillas.clear();
+          await offlineDb.cuadrillas.bulkPut(cuadrillas);
+        }
       },
     );
   } catch {
@@ -318,7 +323,7 @@ type WorkerJson = {
   isActive: boolean;
   cui?: string;
   category?: string;
-  cuadrilla?: string | null;
+  cuadrillaId?: string | null;
 };
 
 function toCachedWorker(worker: WorkerJson) {
@@ -328,7 +333,7 @@ function toCachedWorker(worker: WorkerJson) {
     isActive: worker.isActive,
     cui: worker.cui ?? "",
     category: worker.category ?? "",
-    cuadrilla: worker.cuadrilla ?? null,
+    cuadrillaId: worker.cuadrillaId ?? null,
   };
 }
 

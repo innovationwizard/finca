@@ -49,6 +49,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { href: "/cosecha/entrega", label: "Entrega", icon: Camera, roles: ["MASTER", "ADMIN", "FIELD", "MANAGER"] },
   { href: "/cosecha/registrar", label: "Registrar persona", icon: UserPlus, roles: ["MASTER", "ADMIN", "FIELD", "MANAGER"] },
+  { href: "/cosecha/cuadrillas", label: "Cuadrillas", icon: Users, roles: ["MASTER", "ADMIN", "MANAGER"] },
   { href: "/cosecha/kpis", label: "KPIs de cosecha", icon: BarChart3, roles: ["MASTER", "ADMIN", "MANAGER"] },
   { href: "/cosecha/contabilidad", label: "Contabilidad cosecha", icon: FileBarChart, roles: ["MASTER", "ADMIN", "MANAGER"] },
   { href: "/planilla/captura", label: "Captura Semanal", icon: Table2 },

@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, X, Save, User, Phone, CreditCard, Hash, AlertTriangle } from "lucide-react";
 import { formatDateShort, formatGTQ } from "@/lib/utils/format";
 import { categoryLabel, type WorkerCategoryValue } from "@/lib/workers/category-label";
+import { cuadrillaLabel } from "@/lib/harvest/cuadrilla-label";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,7 +49,8 @@ export type WorkerProfileData = {
   bankAccount: string | null;
   phone: string | null;
   personPhotoUrl: string | null;
-  cuadrilla: string | null;
+  cuadrillaId: string | null;
+  cuadrillaName: string | null;
   category: WorkerCategoryValue;
   isMinor: boolean;
   isActive: boolean;
@@ -59,14 +61,22 @@ export type WorkerProfileData = {
   payrollEntries: PayrollEntry[];
 };
 
+type CrewOption = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string | null;
+};
+
 type WorkerProfileProps = {
   worker: WorkerProfileData;
   canEdit: boolean;
+  cuadrillas: CrewOption[];
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
+export function WorkerProfile({ worker, canEdit, cuadrillas }: WorkerProfileProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -79,7 +89,7 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
     nit: worker.nit ?? "",
     bankAccount: worker.bankAccount ?? "",
     phone: worker.phone ?? "",
-    cuadrilla: worker.cuadrilla ?? "",
+    cuadrillaId: worker.cuadrillaId ?? "",
     category: worker.category,
     isMinor: worker.isMinor,
     isActive: worker.isActive,
@@ -92,7 +102,7 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
   };
 
   const handleSave = async () => {
-    if (form.category === "TEMPORAL" && !form.cuadrilla.trim()) {
+    if (form.category === "TEMPORAL" && !form.cuadrillaId) {
       setError("La cuadrilla es obligatoria para un temporal");
       return;
     }
@@ -110,7 +120,7 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
           nit: form.nit.trim() || null,
           bankAccount: form.bankAccount.trim() || null,
           phone: form.phone.trim() || null,
-          cuadrilla: form.cuadrilla.trim() || null,
+          cuadrillaId: form.cuadrillaId || null,
           category: form.category,
           isMinor: form.isMinor,
           isActive: form.isActive,
@@ -143,7 +153,7 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
       nit: worker.nit ?? "",
       bankAccount: worker.bankAccount ?? "",
       phone: worker.phone ?? "",
-      cuadrilla: worker.cuadrilla ?? "",
+      cuadrillaId: worker.cuadrillaId ?? "",
       category: worker.category,
       isMinor: worker.isMinor,
       isActive: worker.isActive,
@@ -358,13 +368,18 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
               Cuadrilla
             </label>
             {isEditing ? (
-              <input
-                value={form.cuadrilla}
-                onChange={(e) => handleChange("cuadrilla", e.target.value)}
+              <select
+                value={form.cuadrillaId}
+                onChange={(e) => handleChange("cuadrillaId", e.target.value)}
                 className="w-full rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400"
-              />
+              >
+                {form.category !== "TEMPORAL" && <option value="">Sin cuadrilla</option>}
+                {cuadrillas.map((crew) => (
+                  <option key={crew.id} value={crew.id}>{cuadrillaLabel(crew)}</option>
+                ))}
+              </select>
             ) : (
-              <p className="text-sm text-finca-900">{worker.cuadrilla ?? "—"}</p>
+              <p className="text-sm text-finca-900">{worker.cuadrillaName ?? "—"}</p>
             )}
           </div>
 

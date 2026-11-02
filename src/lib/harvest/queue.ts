@@ -8,7 +8,7 @@ import { deriveFullName } from "@/lib/validators/worker";
 
 export type NewEnrollmentInput = {
   chosenCategory: "VOLUNTARIO" | "FIJO" | "TEMPORAL";
-  cuadrilla: string;
+  cuadrillaId: string | null;
   documentType: "DPI" | "BIRTH_CERTIFICATE";
   nombres: string;
   apellidos: string;
@@ -21,7 +21,7 @@ export type NewEnrollmentInput = {
 };
 
 export async function queueEnrollment(input: NewEnrollmentInput): Promise<string> {
-  if (input.chosenCategory === "TEMPORAL" && !input.cuadrilla.trim()) {
+  if (input.chosenCategory === "TEMPORAL" && !input.cuadrillaId) {
     throw new Error("La cuadrilla es obligatoria para un temporal");
   }
   const clientId = uuidv7();
@@ -45,7 +45,7 @@ export async function queueEnrollment(input: NewEnrollmentInput): Promise<string
           isActive: true,
           cui: stored.cui,
           category: input.chosenCategory,
-          cuadrilla: input.cuadrilla.trim() || null,
+          cuadrillaId: input.cuadrillaId,
         });
       }
       if (input.photos.face) {
@@ -62,7 +62,7 @@ export async function queueEnrollment(input: NewEnrollmentInput): Promise<string
       }
       await addToOutbox("enrollments", clientId, {
         chosenCategory: input.chosenCategory,
-        cuadrilla: input.cuadrilla.trim() || null,
+        cuadrillaId: input.cuadrillaId,
         documentType: input.documentType,
         nombres: input.nombres.trim() || null,
         apellidos: input.apellidos.trim() || null,

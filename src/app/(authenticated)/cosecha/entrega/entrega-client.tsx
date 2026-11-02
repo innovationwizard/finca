@@ -34,6 +34,7 @@ export function EntregaClient({ role }: { role: string }) {
   const locked = useRef(false);
 
   const lotes = useLiveQuery(() => offlineDb.lotes.filter((lote) => lote.isActive).toArray(), []);
+  const crews = useLiveQuery(() => offlineDb.cuadrillas.toArray(), []);
   const worker = useLiveQuery(
     () => (workerId ? offlineDb.workers.get(workerId) : undefined),
     [workerId],
@@ -192,7 +193,7 @@ export function EntregaClient({ role }: { role: string }) {
           )}
           <div className="min-w-0">
             <p className="truncate font-medium text-finca-900">{worker.fullName}</p>
-            <p className="text-sm text-finca-500">{worker.cuadrilla || "Sin cuadrilla"} · {categoryLabel(worker.category)}</p>
+            <p className="text-sm text-finca-500">{(crews ?? []).find((crew) => crew.id === worker.cuadrillaId)?.name || "Sin cuadrilla"} · {categoryLabel(worker.category)}</p>
           </div>
           <button type="button" className="ml-auto text-sm text-finca-500 underline" onClick={() => setWorkerId(null)}>
             Cambiar

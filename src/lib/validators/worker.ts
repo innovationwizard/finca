@@ -47,16 +47,7 @@ const workerFields = z.object({
     .nullable()
     .optional(),
   category: z.enum(["VOLUNTARIO", "FIJO", "TEMPORAL"]).default("VOLUNTARIO"),
-  cuadrilla: z
-    .string()
-    .max(80, "Cuadrilla demasiado larga")
-    .nullable()
-    .optional()
-    .transform((value) => {
-      if (value == null) return value;
-      const trimmed = value.trim();
-      return trimmed === "" ? null : trimmed;
-    }),
+  cuadrillaId: z.string().uuid("Cuadrilla inválida").nullable().optional(),
   isMinor: z.boolean().default(false),
   isActive: z.boolean().default(true),
   startDate: z
@@ -72,13 +63,13 @@ const workerFields = z.object({
 });
 
 function requireTemporalCuadrilla(
-  data: { category?: string; cuadrilla?: string | null },
+  data: { category?: string; cuadrillaId?: string | null },
   ctx: z.RefinementCtx,
 ) {
-  if (data.category === "TEMPORAL" && !data.cuadrilla) {
+  if (data.category === "TEMPORAL" && !data.cuadrillaId) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ["cuadrilla"],
+      path: ["cuadrillaId"],
       message: "La cuadrilla es obligatoria para un temporal",
     });
   }
