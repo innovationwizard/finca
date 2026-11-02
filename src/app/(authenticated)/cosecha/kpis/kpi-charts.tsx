@@ -5,20 +5,24 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 export type DayPoint = { day: string; libras: number };
 export type LotePoint = { lote: string; libras: number };
 export type MadurezPoint = { name: string; libras: number };
+export type CuadrillaPoint = { cuadrilla: string; libras: number };
 
 export function KpiCharts({
   days,
   lotes,
   madurez,
+  cuadrillas,
 }: {
   days: DayPoint[];
   lotes: LotePoint[];
   madurez: MadurezPoint[];
+  cuadrillas: CuadrillaPoint[];
 }) {
   return (
     <div className="mt-6 grid gap-4 lg:grid-cols-2">
       <Chart title="Libras por día · período abierto" data={days} x="day" />
       <Chart title="Libras por pante · período abierto" data={lotes} x="lote" />
+      <Chart title="Libras por cuadrilla · período abierto" data={cuadrillas} x="cuadrilla" />
       <Chart title="Maduro e inmaduro · período abierto" data={madurez} x="name" />
     </div>
   );

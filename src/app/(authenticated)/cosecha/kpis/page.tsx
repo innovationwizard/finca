@@ -11,7 +11,7 @@ import { isoDate } from "@/lib/harvest/dates";
 import { displayLibras, formatCoffeeWeight } from "@/lib/harvest/weight";
 import { formatGTQ } from "@/lib/utils/format";
 import { HarvestNav } from "@/components/harvest/harvest-nav";
-import { KpiCharts, type DayPoint, type LotePoint, type MadurezPoint } from "./kpi-charts";
+import { KpiCharts, type CuadrillaPoint, type DayPoint, type LotePoint, type MadurezPoint } from "./kpi-charts";
 
 export const metadata = { title: "KPIs de cosecha" };
 
@@ -39,6 +39,7 @@ export default async function KpiPage() {
           madurez: true,
           workerId: true,
           lote: { select: { name: true } },
+          worker: { select: { cuadrilla: true } },
           activityRecord: { select: { totalEarned: true, payPeriodId: true } },
         },
       })
@@ -62,6 +63,7 @@ export default async function KpiPage() {
   const byDay = new Map<string, number>();
   const byLote = new Map<string, number>();
   const byMadurez = new Map<string, number>();
+  const byCuadrilla = new Map<string, number>();
   for (const row of inPeriod) {
     const date = isoDate(row.date);
     const libras = displayLibras(row.pesoLibras, Number(row.pesoNetoQq));
@@ -70,6 +72,8 @@ export default async function KpiPage() {
     byLote.set(lote, (byLote.get(lote) ?? 0) + libras);
     const madurez = row.madurez ?? "Sin madurez";
     byMadurez.set(madurez, (byMadurez.get(madurez) ?? 0) + libras);
+    const cuadrilla = row.worker?.cuadrilla?.trim() || "Sin cuadrilla";
+    byCuadrilla.set(cuadrilla, (byCuadrilla.get(cuadrilla) ?? 0) + libras);
   }
 
   const days: DayPoint[] = [...byDay.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, libras]) => ({
@@ -83,6 +87,9 @@ export default async function KpiPage() {
     name,
     libras: Math.round(libras * 100) / 100,
   }));
+  const cuadrillas: CuadrillaPoint[] = [...byCuadrilla.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([cuadrilla, libras]) => ({ cuadrilla, libras: Math.round(libras * 100) / 100 }));
   const people = new Set(inPeriod.map((row) => row.workerId).filter(Boolean)).size;
 
   return (
@@ -90,7 +97,7 @@ export default async function KpiPage() {
       <HarvestNav role={user.role} />
       <h1 className="mt-4 text-2xl font-semibold text-finca-900">KPIs de cosecha</h1>
       <p className="text-sm text-finca-500">
-        Entrega de cereza. {period ? `Período abierto ${periodStart} a ${periodEnd}.` : "No hay período abierto."} Cosecha {year}.
+        Entrega de café. {period ? `Período abierto ${periodStart} a ${periodEnd}.` : "No hay período abierto."} Cosecha {year}.
       </p>
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card label="Período abierto" value={formatCoffeeWeight(sumLb(inPeriod), sumQq(inPeriod))} />
@@ -98,7 +105,7 @@ export default async function KpiPage() {
         <Card label="Entregas / personas" value={`${inPeriod.length} / ${people}`} />
         <Card label="Cosecha" value={formatCoffeeWeight(sumLb(inSeason), sumQq(inSeason))} />
       </div>
-      <KpiCharts days={days} lotes={lotes} madurez={madurez} />
+      <KpiCharts days={days} lotes={lotes} madurez={madurez} cuadrillas={cuadrillas} />
     </div>
   );
 }

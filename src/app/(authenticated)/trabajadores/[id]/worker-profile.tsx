@@ -92,6 +92,10 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
   };
 
   const handleSave = async () => {
+    if (form.category === "TEMPORAL" && !form.cuadrilla.trim()) {
+      setError("La cuadrilla es obligatoria para un temporal");
+      return;
+    }
     setError(null);
     setSaving(true);
 

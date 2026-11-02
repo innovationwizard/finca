@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 
-export const workerCreateSchema = z.object({
+const workerFields = z.object({
   // Identity (DPI canon): apellidos = both surnames combined, nombres = given
   // names combined. fullName is derived server-side ("nombres apellidos").
   apellidos: z
@@ -71,11 +71,26 @@ export const workerCreateSchema = z.object({
     .optional(),
 });
 
+function requireTemporalCuadrilla(
+  data: { category?: string; cuadrilla?: string | null },
+  ctx: z.RefinementCtx,
+) {
+  if (data.category === "TEMPORAL" && !data.cuadrilla) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["cuadrilla"],
+      message: "La cuadrilla es obligatoria para un temporal",
+    });
+  }
+}
+
+export const workerCreateSchema = workerFields.superRefine(requireTemporalCuadrilla);
+
 export type WorkerCreateInput = z.infer<typeof workerCreateSchema>;
 
-export const workerUpdateSchema = workerCreateSchema.partial().extend({
+export const workerUpdateSchema = workerFields.partial().extend({
   id: z.string().uuid(),
-});
+}).superRefine(requireTemporalCuadrilla);
 
 export type WorkerUpdateInput = z.infer<typeof workerUpdateSchema>;
 

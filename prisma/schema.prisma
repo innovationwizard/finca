@@ -124,8 +124,8 @@ model Worker {
   personPhotoUrl       String?   @map("person_photo_url")
   // Private object path in the person-photos bucket. Not a public URL.
   personPhotoPath      String?   @map("person_photo_path")
-  // Crew name captured at enrollment. Storage was unspecified; this is a
-  // single optional string on the person, same place as category.
+  // Required when category is TEMPORAL (CHECK workers_temporal_cuadrilla_check).
+  // Optional for Voluntario and Fijo.
   cuadrilla            String?
 
   // App-managed (not from SSOT): payroll banking, lifecycle
@@ -241,7 +241,7 @@ enum ActivityUnit {
   DIA // día trabajado
   TAREA // tarea
   UNIDAD // unidad
-  LIBRA // lb — cherry weighing. Appended; do not reorder.
+  LIBRA // lb. Appended; do not reorder.
 }
 
 model Activity {
@@ -450,6 +450,8 @@ model CoffeeIntake {
   pricePerQq      Decimal?     @map("price_per_qq") @db.Decimal(10, 2) // Purchase price per quintal
   paymentStatus   String?      @map("payment_status") // "CANCELADO", "PENDIENTE"
   bultos          Int?
+  // Sacos on a café delivery. Not bultos.
+  sacos           Int?
   pesoNetoQq      Decimal      @map("peso_neto_qq") @db.Decimal(12, 4)
   // Cherry weighing. Null on historical rows: display libras as pesoNetoQq × 100.
   pesoLibras      Float?       @map("peso_libras")
@@ -508,6 +510,7 @@ model EnrollmentCapture {
   id              String         @id @default(uuid(7)) @db.Uuid
   clientId        String         @unique @map("client_id")
   chosenCategory  WorkerCategory @map("chosen_category")
+  // Required when chosenCategory is TEMPORAL (CHECK enrollment_captures_temporal_cuadrilla_check).
   cuadrilla       String?
   documentType    DocumentType   @map("document_type")
   nombres         String?

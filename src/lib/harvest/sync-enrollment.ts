@@ -78,6 +78,9 @@ export async function syncEnrollment(
   const captureTime = data.captureTime ? new Date(data.captureTime) : new Date();
   const person = completePerson(data);
   const cuadrilla = data.cuadrilla?.trim() || null;
+  if (chosenCategory === "TEMPORAL" && !cuadrilla) {
+    return { ok: false, error: "La cuadrilla es obligatoria para un temporal", retry: false };
+  }
 
   try {
     return await prisma.$transaction(async (tx) => {

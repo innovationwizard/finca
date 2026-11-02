@@ -12,7 +12,7 @@ export default async function ContabilidadPage() {
     <div className="mx-auto max-w-6xl px-4 py-4">
       <HarvestNav role={user.role} />
       <h1 className="mt-4 text-2xl font-semibold text-finca-900">Contabilidad de cosecha</h1>
-      <p className="text-sm text-finca-500">Monto a pagar de Entrega de cereza. El libro lista todas las filas.</p>
+      <p className="text-sm text-finca-500">Monto a pagar de Entrega de Café. El libro lista todas las filas.</p>
       <ContabilidadClient rows={rows} openPeriod={openPeriod} />
     </div>
   );

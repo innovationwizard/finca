@@ -21,6 +21,9 @@ export type NewEnrollmentInput = {
 };
 
 export async function queueEnrollment(input: NewEnrollmentInput): Promise<string> {
+  if (input.chosenCategory === "TEMPORAL" && !input.cuadrilla.trim()) {
+    throw new Error("La cuadrilla es obligatoria para un temporal");
+  }
   const clientId = uuidv7();
   const descriptors = input.descriptors.filter(isFaceDescriptor);
   const stored = input.cui.trim() ? splitCui(input.cui) : null;

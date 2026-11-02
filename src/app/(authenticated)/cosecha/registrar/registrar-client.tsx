@@ -24,7 +24,7 @@ const SHOTS: { id: Shot; label: string; slot: PhotoSlot }[] = [
   { id: "partida", label: "Partida", slot: "partida" },
 ];
 
-export function EnrolarClient({ role, canLinkPending }: { role: string; canLinkPending: boolean }) {
+export function RegistrarClient({ role, canLinkPending }: { role: string; canLinkPending: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [mode, setMode] = useState<Mode>("nuevo");
   const [shot, setShot] = useState<Shot>("face");
@@ -104,6 +104,10 @@ export function EnrolarClient({ role, canLinkPending }: { role: string; canLinkP
 
   async function saveNew() {
     const required: PhotoSlot[] = documentType === "DPI" ? ["face", "dpiFront", "dpiBack"] : ["face", "partida"];
+    if (category === "TEMPORAL" && !cuadrilla.trim()) {
+      setNotice("La cuadrilla es obligatoria para un temporal");
+      return;
+    }
     if (required.some((slot) => !photos[slot])) {
       setNotice("Faltan fotos");
       return;
@@ -127,8 +131,8 @@ export function EnrolarClient({ role, canLinkPending }: { role: string; canLinkP
       resetNew();
       setNotice(complete ? "Guardado en el teléfono" : "Guardado en el teléfono. Faltan datos: quedará pendiente.");
       if (navigator.onLine) void flushOutbox();
-    } catch {
-      setNotice("No se pudo guardar en el teléfono");
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "No se pudo guardar en el teléfono");
     } finally {
       setSaving(false);
     }
@@ -178,7 +182,7 @@ export function EnrolarClient({ role, canLinkPending }: { role: string; canLinkP
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4 px-4 py-4">
       <HarvestNav role={role} />
-      <h1 className="text-2xl font-semibold text-finca-900">Enrolar</h1>
+      <h1 className="text-2xl font-semibold text-finca-900">Registrar persona</h1>
       <div className="flex gap-2">
         <button type="button" onClick={() => setMode("nuevo")} className={`rounded-full px-3 py-1.5 text-sm ${mode === "nuevo" ? "bg-earth-600 text-white" : "bg-finca-100"}`}>Nueva persona</button>
         <button type="button" onClick={() => setMode("existente")} className={`rounded-full px-3 py-1.5 text-sm ${mode === "existente" ? "bg-earth-600 text-white" : "bg-finca-100"}`}>Rostro existente</button>
@@ -208,8 +212,8 @@ export function EnrolarClient({ role, canLinkPending }: { role: string; canLinkP
             </select>
           </label>
           <label className="text-sm font-medium text-finca-700">
-            Cuadrilla
-            <input value={cuadrilla} onChange={(event) => setCuadrilla(event.target.value)} className="mt-1 w-full rounded-lg border border-finca-200 px-3 py-3 text-base" />
+            Cuadrilla{category === "TEMPORAL" ? " (obligatoria)" : ""}
+            <input value={cuadrilla} onChange={(event) => setCuadrilla(event.target.value)} required={category === "TEMPORAL"} className="mt-1 w-full rounded-lg border border-finca-200 px-3 py-3 text-base" />
           </label>
           <label className="text-sm font-medium text-finca-700">
             Documento

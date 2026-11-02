@@ -9,8 +9,8 @@ import {
 } from "@/lib/auth/roles";
 
 const LINKS = [
-  { href: "/cosecha/pesaje", label: "Pesaje", roles: HARVEST_ROLE_NAMES },
-  { href: "/cosecha/enrolar", label: "Enrolar", roles: HARVEST_ROLE_NAMES },
+  { href: "/cosecha/entrega", label: "Entrega", roles: HARVEST_ROLE_NAMES },
+  { href: "/cosecha/registrar", label: "Registrar persona", roles: HARVEST_ROLE_NAMES },
   { href: "/cosecha/kpis", label: "KPIs", roles: HARVEST_DESK_ROLE_NAMES },
   { href: "/cosecha/contabilidad", label: "Contabilidad", roles: HARVEST_DESK_ROLE_NAMES },
 ];

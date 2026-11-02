@@ -53,7 +53,7 @@ export async function harvestLedger(): Promise<{
       worker: { select: { fullName: true, cui: true, category: true, cuadrilla: true } },
       lote: { select: { name: true } },
       coffeeIntake: {
-        select: { code: true, pesoLibras: true, pesoNetoQq: true, madurez: true, bultos: true },
+        select: { code: true, pesoLibras: true, pesoNetoQq: true, madurez: true, sacos: true },
       },
     },
   });
@@ -74,7 +74,7 @@ export async function harvestLedger(): Promise<{
       libras,
       quintales,
       madurez: record.coffeeIntake?.madurez ?? null,
-      sacos: record.coffeeIntake?.bultos ?? null,
+      sacos: record.coffeeIntake?.sacos ?? null,
       unitPrice: Number(record.unitPrice),
       totalEarned: Number(record.totalEarned),
       intakeCode: record.coffeeIntake?.code ?? null,

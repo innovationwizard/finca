@@ -1,3 +1,5 @@
+// Uploads do not create buckets. These private buckets must already exist:
+// person-photos, identity-documents. See scripts/create-harvest-buckets.ts.
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   IDENTITY_DOCUMENTS_BUCKET,
@@ -5,8 +7,6 @@ import {
   type PhotoSlot,
 } from "./constants";
 import { splitCui } from "./cui";
-
-const readyBuckets = new Set<string>();
 
 function safeSegment(value: string): string {
   const cleaned = value.replace(/[^A-Za-z0-9._-]/g, "_");
@@ -27,20 +27,6 @@ export function objectPath(slot: PhotoSlot, clientId: string, cui: string | null
   return { bucket: IDENTITY_DOCUMENTS_BUCKET, path: `${folder}/${file}` };
 }
 
-async function ensurePrivateBucket(name: string): Promise<void> {
-  if (readyBuckets.has(name)) return;
-  const supabase = createServiceClient();
-  const { data, error } = await supabase.storage.listBuckets();
-  if (error) throw new Error(error.message);
-  if (!data?.some((bucket) => bucket.name === name)) {
-    const created = await supabase.storage.createBucket(name, { public: false });
-    if (created.error && !/already exists/i.test(created.error.message)) {
-      throw new Error(created.error.message);
-    }
-  }
-  readyBuckets.add(name);
-}
-
 export async function uploadHarvestPhoto(
   slot: PhotoSlot,
   clientId: string,
@@ -48,13 +34,16 @@ export async function uploadHarvestPhoto(
   bytes: Buffer,
 ): Promise<string> {
   const { bucket, path } = objectPath(slot, clientId, cui);
-  await ensurePrivateBucket(bucket);
   const supabase = createServiceClient();
   const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
     contentType: "image/jpeg",
     upsert: true,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(
+      `No se pudo subir a ${bucket}. Los buckets privados "${PERSON_PHOTOS_BUCKET}" y "${IDENTITY_DOCUMENTS_BUCKET}" deben existir antes de la primera foto. ${error.message}`,
+    );
+  }
   return path;
 }
 

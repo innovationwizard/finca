@@ -4,7 +4,7 @@
 // Mirrors the subset of Prisma models that need offline support:
 // - ActivityRecord (write offline → sync)
 // - CoffeeIntake (write offline → sync)
-// - Enrollment bundles and cherry weighings (outbox)
+// - Enrollment bundles and café deliveries (outbox)
 // - Reference data caches (read-only mirrors)
 // - Outbox queue (pending mutations)
 

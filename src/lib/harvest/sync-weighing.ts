@@ -119,13 +119,21 @@ export async function syncWeighing(clientId: string, data: WeighingPayload): Pro
           include: { prices: { orderBy: { effectiveFrom: "asc" } } },
         });
         if (!activity) {
-          return { ok: false, error: "No existe la actividad Entrega de Cereza", retry: true };
+          return { ok: false, error: "No existe la actividad Entrega de Café", retry: true };
         }
         const schedule: PriceVigencia[] = activity.prices.map((price) => ({
           effectiveFrom: isoDate(price.effectiveFrom),
           price: Number(price.price),
         }));
-        const unitPrice = resolveActivityPrice(schedule, Number(activity.defaultPrice), data.date);
+        const covering = schedule.some((row) => row.effectiveFrom <= data.date);
+        if (!covering) {
+          return {
+            ok: false,
+            error: "No hay vigencia de precio para Entrega de Café. La entrega sigue en el teléfono.",
+            retry: true,
+          };
+        }
+        const unitPrice = resolveActivityPrice(schedule, null, data.date);
         const amounts = weighingAmounts(data.libras, unitPrice);
 
         const record = await tx.activityRecord.create({
@@ -149,12 +157,13 @@ export async function syncWeighing(clientId: string, data: WeighingPayload): Pro
             code,
             clientId,
             date: new Date(`${data.date}T00:00:00.000Z`),
+            // CoffeeType has no CAFÉ value. The pipeline's cereza type is CEREZA.
             coffeeType: "CEREZA",
             source: "COSECHA",
             status: "RECIBIDO",
             loteId: data.loteId,
             workerId,
-            bultos: data.sacos,
+            sacos: data.sacos,
             pesoLibras: amounts.pesoLibras,
             pesoNetoQq: amounts.pesoNetoQq,
             madurez,

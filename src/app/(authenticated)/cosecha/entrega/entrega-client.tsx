@@ -20,7 +20,7 @@ import { offlineDb } from "@/lib/offline/db";
 import { flushOutbox } from "@/lib/offline/sync-engine";
 import { getHuman } from "@/lib/face/engine";
 
-export function PesajeClient({ role }: { role: string }) {
+export function EntregaClient({ role }: { role: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [workerId, setWorkerId] = useState<string | null>(null);
   const [modelError, setModelError] = useState<string | null>(null);
@@ -136,7 +136,9 @@ export function PesajeClient({ role }: { role: string }) {
         date,
       });
       setWorkerId(null);
+      setLoteId("");
       setLibras("");
+      setMadurez("");
       setSacos("");
       setCui("");
       setNotice("Guardado en el teléfono");
@@ -156,8 +158,8 @@ export function PesajeClient({ role }: { role: string }) {
     <div className="mx-auto flex max-w-lg flex-col gap-4 px-4 py-4">
       <HarvestNav role={role} />
       <div>
-        <h1 className="text-2xl font-semibold text-finca-900">Pesaje</h1>
-        <p className="text-sm text-finca-500">Entrega de cereza. Guardar y seguir con la siguiente persona.</p>
+        <h1 className="text-2xl font-semibold text-finca-900">Entrega</h1>
+        <p className="text-sm text-finca-500">Entrega de café. Guardar y seguir con la siguiente persona.</p>
       </div>
       <OutboxNotice tables={["weighings", "enrollments"]} />
       {modelError && <p className="text-sm text-red-700">{modelError}</p>}
