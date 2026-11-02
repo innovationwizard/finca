@@ -19,6 +19,7 @@
 // =============================================================================
 
 import { PrismaClient, Prisma } from "@prisma/client";
+import { earnsSeptimo } from "@/lib/payroll/septimo-eligibility";
 import { getSeptimoAmount } from "@/lib/payroll/septimo";
 import { DAY_MS, isoUTC, dayMsUTC, weekMondayMs, dm } from "@/lib/planilla/history";
 
@@ -176,11 +177,14 @@ export async function buildSeptimoReport(
 
   let workerIds = [...new Set([...stored.keys(), ...payByWorkerDay.keys()])];
   if (workerId) workerIds = workerIds.filter((id) => id === workerId);
-  const names = new Map(
-    (await db.worker.findMany({ where: { id: { in: workerIds } }, select: { id: true, fullName: true } })).map(
-      (w) => [w.id, w.fullName] as const,
-    ),
-  );
+  const people = workerIds.length
+    ? await db.worker.findMany({
+        where: { id: { in: workerIds } },
+        select: { id: true, fullName: true, category: true },
+      })
+    : [];
+  const names = new Map(people.map((w) => [w.id, w.fullName] as const));
+  const categoryOf = new Map(people.map((w) => [w.id, w.category] as const));
 
   const rows: SeptimoRow[] = workerIds.map((id) => {
     const byDay = payByWorkerDay.get(id) ?? new Map<string, number>();
@@ -194,9 +198,11 @@ export async function buildSeptimoReport(
       const missingDays = w.requiredDays.filter((d) => !days.has(d));
       const septimo = !w.ownsSeptimo
         ? null
-        : w.requiredDays.length > 0 && missingDays.length === 0
-          ? amount
-          : 0;
+        : !earnsSeptimo(categoryOf.get(id) ?? "")
+          ? 0
+          : w.requiredDays.length > 0 && missingDays.length === 0
+            ? amount
+            : 0;
       return {
         actividades,
         septimo,

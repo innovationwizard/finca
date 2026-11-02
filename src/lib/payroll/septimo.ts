@@ -8,6 +8,9 @@
 
 import { PrismaClient, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { earnsSeptimo } from "./septimo-eligibility";
+
+export { earnsSeptimo };
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -110,7 +113,12 @@ export async function computeSeptimoForPeriod(
 
   // Attendance: distinct (worker, date) BY DATE across all periods over the span.
   const records = await db.activityRecord.findMany({
-    where: { date: { gte: new Date(minMs), lte: new Date(maxMs) } },
+    where: {
+      date: { gte: new Date(minMs), lte: new Date(maxMs) },
+      // Current category at recalc time. A delivery still writes the activity
+      // record, so a Voluntario or Fijo day counts; a Temporal worker does not.
+      worker: { category: { not: "TEMPORAL" } },
+    },
     select: { workerId: true, date: true },
   });
   const attendedByWorker = new Map<string, Set<string>>();

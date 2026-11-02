@@ -9,10 +9,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   formatDateShort,
-  formatDecimal,
   formatGTQ,
   formatRendimiento,
 } from "@/lib/utils/format";
+import { formatCoffeeWeight } from "@/lib/harvest/weight";
 import {
   Coffee,
   Truck,
@@ -41,6 +41,7 @@ type IntakeData = {
   paymentStatus: string | null;
   bultos: number | null;
   pesoNetoQq: number;
+  pesoLibras?: number | null;
   pesoPergaminoQq: number | null;
   rendimiento: number | null;
   status: string;
@@ -792,7 +793,7 @@ export function IntakeDetail({
               <div>
                 <dt className="text-xs text-finca-400">Peso Neto</dt>
                 <dd className="text-sm font-medium text-finca-900">
-                  {formatDecimal(intake.pesoNetoQq)} qq
+                  {formatCoffeeWeight(intake.pesoLibras, intake.pesoNetoQq)}
                 </dd>
               </div>
             </div>
@@ -803,7 +804,7 @@ export function IntakeDetail({
                 <div>
                   <dt className="text-xs text-finca-400">Peso Pergamino</dt>
                   <dd className="text-sm font-medium text-finca-900">
-                    {formatDecimal(intake.pesoPergaminoQq)} qq
+                    {formatCoffeeWeight(null, intake.pesoPergaminoQq)}
                   </dd>
                 </div>
               </div>

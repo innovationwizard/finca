@@ -27,7 +27,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { apiRequireRole, READ_ALL_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
+import { apiRequireRole, REFERENCE_READ_ROLES, SETTINGS_ROLES } from "@/lib/auth/guards";
 import { getAgriculturalYear } from "@/lib/utils/agricultural-year";
 import { periodsOfCosecha } from "@/lib/payroll/period-cosecha";
 
@@ -35,7 +35,7 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 86_400_000;
 
 export async function GET(request: NextRequest) {
-  const auth = await apiRequireRole(...READ_ALL_ROLES);
+  const auth = await apiRequireRole(...REFERENCE_READ_ROLES);
   if (auth instanceof NextResponse) return auth;
 
   const { searchParams } = new URL(request.url);

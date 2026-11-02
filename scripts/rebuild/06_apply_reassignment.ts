@@ -74,7 +74,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
       // (b) payroll_entries — remap with merge-by-sum on (new worker, period, category)
       const entries = await tx.payrollEntry.findMany();
       type Acc = {
-        payPeriodId: string; workerId: string; category: "VOLUNTARIO" | "FIJO";
+        payPeriodId: string; workerId: string; category: "VOLUNTARIO" | "FIJO" | "TEMPORAL";
         totalEarned: number; bonification: number; seventhDayPay: number;
         advances: number; deductions: number; isPaid: boolean; paidAt: Date | null; createdAt: Date;
         memberIds: string[];

@@ -24,7 +24,7 @@ type FlagKey = "sinCuenta" | "cuentaCompartida" | "pagoSinTrabajo" | "inactivoCo
 type Row = {
   workerId: string;
   name: string;
-  category: "VOLUNTARIO" | "FIJO";
+  category: "VOLUNTARIO" | "FIJO" | "TEMPORAL";
   devengado: number;
   septimo: number;
   adicionales: number;
@@ -94,7 +94,7 @@ export function AutorizacionClient({
     "resumen" | "detalle" | "acumulados" | "acumuladosActividad" | "acumuladosLote"
   >("resumen");
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<"" | "VOLUNTARIO" | "FIJO">("");
+  const [category, setCategory] = useState<"" | "VOLUNTARIO" | "FIJO" | "TEMPORAL">("");
   const [onlyExceptions, setOnlyExceptions] = useState(false);
   const [onlyAdjustments, setOnlyAdjustments] = useState(false);
   const [flagFilter, setFlagFilter] = useState<FlagKey | null>(null);
@@ -324,6 +324,7 @@ export function AutorizacionClient({
           <option value="">Todas las categorías</option>
           <option value="VOLUNTARIO">Voluntario</option>
           <option value="FIJO">Fijo</option>
+          <option value="TEMPORAL">Temporal</option>
         </select>
         <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className="rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-700 focus:border-earth-400 focus:outline-none">
           <option value="name">Ordenar: Nombre</option>
@@ -364,7 +365,7 @@ export function AutorizacionClient({
             {filtered.map((r) => (
               <tr key={r.workerId} className="hover:bg-finca-50/40">
                 <td className="sticky left-0 z-10 whitespace-nowrap border border-finca-100 bg-white px-3 py-1.5 font-medium text-finca-900">{r.name}</td>
-                <td className="border border-finca-100 px-2 py-1.5 text-finca-500">{r.category === "VOLUNTARIO" ? "Vol." : "Fijo"}</td>
+                <td className="border border-finca-100 px-2 py-1.5 text-finca-500">{r.category === "VOLUNTARIO" ? "Vol." : r.category === "TEMPORAL" ? "Temp." : "Fijo"}</td>
                 <td className="border border-finca-100 px-2 py-1.5 text-right tabular-nums text-finca-700">{formatGTQ(r.devengado)}</td>
                 <td className="border border-finca-100 p-0 text-right tabular-nums text-finca-700">
                   <button

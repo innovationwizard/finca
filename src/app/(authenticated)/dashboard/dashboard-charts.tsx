@@ -20,6 +20,7 @@ import {
 export type WeeklyCoffeeData = {
   week: string;
   qq: number;
+  libras: number;
 };
 
 export type CostPerLoteData = {
@@ -57,7 +58,10 @@ export function WeeklyCoffeeChart({ data }: { data: WeeklyCoffeeData[] }) {
           tickFormatter={(v: number) => `${v} qq`}
         />
         <Tooltip
-          formatter={(value) => [`${Number(value).toFixed(2)} qq`, "Peso Neto"]}
+          formatter={(value, _name, item) => {
+            const libras = Number((item as { payload?: { libras?: number } }).payload?.libras ?? 0);
+            return [`${libras.toFixed(2)} lb · ${Number(value).toFixed(2)} qq`, "Peso"];
+          }}
           labelFormatter={(label) => `Semana ${label}`}
           contentStyle={{
             borderRadius: "0.5rem",

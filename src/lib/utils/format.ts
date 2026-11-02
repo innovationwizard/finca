@@ -23,6 +23,7 @@ export function unitAbbr(unit: string): string {
     DIA: "día",
     TAREA: "tarea",
     UNIDAD: "unidad",
+    LIBRA: "lb",
   };
   return abbr[unit] ?? unit;
 }

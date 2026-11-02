@@ -15,6 +15,7 @@ import {
   CostPerLoteChart,
 } from "./dashboard-charts";
 import type { WeeklyCoffeeData, CostPerLoteData } from "./dashboard-charts";
+import { displayLibras, formatCoffeeWeight } from "@/lib/harvest/weight";
 import {
   Users,
   Wallet,
@@ -32,10 +33,6 @@ export const metadata = { title: "Dashboard" };
 
 function fmtGTQ(value: number): string {
   return `Q${value.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function fmtQQ(value: number): string {
-  return `${value.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} qq`;
 }
 
 /** ISO week number (Mon-based). */
@@ -82,13 +79,18 @@ export default async function DashboardPage() {
   // -------------------------------------------------------------------------
   // KPI 3: Accumulated coffee (qq) for current agricultural year
   // -------------------------------------------------------------------------
-  const coffeeAgg = await prisma.coffeeIntake.aggregate({
+  const coffeeRows = await prisma.coffeeIntake.findMany({
     where: {
       date: { gte: seasonStart, lte: seasonEnd },
     },
-    _sum: { pesoNetoQq: true },
+    select: { date: true, pesoNetoQq: true, pesoLibras: true },
+    orderBy: { date: "asc" },
   });
-  const totalCoffeeQQ = Number(coffeeAgg._sum.pesoNetoQq ?? 0);
+  const totalCoffeeQQ = coffeeRows.reduce((sum, row) => sum + Number(row.pesoNetoQq), 0);
+  const totalCoffeeLb = coffeeRows.reduce(
+    (sum, row) => sum + displayLibras(row.pesoLibras, Number(row.pesoNetoQq)),
+    0,
+  );
 
   // -------------------------------------------------------------------------
   // KPI 4: Production vs Target (25 qq oro/mz)
@@ -130,24 +132,20 @@ export default async function DashboardPage() {
   // -------------------------------------------------------------------------
   // Chart 1: Weekly coffee intake for the season
   // -------------------------------------------------------------------------
-  const coffeeIntakes = await prisma.coffeeIntake.findMany({
-    where: {
-      date: { gte: seasonStart, lte: seasonEnd },
-    },
-    select: { date: true, pesoNetoQq: true },
-    orderBy: { date: "asc" },
-  });
-
-  const weeklyMap = new Map<number, number>();
-  for (const intake of coffeeIntakes) {
+  const weeklyMap = new Map<number, { qq: number; libras: number }>();
+  for (const intake of coffeeRows) {
     const w = getISOWeek(intake.date);
-    weeklyMap.set(w, (weeklyMap.get(w) ?? 0) + Number(intake.pesoNetoQq));
+    const current = weeklyMap.get(w) ?? { qq: 0, libras: 0 };
+    current.qq += Number(intake.pesoNetoQq);
+    current.libras += displayLibras(intake.pesoLibras, Number(intake.pesoNetoQq));
+    weeklyMap.set(w, current);
   }
   const weeklyCoffeeData: WeeklyCoffeeData[] = Array.from(weeklyMap.entries())
     .sort(([a], [b]) => a - b)
-    .map(([week, qq]) => ({
+    .map(([week, value]) => ({
       week: String(week),
-      qq: Math.round(qq * 100) / 100,
+      qq: Math.round(value.qq * 100) / 100,
+      libras: Math.round(value.libras * 100) / 100,
     }));
 
   // -------------------------------------------------------------------------
@@ -284,7 +282,7 @@ export default async function DashboardPage() {
             </p>
           </div>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-finca-900">
-            {fmtQQ(totalCoffeeQQ)}
+            {formatCoffeeWeight(totalCoffeeLb, totalCoffeeQQ)}
           </p>
         </div>
 
@@ -321,7 +319,7 @@ export default async function DashboardPage() {
             Cafe Semanal
           </h2>
           <p className="mb-3 text-xs text-finca-400">
-            Ingreso semanal de cafe (qq) &middot; Cosecha {year}
+            Ingreso semanal de cafe (lb y qq) &middot; Cosecha {year}
           </p>
           <WeeklyCoffeeChart data={weeklyCoffeeData} />
         </div>

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, X, Save, User, Phone, CreditCard, Hash, AlertTriangle } from "lucide-react";
 import { formatDateShort, formatGTQ } from "@/lib/utils/format";
+import { categoryLabel, type WorkerCategoryValue } from "@/lib/workers/category-label";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,8 @@ export type WorkerProfileData = {
   bankAccount: string | null;
   phone: string | null;
   personPhotoUrl: string | null;
-  category: "VOLUNTARIO" | "FIJO";
+  cuadrilla: string | null;
+  category: WorkerCategoryValue;
   isMinor: boolean;
   isActive: boolean;
   startDate: string | null;
@@ -77,6 +79,7 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
     nit: worker.nit ?? "",
     bankAccount: worker.bankAccount ?? "",
     phone: worker.phone ?? "",
+    cuadrilla: worker.cuadrilla ?? "",
     category: worker.category,
     isMinor: worker.isMinor,
     isActive: worker.isActive,
@@ -103,6 +106,7 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
           nit: form.nit.trim() || null,
           bankAccount: form.bankAccount.trim() || null,
           phone: form.phone.trim() || null,
+          cuadrilla: form.cuadrilla.trim() || null,
           category: form.category,
           isMinor: form.isMinor,
           isActive: form.isActive,
@@ -135,6 +139,7 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
       nit: worker.nit ?? "",
       bankAccount: worker.bankAccount ?? "",
       phone: worker.phone ?? "",
+      cuadrilla: worker.cuadrilla ?? "",
       category: worker.category,
       isMinor: worker.isMinor,
       isActive: worker.isActive,
@@ -337,9 +342,25 @@ export function WorkerProfile({ worker, canEdit }: WorkerProfileProps) {
               >
                 <option value="VOLUNTARIO">Voluntario</option>
                 <option value="FIJO">Fijo</option>
+                <option value="TEMPORAL">Temporal</option>
               </select>
             ) : (
-              <p className="text-sm text-finca-900">{worker.category === "FIJO" ? "Fijo" : "Voluntario"}</p>
+              <p className="text-sm text-finca-900">{categoryLabel(worker.category)}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-finca-400">
+              Cuadrilla
+            </label>
+            {isEditing ? (
+              <input
+                value={form.cuadrilla}
+                onChange={(e) => handleChange("cuadrilla", e.target.value)}
+                className="w-full rounded-lg border border-finca-200 bg-white px-3 py-2 text-sm text-finca-900 focus:border-earth-400 focus:outline-none focus:ring-1 focus:ring-earth-400"
+              />
+            ) : (
+              <p className="text-sm text-finca-900">{worker.cuadrilla ?? "—"}</p>
             )}
           </div>
 

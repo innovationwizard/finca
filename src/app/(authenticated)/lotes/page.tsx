@@ -11,6 +11,7 @@ import {
   formatAgriculturalYear,
 } from "@/lib/utils/agricultural-year";
 import Link from "next/link";
+import { formatCoffeeWeight, sumCoffeeWeights } from "@/lib/harvest/weight";
 import {
   MapPin,
   TreePine,
@@ -50,7 +51,7 @@ export default async function LotesPage() {
         where: {
           date: { gte: yearStart, lte: yearEnd },
         },
-        select: { pesoNetoQq: true },
+        select: { pesoNetoQq: true, pesoLibras: true },
       },
       productionEstimates: {
         where: { agriculturalYear: currentYear },
@@ -83,7 +84,7 @@ export default async function LotesPage() {
         where: {
           date: { gte: yearStart, lte: yearEnd },
         },
-        select: { pesoNetoQq: true },
+        select: { pesoNetoQq: true, pesoLibras: true },
       },
       productionEstimates: {
         where: { agriculturalYear: currentYear },
@@ -106,10 +107,14 @@ export default async function LotesPage() {
       (sum, r) => sum + Number(r.totalEarned),
       0
     );
-    const totalCoffeeQq = lote.coffeeIntakes.reduce(
-      (sum, i) => sum + Number(i.pesoNetoQq),
-      0
+    const coffee = sumCoffeeWeights(
+      lote.coffeeIntakes.map((i) => ({
+        pesoNetoQq: Number(i.pesoNetoQq),
+        pesoLibras: i.pesoLibras,
+      })),
     );
+    const totalCoffeeQq = coffee.quintales;
+    const totalCoffeeLb = coffee.libras;
     const latestEstimate = lote.productionEstimates[0];
     const qqOroPerManzana = latestEstimate?.qqOroPerManzana
       ? Number(latestEstimate.qqOroPerManzana)
@@ -132,6 +137,7 @@ export default async function LotesPage() {
       hasMissingData,
       totalLaborCost,
       totalCoffeeQq,
+      totalCoffeeLb,
       qqOroPerManzana,
       estimateType: latestEstimate?.estimateType ?? null,
     };
@@ -151,6 +157,7 @@ export default async function LotesPage() {
   const avgPodaPct = totalAreaMz > 0 ? (totalPodaMz / totalAreaMz) * 100 : 0;
   const totalLaborCost = activeKpis.reduce((s, l) => s + l.totalLaborCost, 0);
   const totalCoffeeQq = activeKpis.reduce((s, l) => s + l.totalCoffeeQq, 0);
+  const totalCoffeeLb = activeKpis.reduce((s, l) => s + l.totalCoffeeLb, 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -211,7 +218,7 @@ export default async function LotesPage() {
                 <Coffee className="h-3 w-3" /> Café total
               </p>
               <p className="mt-0.5 text-lg font-bold tabular-nums text-earth-900">
-                {totalCoffeeQq.toLocaleString("es-GT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} qq
+                {formatCoffeeWeight(totalCoffeeLb, totalCoffeeQq)}
               </p>
             </div>
             <div>
@@ -345,14 +352,11 @@ export default async function LotesPage() {
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1">
                     <Coffee className="h-3.5 w-3.5 text-earth-600" />
-                    <span className="text-xs text-finca-500">Café qq</span>
+                    <span className="text-xs text-finca-500">Café</span>
                   </div>
                   <p className="mt-1 text-sm font-semibold text-finca-900">
                     {lote.totalCoffeeQq > 0
-                      ? lote.totalCoffeeQq.toLocaleString("es-GT", {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 1,
-                        })
+                      ? formatCoffeeWeight(lote.totalCoffeeLb, lote.totalCoffeeQq)
                       : "—"}
                   </p>
                 </div>

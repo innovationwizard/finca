@@ -4,11 +4,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { apiRequireRole, READ_ALL_ROLES, WRITE_ROLES } from "@/lib/auth/guards";
+import { apiRequireRole, REFERENCE_READ_ROLES, WRITE_ROLES } from "@/lib/auth/guards";
 import { workerCreateSchema, deriveFullName } from "@/lib/validators/worker";
 
 export async function GET(request: NextRequest) {
-  const auth = await apiRequireRole(...READ_ALL_ROLES);
+  const auth = await apiRequireRole(...REFERENCE_READ_ROLES);
   if (auth instanceof NextResponse) return auth;
 
   const { searchParams } = new URL(request.url);
@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
       id: true,
       fullName: true,
       cui: true,
+      category: true,
+      cuadrilla: true,
       phone: true,
       isActive: true,
       isMinor: true,

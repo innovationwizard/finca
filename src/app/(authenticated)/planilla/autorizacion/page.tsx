@@ -96,7 +96,7 @@ export default async function AutorizacionPage() {
       return {
         workerId: e.workerId,
         name: e.worker.fullName,
-        category: e.category as "VOLUNTARIO" | "FIJO",
+        category: e.category,
         devengado,
         septimo,
         adicionales,
@@ -405,10 +405,10 @@ export default async function AutorizacionPage() {
   }
 
   // Composition by category (≤ few categories, per research).
-  const composition = (["VOLUNTARIO", "FIJO"] as const).map((cat) => {
+  const composition = (["VOLUNTARIO", "FIJO", "TEMPORAL"] as const).map((cat) => {
     const rs = rows.filter((r) => r.category === cat);
     return {
-      category: cat === "VOLUNTARIO" ? "Voluntario" : "Fijo",
+      category: cat === "VOLUNTARIO" ? "Voluntario" : cat === "FIJO" ? "Fijo" : "Temporal",
       total: rs.reduce((s, r) => s + r.totalToPay, 0),
       count: rs.length,
     };

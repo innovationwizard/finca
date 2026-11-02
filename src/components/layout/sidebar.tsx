@@ -7,6 +7,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Camera,
+  UserPlus,
   Sprout,
   ClipboardList,
   Coffee,
@@ -45,6 +47,10 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
+  { href: "/cosecha/pesaje", label: "Pesaje", icon: Camera, roles: ["MASTER", "ADMIN", "FIELD", "MANAGER"] },
+  { href: "/cosecha/enrolar", label: "Enrolar", icon: UserPlus, roles: ["MASTER", "ADMIN", "FIELD", "MANAGER"] },
+  { href: "/cosecha/kpis", label: "KPIs de cosecha", icon: BarChart3, roles: ["MASTER", "ADMIN", "MANAGER"] },
+  { href: "/cosecha/contabilidad", label: "Contabilidad cosecha", icon: FileBarChart, roles: ["MASTER", "ADMIN", "MANAGER"] },
   { href: "/planilla/captura", label: "Captura Semanal", icon: Table2 },
   { href: "/planilla", label: "Planillas anteriores", icon: ClipboardList },
   { href: "/planilla/ajustes", label: "Descuentos, Anticipos y Adicionales", icon: Calculator, roles: ["MASTER", "MANAGER", "ADMIN", "CFO"] },

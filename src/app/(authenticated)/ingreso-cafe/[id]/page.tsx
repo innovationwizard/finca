@@ -60,6 +60,7 @@ export default async function IntakeDetailPage({
     paymentStatus: intake.paymentStatus,
     bultos: intake.bultos,
     pesoNetoQq: Number(intake.pesoNetoQq),
+    pesoLibras: intake.pesoLibras,
     pesoPergaminoQq: intake.pesoPergaminoQq
       ? Number(intake.pesoPergaminoQq)
       : null,

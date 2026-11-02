@@ -123,6 +123,6 @@ export const config = {
      * - _next/static, _next/image
      * - favicon.ico, public files
      */
-    "/((?!_next/static|_next/image|favicon.ico|icons/|manifest.json|sw.js).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icons/|models/|manifest.json|sw.js).*)",
   ],
 };

@@ -12,6 +12,7 @@ import {
   formatAgriculturalYear,
 } from "@/lib/utils/agricultural-year";
 import Link from "next/link";
+import { formatCoffeeWeight, sumCoffeeWeights } from "@/lib/harvest/weight";
 import {
   ArrowLeft,
   MapPin,
@@ -62,12 +63,12 @@ export default async function LoteDetailPage({ params }: PageProps) {
       },
       _sum: { totalEarned: true },
     }),
-    prisma.coffeeIntake.aggregate({
+    prisma.coffeeIntake.findMany({
       where: {
         loteId: lote.id,
         date: { gte: yearStart, lte: yearEnd },
       },
-      _sum: { pesoNetoQq: true },
+      select: { pesoNetoQq: true, pesoLibras: true },
     }),
   ]);
 
@@ -115,6 +116,7 @@ export default async function LoteDetailPage({ params }: PageProps) {
       code: true,
       coffeeType: true,
       pesoNetoQq: true,
+      pesoLibras: true,
       status: true,
     },
   });
@@ -122,9 +124,12 @@ export default async function LoteDetailPage({ params }: PageProps) {
   const totalLaborCost = laborAgg._sum.totalEarned
     ? Number(laborAgg._sum.totalEarned)
     : 0;
-  const totalCoffeeQq = coffeeAgg._sum.pesoNetoQq
-    ? Number(coffeeAgg._sum.pesoNetoQq)
-    : 0;
+  const coffeeWeight = sumCoffeeWeights(
+    coffeeAgg.map((row) => ({
+      pesoNetoQq: Number(row.pesoNetoQq),
+      pesoLibras: row.pesoLibras,
+    })),
+  );
   const qqOroPerManzana = latestEstimate?.qqOroPerManzana
     ? Number(latestEstimate.qqOroPerManzana)
     : null;
@@ -265,15 +270,10 @@ export default async function LoteDetailPage({ params }: PageProps) {
             </span>
           </div>
           <p className="mt-3 text-2xl font-bold text-finca-900">
-            {totalCoffeeQq > 0
-              ? totalCoffeeQq.toLocaleString("es-GT", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })
-              : "0.00"}
+            {formatCoffeeWeight(coffeeWeight.libras, coffeeWeight.quintales)}
           </p>
           <p className="mt-1 text-xs text-finca-400">
-            qq esta temporada
+            esta temporada
           </p>
         </div>
 
@@ -407,8 +407,8 @@ export default async function LoteDetailPage({ params }: PageProps) {
                   <th className="px-4 py-3 text-left font-medium text-finca-600">
                     Tipo
                   </th>
-                  <th className="px-4 py-3 text-right font-medium text-finca-600">
-                    Peso QQ
+                    <th className="px-4 py-3 text-right font-medium text-finca-600">
+                    Peso
                   </th>
                   <th className="px-4 py-3 text-left font-medium text-finca-600">
                     Estado
@@ -428,10 +428,7 @@ export default async function LoteDetailPage({ params }: PageProps) {
                       {coffeeTypeLabels[intake.coffeeType] ?? intake.coffeeType}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-finca-700">
-                      {Number(intake.pesoNetoQq).toLocaleString("es-GT", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatCoffeeWeight(intake.pesoLibras, Number(intake.pesoNetoQq))}
                     </td>
                     <td className="px-4 py-3">
                       <span

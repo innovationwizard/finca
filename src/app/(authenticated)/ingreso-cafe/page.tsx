@@ -12,6 +12,7 @@ import {
 } from "@/lib/utils/agricultural-year";
 import { IntakeList } from "./intake-list";
 import Link from "next/link";
+import { displayLibras, formatCoffeeWeight, sumCoffeeWeights } from "@/lib/harvest/weight";
 
 export const metadata = { title: "Ingreso de Café" };
 
@@ -35,9 +36,11 @@ export default async function IngresoCafePage() {
   });
 
   // KPIs — season accumulators
-  const acumuladoCereza = intakes
+  const cerezaRows = intakes
     .filter((i) => i.coffeeType === "CEREZA")
-    .reduce((sum, i) => sum + Number(i.pesoNetoQq), 0);
+    .map((i) => ({ pesoNetoQq: Number(i.pesoNetoQq), pesoLibras: i.pesoLibras }));
+  const cerezaWeight = sumCoffeeWeights(cerezaRows);
+  const acumuladoCereza = cerezaWeight.quintales;
 
   const acumuladoVerde = intakes.reduce(
     (sum, i) => sum + (i.pesoVerdeQq ? Number(i.pesoVerdeQq) : 0),
@@ -65,6 +68,7 @@ export default async function IngresoCafePage() {
     procedencia: i.procedencia,
     bultos: i.bultos,
     pesoNetoQq: Number(i.pesoNetoQq),
+    pesoLibras: i.pesoLibras,
     pesoVerdeQq: i.pesoVerdeQq ? Number(i.pesoVerdeQq) : null,
     pesoPergaminoQq: i.pesoPergaminoQq ? Number(i.pesoPergaminoQq) : null,
     rendimiento: i.rendimiento ? Number(i.rendimiento) : null,
@@ -75,7 +79,7 @@ export default async function IngresoCafePage() {
   // Resumen por Lote — aggregate by lote
   const loteAgg = new Map<
     string,
-    { name: string; totalQq: number; verdeQq: number; days: Set<string> }
+    { name: string; totalQq: number; totalLb: number; verdeQq: number; days: Set<string> }
   >();
   for (const i of intakes) {
     if (i.coffeeType !== "CEREZA" || !i.loteId) continue;
@@ -83,10 +87,12 @@ export default async function IngresoCafePage() {
     const existing = loteAgg.get(key) ?? {
       name: i.lote?.name ?? "—",
       totalQq: 0,
+      totalLb: 0,
       verdeQq: 0,
       days: new Set<string>(),
     };
     existing.totalQq += Number(i.pesoNetoQq);
+    existing.totalLb += displayLibras(i.pesoLibras, Number(i.pesoNetoQq));
     existing.verdeQq += i.pesoVerdeQq ? Number(i.pesoVerdeQq) : 0;
     existing.days.add(i.date.toISOString().split("T")[0]);
     loteAgg.set(key, existing);
@@ -131,9 +137,7 @@ export default async function IngresoCafePage() {
             Maduro (qq)
           </p>
           <p className="mt-1 text-xl font-semibold tabular-nums text-finca-900">
-            {acumuladoCereza.toLocaleString("es-GT", {
-              minimumFractionDigits: 2,
-            })}
+            {formatCoffeeWeight(cerezaWeight.libras, cerezaWeight.quintales)}
           </p>
         </div>
         <div className="rounded-xl border border-finca-200 bg-white px-4 py-3 shadow-sm">
@@ -141,9 +145,7 @@ export default async function IngresoCafePage() {
             Verde (qq)
           </p>
           <p className="mt-1 text-xl font-semibold tabular-nums text-finca-900">
-            {acumuladoVerde.toLocaleString("es-GT", {
-              minimumFractionDigits: 2,
-            })}
+            {formatCoffeeWeight(null, acumuladoVerde)}
           </p>
         </div>
         <div className="rounded-xl border border-finca-200 bg-white px-4 py-3 shadow-sm">
@@ -151,9 +153,7 @@ export default async function IngresoCafePage() {
             Total Cosecha (qq)
           </p>
           <p className="mt-1 text-xl font-semibold tabular-nums text-earth-700">
-            {totalCosecha.toLocaleString("es-GT", {
-              minimumFractionDigits: 2,
-            })}
+            {formatCoffeeWeight(cerezaWeight.libras + acumuladoVerde * 100, totalCosecha)}
           </p>
         </div>
         <div className="rounded-xl border border-finca-200 bg-white px-4 py-3 shadow-sm">
@@ -161,9 +161,7 @@ export default async function IngresoCafePage() {
             Pergamino (qq)
           </p>
           <p className="mt-1 text-xl font-semibold tabular-nums text-finca-900">
-            {acumuladoPergamino.toLocaleString("es-GT", {
-              minimumFractionDigits: 2,
-            })}
+            {formatCoffeeWeight(null, acumuladoPergamino)}
           </p>
         </div>
         <div className="hidden rounded-xl border border-finca-200 bg-white px-4 py-3 shadow-sm sm:block">
@@ -201,7 +199,7 @@ export default async function IngresoCafePage() {
                 <tr className="border-b border-finca-100 bg-finca-50/50">
                   <th className="px-4 py-3 font-medium text-finca-600">Lote</th>
                   <th className="px-4 py-3 text-right font-medium text-finca-600">
-                    Cereza (qq)
+                    Cereza
                   </th>
                   <th className="px-4 py-3 text-right font-medium text-finca-600">
                     %
@@ -221,9 +219,7 @@ export default async function IngresoCafePage() {
                       {l.name}
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-finca-700">
-                      {l.totalQq.toLocaleString("es-GT", {
-                        minimumFractionDigits: 2,
-                      })}
+                      {formatCoffeeWeight(l.totalLb, l.totalQq)}
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-finca-500">
                       {l.pct.toLocaleString("es-GT", {
@@ -233,11 +229,7 @@ export default async function IngresoCafePage() {
                       %
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-finca-500">
-                      {l.verdeQq > 0
-                        ? l.verdeQq.toLocaleString("es-GT", {
-                            minimumFractionDigits: 2,
-                          })
-                        : "—"}
+                      {l.verdeQq > 0 ? formatCoffeeWeight(null, l.verdeQq) : "—"}
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-finca-700">
                       {l.diasCorte}
@@ -251,19 +243,13 @@ export default async function IngresoCafePage() {
                     Total
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums font-semibold text-finca-900">
-                    {acumuladoCereza.toLocaleString("es-GT", {
-                      minimumFractionDigits: 2,
-                    })}
+                    {formatCoffeeWeight(cerezaWeight.libras, cerezaWeight.quintales)}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums font-semibold text-finca-900">
                     100%
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums font-semibold text-finca-900">
-                    {acumuladoVerde > 0
-                      ? acumuladoVerde.toLocaleString("es-GT", {
-                          minimumFractionDigits: 2,
-                        })
-                      : "—"}
+                    {acumuladoVerde > 0 ? formatCoffeeWeight(null, acumuladoVerde) : "—"}
                   </td>
                   <td />
                 </tr>

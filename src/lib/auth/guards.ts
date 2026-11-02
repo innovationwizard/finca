@@ -3,6 +3,11 @@
 // =============================================================================
 
 import { UserRole } from "@prisma/client";
+import {
+  CUI_FALLBACK_ROLE_NAMES,
+  HARVEST_DESK_ROLE_NAMES,
+  HARVEST_ROLE_NAMES,
+} from "./roles";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { currentPlanRoute, type PlanRoutePath } from "@/lib/plan/plan-routes";
@@ -74,6 +79,36 @@ export const READ_ALL_ROLES: UserRole[] = ["MASTER", "ADMIN", "MANAGER", "CEO", 
 
 /** Roles that can create/edit operational data */
 export const WRITE_ROLES: UserRole[] = ["MASTER", "ADMIN", "FIELD"];
+
+/**
+ * Harvest enrollment and weighing. MANAGER prepares payroll and is not in
+ * WRITE_ROLES, so this list names the four roles from the pilot instead of
+ * widening WRITE_ROLES.
+ */
+export const HARVEST_ROLES: UserRole[] = [...HARVEST_ROLE_NAMES];
+
+/**
+ * Management KPIs and the harvest accounting page.
+ * CFO is outside the four roles named for this pilot.
+ */
+export const HARVEST_DESK_ROLES: UserRole[] = [...HARVEST_DESK_ROLE_NAMES];
+
+/** Exact-CUI fallback on the weighing screen. The spec names these two roles. */
+export const CUI_FALLBACK_ROLES: UserRole[] = [...CUI_FALLBACK_ROLE_NAMES];
+
+/**
+ * Reference lists the phone cache reads. FIELD is not in READ_ALL_ROLES, and
+ * without these lists the caporal cannot resolve a lote, a price, or a CUI offline.
+ */
+export const REFERENCE_READ_ROLES: UserRole[] = [
+  "MASTER",
+  "ADMIN",
+  "MANAGER",
+  "CEO",
+  "CFO",
+  "CONSULTANT",
+  "FIELD",
+];
 
 /**
  * Captura Semanal write access. MANAGER (Manuel, the payroll preparer) enters the

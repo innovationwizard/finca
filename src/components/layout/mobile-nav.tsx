@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Camera,
   ClipboardList,
   Coffee,
   Users,
@@ -26,6 +27,7 @@ type MobileTab = {
 };
 
 const MOBILE_TABS: MobileTab[] = [
+  { href: "/cosecha/pesaje", label: "Cosecha", icon: Camera, roles: ["MASTER", "ADMIN", "FIELD", "MANAGER"] },
   { href: "/planilla", label: "Anteriores", icon: ClipboardList },
   { href: "/ingreso-cafe", label: "Café", icon: Coffee },
   { href: "/resumenes", label: "Resúmenes", icon: FileBarChart },

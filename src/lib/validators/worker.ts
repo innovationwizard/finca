@@ -46,7 +46,17 @@ export const workerCreateSchema = z.object({
     .url("URL de foto inválida")
     .nullable()
     .optional(),
-  category: z.enum(["VOLUNTARIO", "FIJO"]).default("VOLUNTARIO"),
+  category: z.enum(["VOLUNTARIO", "FIJO", "TEMPORAL"]).default("VOLUNTARIO"),
+  cuadrilla: z
+    .string()
+    .max(80, "Cuadrilla demasiado larga")
+    .nullable()
+    .optional()
+    .transform((value) => {
+      if (value == null) return value;
+      const trimmed = value.trim();
+      return trimmed === "" ? null : trimmed;
+    }),
   isMinor: z.boolean().default(false),
   isActive: z.boolean().default(true),
   startDate: z

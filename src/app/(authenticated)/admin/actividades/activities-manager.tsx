@@ -22,6 +22,7 @@ const UNIT_OPTIONS = [
   { value: "DIA", label: "Día" },
   { value: "TAREA", label: "Tarea" },
   { value: "UNIDAD", label: "Unidad" },
+  { value: "LIBRA", label: "Libra (lb)" },
 ] as const;
 
 const UNIT_ABBR: Record<string, string> = {
@@ -31,6 +32,7 @@ const UNIT_ABBR: Record<string, string> = {
   DIA: "día",
   TAREA: "tarea",
   UNIDAD: "unidad",
+  LIBRA: "lb",
 };
 
 type ActivityRow = {

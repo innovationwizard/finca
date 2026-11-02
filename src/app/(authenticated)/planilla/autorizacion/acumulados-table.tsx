@@ -104,7 +104,7 @@ function averagesOf(rows: AcumuladoRow[]): Averages {
 
 export function AcumuladosTable({ rows }: { rows: AcumuladoRow[] }) {
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<"" | "VOLUNTARIO" | "FIJO">("");
+  const [category, setCategory] = useState<"" | "VOLUNTARIO" | "FIJO" | "TEMPORAL">("");
   const [onlyExceptions, setOnlyExceptions] = useState(false);
   const [onlyAdjustments, setOnlyAdjustments] = useState(false);
   const [sort, setSort] = useState<"name" | "acumulado" | "promedio">("name");
@@ -154,6 +154,7 @@ export function AcumuladosTable({ rows }: { rows: AcumuladoRow[] }) {
           <option value="">Todas las categorías</option>
           <option value="VOLUNTARIO">Voluntario</option>
           <option value="FIJO">Fijo</option>
+          <option value="TEMPORAL">Temporal</option>
         </select>
         <select
           value={sort}

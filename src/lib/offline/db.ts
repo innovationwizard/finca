@@ -4,16 +4,16 @@
 // Mirrors the subset of Prisma models that need offline support:
 // - ActivityRecord (write offline → sync)
 // - CoffeeIntake (write offline → sync)
+// - Enrollment bundles and cherry weighings (outbox)
 // - Reference data caches (read-only mirrors)
 // - Outbox queue (pending mutations)
 
 import Dexie, { type EntityTable } from "dexie";
-
-// ── Offline record types ─────────────────────────────────────────────────────
+import type { PhotoSlot } from "@/lib/harvest/constants";
 
 export interface OfflineActivityRecord {
-  clientId: string; // UUID v4 — dedup key
-  date: string; // ISO date
+  clientId: string;
+  date: string;
   payPeriodId: string;
   workerId: string;
   activityId: string;
@@ -22,7 +22,7 @@ export interface OfflineActivityRecord {
   unitPrice: number;
   totalEarned: number;
   notes: string | null;
-  createdAt: string; // ISO datetime
+  createdAt: string;
   syncedAt: string | null;
 }
 
@@ -44,23 +44,24 @@ export interface OfflineCoffeeIntake {
   syncedAt: string | null;
 }
 
-// ── Reference data caches (synced on login, refreshed when online) ───────────
-
 export interface CachedWorker {
   id: string;
   fullName: string;
   isActive: boolean;
+  cui: string;
+  category: string;
+  cuadrilla: string | null;
 }
 
 export interface CachedActivity {
   id: string;
   name: string;
+  shortName?: string | null;
   unit: string;
   defaultPrice: number;
   isHarvest: boolean;
   isBeneficio: boolean;
   isActive: boolean;
-  // Effective-dated prices (from /api/activities) → resolve price by work date offline.
   priceSchedule?: { effectiveFrom: string; price: number }[];
 }
 
@@ -82,19 +83,53 @@ export interface CachedPayPeriod {
   isClosed: boolean;
 }
 
-// ── Outbox queue entry ───────────────────────────────────────────────────────
-
-export interface OutboxEntry {
-  id?: number; // Auto-increment
-  table: "activity_records" | "coffee_intakes";
-  clientId: string;
-  payload: string; // JSON-serialized record
-  attempts: number;
-  lastAttemptAt: string | null;
-  createdAt: string;
+export interface CachedFaceDescriptor {
+  id: string;
+  workerId: string;
+  descriptor: number[];
+  captureTime: string;
+  source: "server" | "local";
 }
 
-// ── Database ─────────────────────────────────────────────────────────────────
+export interface PendingBlob {
+  id?: number;
+  clientId: string;
+  slot: PhotoSlot;
+  blob: Blob;
+}
+
+export interface WorkerPhoto {
+  workerId: string;
+  blob: Blob;
+}
+
+export interface ModelFile {
+  name: string;
+  blob: Blob;
+}
+
+export interface HarvestMeta {
+  key: string;
+  faceMatchMinSimilarity: number;
+}
+
+export type OutboxTable =
+  | "activity_records"
+  | "coffee_intakes"
+  | "enrollments"
+  | "face_enrollments"
+  | "weighings";
+
+export interface OutboxEntry {
+  id?: number;
+  table: OutboxTable;
+  clientId: string;
+  payload: string;
+  attempts: number;
+  lastAttemptAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+}
 
 class FincaOfflineDB extends Dexie {
   activityRecords!: EntityTable<OfflineActivityRecord, "clientId">;
@@ -104,6 +139,11 @@ class FincaOfflineDB extends Dexie {
   lotes!: EntityTable<CachedLote, "id">;
   payPeriods!: EntityTable<CachedPayPeriod, "id">;
   outbox!: EntityTable<OutboxEntry, "id">;
+  faceDescriptors!: EntityTable<CachedFaceDescriptor, "id">;
+  pendingBlobs!: EntityTable<PendingBlob, "id">;
+  workerPhotos!: EntityTable<WorkerPhoto, "workerId">;
+  modelFiles!: EntityTable<ModelFile, "name">;
+  harvestMeta!: EntityTable<HarvestMeta, "key">;
 
   constructor() {
     super("finca-danilandia");
@@ -116,6 +156,21 @@ class FincaOfflineDB extends Dexie {
       lotes: "id, slug",
       payPeriods: "id, agriculturalYear",
       outbox: "++id, table, clientId, createdAt",
+    });
+
+    this.version(2).stores({
+      activityRecords: "clientId, date, workerId, payPeriodId, syncedAt",
+      coffeeIntakes: "clientId, date, code, syncedAt",
+      workers: "id, fullName, cui, category",
+      activities: "id, name",
+      lotes: "id, slug",
+      payPeriods: "id, agriculturalYear",
+      outbox: "++id, table, clientId, createdAt",
+      faceDescriptors: "id, workerId, source",
+      pendingBlobs: "++id, clientId, slot",
+      workerPhotos: "workerId",
+      modelFiles: "name",
+      harvestMeta: "key",
     });
   }
 }

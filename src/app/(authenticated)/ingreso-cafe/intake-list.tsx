@@ -7,6 +7,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { formatDateShort, formatDecimal } from "@/lib/utils/format";
+import { formatCoffeeWeight, sumCoffeeWeights } from "@/lib/harvest/weight";
 
 type IntakeRecord = {
   id: string;
@@ -19,6 +20,7 @@ type IntakeRecord = {
   procedencia: string | null;
   bultos: number | null;
   pesoNetoQq: number;
+  pesoLibras: number | null;
   pesoVerdeQq: number | null;
   pesoPergaminoQq: number | null;
   rendimiento: number | null;
@@ -213,7 +215,7 @@ export function IntakeList({ records }: { records: IntakeRecord[] }) {
                   {r.bultos ?? "—"}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-finca-700">
-                  {formatDecimal(r.pesoNetoQq)}
+                  {formatCoffeeWeight(r.pesoLibras, r.pesoNetoQq)}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-finca-500">
                   {r.pesoVerdeQq ? formatDecimal(r.pesoVerdeQq) : "—"}
@@ -245,10 +247,10 @@ export function IntakeList({ records }: { records: IntakeRecord[] }) {
                 Total
               </td>
               <td className="px-4 py-3 text-right tabular-nums text-sm font-semibold text-finca-900">
-                {formatDecimal(
-                  filtered.reduce((s, r) => s + r.pesoNetoQq, 0),
-                )}{" "}
-                qq
+                {(() => {
+                  const total = sumCoffeeWeights(filtered);
+                  return formatCoffeeWeight(total.libras, total.quintales);
+                })()}
               </td>
               <td className="px-4 py-3 text-right tabular-nums text-sm font-semibold text-finca-900">
                 {formatDecimal(

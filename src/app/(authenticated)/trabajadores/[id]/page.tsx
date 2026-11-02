@@ -82,6 +82,7 @@ export default async function WorkerDetailPage({ params }: PageProps) {
     bankAccount: worker.bankAccount,
     phone: worker.phone,
     personPhotoUrl: worker.personPhotoUrl,
+    cuadrilla: worker.cuadrilla,
     category: worker.category,
     isMinor: worker.isMinor,
     isActive: worker.isActive,
